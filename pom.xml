@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.helger</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>3.0.3</version>
+  </parent>
+  <groupId>com.helger.phoss.ap</groupId>
+  <artifactId>phoss-ap-parent-pom</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>phoss-ap-parent-pom</name>
+  <description>phoss Peppol Access Point - Parent POM</description>
+  <url>https://github.com/phax/phoss-ap</url>
+  <inceptionYear>2026</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/phax/phoss-ap.git</connection>
+    <developerConnection>scm:git:https://github.com/phax/phoss-ap.git</developerConnection>
+    <url>https://github.com/phax/phoss-ap</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+
+    <!-- External dependency versions -->
+    <awssdk.version>2.41.2</awssdk.version>
+    <failsafe.version>3.3.2</failsafe.version>
+    <flyway.version>12.0.2</flyway.version>
+    <jaxb-impl.version>4.0.5</jaxb-impl.version>
+    <log4j.version>2.25.3</log4j.version>
+    <postgres.version>42.7.10</postgres.version>
+    <spring-boot.version>4.0.3</spring-boot.version>
+
+    <ph-commons.version>12.1.3</ph-commons.version>
+    <ph-web.version>11.2.1</ph-web.version>
+    <ph-oton.version>10.2.0</ph-oton.version>
+    <peppol-commons.version>12.3.10</peppol-commons.version>
+    <peppol-reporting.version>4.1.0</peppol-reporting.version>
+    <phase4.version>4.3.0</phase4.version>
+    <ph-db.version>8.1.2</ph-db.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- BOM imports -->
+      <dependency>
+        <groupId>com.helger.commons</groupId>
+        <artifactId>ph-commons-parent-pom</artifactId>
+        <version>${ph-commons.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.web</groupId>
+        <artifactId>ph-web-parent-pom</artifactId>
+        <version>${ph-web.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.peppol</groupId>
+        <artifactId>peppol-commons-parent-pom</artifactId>
+        <version>${peppol-commons.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Internal modules -->
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-db</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-forwarding-http</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-forwarding-s3</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-forwarding-sftp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- External dependencies -->
+      <dependency>
+        <groupId>com.helger.phase4</groupId>
+        <artifactId>phase4-peppol-client</artifactId>
+        <version>${phase4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phase4</groupId>
+        <artifactId>phase4-peppol-servlet</artifactId>
+        <version>${phase4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.peppol</groupId>
+        <artifactId>peppol-reporting</artifactId>
+        <version>${peppol-reporting.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.peppol</groupId>
+        <artifactId>peppol-mls</artifactId>
+        <version>${peppol-commons.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.db</groupId>
+        <artifactId>ph-db-jdbc</artifactId>
+        <version>${ph-db.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-database-postgresql</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgres.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.failsafe</groupId>
+        <artifactId>failsafe</artifactId>
+        <version>${failsafe.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>s3</artifactId>
+        <version>${awssdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.xml.bind</groupId>
+        <artifactId>jaxb-impl</artifactId>
+        <version>${jaxb-impl.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Global dependencies for all modules -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.commons</groupId>
+      <artifactId>ph-unittest-support-ext</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <modules>
+    <module>phoss-ap-api</module>
+    <module>phoss-ap-db</module>
+    <module>phoss-ap-core</module>
+    <module>phoss-ap-forwarding-http</module>
+    <module>phoss-ap-forwarding-s3</module>
+    <module>phoss-ap-forwarding-sftp</module>
+    <module>phoss-ap-webapp</module>
+  </modules>
+</project>

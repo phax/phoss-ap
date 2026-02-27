@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory;
 import com.helger.annotation.style.UsedViaReflection;
 import com.helger.base.exception.InitializationException;
 import com.helger.base.lang.clazz.ClassHelper;
-import com.helger.phoss.ap.api.IInboundTransactionManager;
-import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.db.flyway.APFlywayMigrator;
 import com.helger.scope.IScope;
@@ -115,7 +113,7 @@ public final class APMetaJDBCManager extends AbstractGlobalSingleton
   }
 
   @NonNull
-  public static IOutboundTransactionManager getOutboundTransactionMgr ()
+  public static OutboundTransactionManagerJDBC getOutboundTransactionMgr ()
   {
     return getInstance ().m_aOutboundTxMgr;
   }
@@ -127,7 +125,7 @@ public final class APMetaJDBCManager extends AbstractGlobalSingleton
   }
 
   @NonNull
-  public static IInboundTransactionManager getInboundTransactionMgr ()
+  public static InboundTransactionManagerJDBC getInboundTransactionMgr ()
   {
     return getInstance ().m_aInboundTxMgr;
   }

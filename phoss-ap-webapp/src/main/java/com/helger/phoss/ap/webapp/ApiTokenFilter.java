@@ -22,7 +22,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.helger.phoss.ap.core.APConfig;
+import com.helger.phoss.ap.core.APCoreConfig;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -46,7 +46,7 @@ public class ApiTokenFilter extends OncePerRequestFilter
                                    @NonNull final HttpServletResponse response,
                                    @NonNull final FilterChain filterChain) throws ServletException, IOException
   {
-    final String sRequiredToken = APConfig.getPhase4ApiRequiredToken ();
+    final String sRequiredToken = APCoreConfig.getPhase4ApiRequiredToken ();
     if (sRequiredToken != null && !sRequiredToken.isEmpty ())
     {
       final String sProvidedToken = request.getHeader (HEADER_TOKEN);

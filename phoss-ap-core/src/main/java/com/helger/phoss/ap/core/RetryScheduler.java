@@ -39,7 +39,7 @@ public final class RetryScheduler
 
   public static void start ()
   {
-    final long nIntervalMs = APConfig.getRetrySchedulerIntervalMs ();
+    final long nIntervalMs = APCoreConfig.getRetrySchedulerIntervalMs ();
     LOGGER.info ("Starting retry scheduler with interval " + nIntervalMs + " ms");
 
     s_aTimer = new Timer ("ap-retry-scheduler", true);

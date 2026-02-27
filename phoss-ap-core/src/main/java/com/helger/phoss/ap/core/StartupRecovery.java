@@ -32,7 +32,7 @@ public final class StartupRecovery
 
   public static void run ()
   {
-    if (!APConfig.isStartupRecoveryEnabled ())
+    if (!APCoreConfig.isStartupRecoveryEnabled ())
     {
       LOGGER.info ("Startup recovery is disabled");
       return;

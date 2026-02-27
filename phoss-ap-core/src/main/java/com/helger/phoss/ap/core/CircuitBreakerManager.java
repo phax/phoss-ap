@@ -23,13 +23,16 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.annotation.concurrent.ThreadSafe;
+
 import dev.failsafe.CircuitBreaker;
 
+@ThreadSafe
 public final class CircuitBreakerManager
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (CircuitBreakerManager.class);
 
-  private static final ConcurrentHashMap <String, CircuitBreaker <Void>> s_aBreakers = new ConcurrentHashMap <> ();
+  private static final ConcurrentHashMap <String, CircuitBreaker <Void>> BREAKERS = new ConcurrentHashMap <> ();
 
   private CircuitBreakerManager ()
   {}
@@ -37,19 +40,19 @@ public final class CircuitBreakerManager
   @NonNull
   private static CircuitBreaker <Void> _getOrCreate (@NonNull final String sEndpointURL)
   {
-    return s_aBreakers.computeIfAbsent (sEndpointURL, k -> {
+    return BREAKERS.computeIfAbsent (sEndpointURL, k -> {
       LOGGER.info ("Creating circuit breaker for endpoint URL '" + k + "'");
       return CircuitBreaker.<Void> builder ()
-                           .withFailureThreshold (APConfig.getCircuitBreakerFailureThreshold ())
-                           .withDelay (Duration.ofMillis (APConfig.getCircuitBreakerOpenDurationMs ()))
-                           .withSuccessThreshold (APConfig.getCircuitBreakerHalfOpenMaxAttempts ())
+                           .withFailureThreshold (APCoreConfig.getCircuitBreakerFailureThreshold ())
+                           .withDelay (Duration.ofMillis (APCoreConfig.getCircuitBreakerOpenDurationMs ()))
+                           .withSuccessThreshold (APCoreConfig.getCircuitBreakerHalfOpenMaxAttempts ())
                            .build ();
     });
   }
 
   public static boolean isOpen (@NonNull final String sEndpointURL)
   {
-    final CircuitBreaker <Void> aCB = s_aBreakers.get (sEndpointURL);
+    final CircuitBreaker <Void> aCB = BREAKERS.get (sEndpointURL);
     if (aCB == null)
       return false;
     return aCB.isOpen ();

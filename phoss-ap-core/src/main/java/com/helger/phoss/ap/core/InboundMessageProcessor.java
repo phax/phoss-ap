@@ -83,7 +83,7 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
     if (aTxMgr.getByAS4MessageID (sAS4MessageID) != null)
     {
       bIsDuplicateAS4 = true;
-      if (APConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
+      if (APCoreConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
       {
         LOGGER.warn ("Rejecting duplicate AS4 message '" + sAS4MessageID + "'");
         return;
@@ -92,7 +92,7 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
     if (aTxMgr.getBySbdhInstanceID (sSbdhInstanceID) != null)
     {
       bIsDuplicateSBDH = true;
-      if (APConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
+      if (APCoreConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
       {
         LOGGER.warn ("Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'");
         return;
@@ -117,9 +117,9 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
                                                                                                   .getCurrentDateTime ();
 
     final String sTxID = aTxMgr.create (sIncomingID,
-                                        APConfig.getPeppolSeatID () != null ? APConfig.getPeppolSeatID () : "",
+                                        APCoreConfig.getPeppolSeatID () != null ? APCoreConfig.getPeppolSeatID () : "",
                                         // TODO C3 seat ID
-                                        APConfig.getPeppolSeatID () != null ? APConfig.getPeppolSeatID () : "",
+                                        APCoreConfig.getPeppolSeatID () != null ? APCoreConfig.getPeppolSeatID () : "",
                                         sSigningCertCN,
                                         sSenderID,
                                         sReceiverID,
@@ -134,10 +134,10 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
                                         bIsDuplicateAS4,
                                         bIsDuplicateSBDH,
                                         null,
-                                        APConfig.getMlsType ());
+                                        APCoreConfig.getMlsType ());
 
     // Optional verification
-    if (APConfig.isVerificationInboundEnabled ())
+    if (APCoreConfig.isVerificationInboundEnabled ())
     {
       for (final IDocumentVerifierSPI aVerifier : APMetaManager.getAllVerifiers ())
       {
@@ -189,7 +189,7 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
       aAttemptMgr.createFailure (aTx.getID (), "forwarding_error", "Forwarding failed");
 
       final int nNewAttemptCount = aTx.getAttemptCount () + 1;
-      final int nMaxRetryAttempts = APConfig.getRetryForwardingMaxAttempts ();
+      final int nMaxRetryAttempts = APCoreConfig.getRetryForwardingMaxAttempts ();
       if (nNewAttemptCount >= nMaxRetryAttempts)
       {
         aTxMgr.updateStatusAndRetry (aTx.getID (),
@@ -204,9 +204,9 @@ public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerS
       else
       {
         final var aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
-                                                                     APConfig.getRetryForwardingInitialBackoffMs (),
-                                                                     APConfig.getRetryForwardingBackoffMultiplier (),
-                                                                     APConfig.getRetryForwardingMaxBackoffMs ());
+                                                                     APCoreConfig.getRetryForwardingInitialBackoffMs (),
+                                                                     APCoreConfig.getRetryForwardingBackoffMultiplier (),
+                                                                     APCoreConfig.getRetryForwardingMaxBackoffMs ());
         aTxMgr.updateStatusAndRetry (aTx.getID (),
                                      EInboundStatus.FORWARD_FAILED,
                                      nNewAttemptCount,

@@ -84,13 +84,13 @@ public final class ArchivalScheduler
 
   public static void start ()
   {
-    if (!APConfig.isArchivalSchedulerEnabled ())
+    if (!APCoreConfig.isArchivalSchedulerEnabled ())
     {
       LOGGER.info ("Archival scheduler is disabled");
       return;
     }
 
-    final long nIntervalMs = APConfig.getArchivalSchedulerIntervalMs ();
+    final long nIntervalMs = APCoreConfig.getArchivalSchedulerIntervalMs ();
     LOGGER.info ("Starting archival scheduler with interval " + nIntervalMs + " ms");
 
     s_aTimer = new Timer ("ap-archival-scheduler", true);

@@ -19,6 +19,7 @@ package com.helger.phoss.ap.core;
 import java.time.OffsetDateTime;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public final class MlsHandler
                                                  aMlsBytes,
                                                  aMlsBytes.length,
                                                  "",
-                                                 APConfig.getPeppolOwnerCountryCode (),
+                                                 APCoreConfig.getPeppolOwnerCountryCode (),
                                                  null,
                                                  aTx.getID ());
 
@@ -87,16 +88,17 @@ public final class MlsHandler
   }
 
   public static void handleIncomingMls (@NonNull final String sSbdhInstanceID,
-                                        @NonNull final EPeppolMLSResponseCode eResponseCode)
+                                        @NonNull final EPeppolMLSResponseCode eResponseCode,
+                                        @NonNull final OffsetDateTime aMlsAS4ReceivedDT,
+                                        @Nullable final String sMlsID)
   {
-    LOGGER.info ("Received MLS response (" + eResponseCode.getID () + ") for SBDH: " + sSbdhInstanceID);
+    LOGGER.info ("Received MLS response (" + eResponseCode.getID () + ") for SBDH '" + sSbdhInstanceID + "'");
 
     final OutboundTransactionManagerJDBC aOutboundMgr = APMetaJDBCManager.getOutboundTransactionMgr ();
     final IOutboundTransaction aTx = aOutboundMgr.getBySbdhInstanceID (sSbdhInstanceID);
-
     if (aTx == null)
     {
-      LOGGER.warn ("No outbound transaction found for SBDH Instance ID: " + sSbdhInstanceID);
+      LOGGER.warn ("No outbound transaction found for SBDH Instance ID '" + sSbdhInstanceID + "'");
       return;
     }
 
@@ -105,9 +107,8 @@ public final class MlsHandler
       case ACCEPTANCE -> EMlsReceptionStatus.RECEIVED_AP;
       case ACKNOWLEDGING -> EMlsReceptionStatus.RECEIVED_AB;
       case REJECTION -> EMlsReceptionStatus.RECEIVED_RE;
-      default -> EMlsReceptionStatus.PENDING;
     };
-    aOutboundMgr.updateMlsStatus (aTx.getID (), eMlsStatus, OffsetDateTime.now (), null);
-    LOGGER.info ("Updated MLS status for transaction " + aTx.getID () + " to " + eMlsStatus.getID ());
+    aOutboundMgr.updateMlsStatus (aTx.getID (), eMlsStatus, aMlsAS4ReceivedDT, sMlsID);
+    LOGGER.info ("Updated MLS status for transaction '" + aTx.getID () + "' to '" + eMlsStatus.getID () + "'");
   }
 }

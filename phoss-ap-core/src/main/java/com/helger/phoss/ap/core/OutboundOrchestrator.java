@@ -23,11 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.phase4.model.message.MessageHelperMethods;
 import com.helger.phoss.ap.api.IOutboundTransaction;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
+import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.spi.IDocumentVerifierSPI;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.helper.HashHelper;
@@ -57,7 +59,7 @@ public final class OutboundOrchestrator
     final String sDocumentHash = HashHelper.sha256Hex (aDocumentBytes);
 
     // Optional verification
-    if (APConfig.isVerificationOutboundEnabled ())
+    if (APCoreConfig.isVerificationOutboundEnabled ())
     {
       for (final IDocumentVerifierSPI aVerifier : APMetaManager.getAllVerifiers ())
       {
@@ -102,6 +104,7 @@ public final class OutboundOrchestrator
     final String sDocumentHash = HashHelper.sha256Hex (aSbdBytes);
 
     final OutboundTransactionManagerJDBC aMgr = APMetaJDBCManager.getOutboundTransactionMgr ();
+    // Create in pending state
     final String sTransactionID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
                                                sSenderID,
                                                sReceiverID,
@@ -121,6 +124,7 @@ public final class OutboundOrchestrator
   public static void processPendingOutbound (@NonNull final IOutboundTransaction aTx)
   {
     final String sID = aTx.getID ();
+    final IAPTimestampManager aTimestampMgr = APMetaJDBCManager.getTimestampMgr ();
     final OutboundTransactionManagerJDBC aTxMgr = APMetaJDBCManager.getOutboundTransactionMgr ();
     final OutboundSendingAttemptManagerJDBC aAttemptMgr = APMetaJDBCManager.getOutboundSendingAttemptMgr ();
 
@@ -135,29 +139,24 @@ public final class OutboundOrchestrator
     // For now, record a placeholder — actual AS4 sending will be integrated when
     // the full phase4 configuration is in place
     final int nNewAttemptCount = aTx.getAttemptCount () + 1;
+    final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
+    final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTime ();
 
     try
     {
       // Actual sending would happen here using Phase4PeppolSender
       // On success:
-      final String sAS4MessageID = "msg-" + java.util.UUID.randomUUID ().toString ();
-      aAttemptMgr.create (sID, sAS4MessageID, OffsetDateTime.now (), null, null, EAttemptStatus.SUCCESS, null);
+      aAttemptMgr.create (sID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.SUCCESS, null);
       aTxMgr.updateStatusCompleted (sID, EOutboundStatus.SENT);
-      LOGGER.info ("Outbound transaction sent successfully: " + sID);
+      LOGGER.info ("Outbound transaction sent successfully '" + sID + "'");
     }
     catch (final Exception ex)
     {
-      LOGGER.error ("Outbound sending failed for transaction: " + sID, ex);
+      LOGGER.error ("Outbound sending failed for transaction '" + sID + "'", ex);
 
-      aAttemptMgr.create (sID,
-                          "msg-" + java.util.UUID.randomUUID ().toString (),
-                          OffsetDateTime.now (),
-                          null,
-                          null,
-                          EAttemptStatus.FAILED,
-                          ex.getMessage ());
+      aAttemptMgr.create (sID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.FAILED, ex.getMessage ());
 
-      if (nNewAttemptCount >= APConfig.getRetrySendingMaxAttempts ())
+      if (nNewAttemptCount >= APCoreConfig.getRetrySendingMaxAttempts ())
       {
         aTxMgr.updateStatusAndRetry (sID, EOutboundStatus.PERMANENTLY_FAILED, nNewAttemptCount, null, ex.getMessage ());
         // Notify
@@ -167,9 +166,9 @@ public final class OutboundOrchestrator
       else
       {
         final OffsetDateTime aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
-                                                                                APConfig.getRetrySendingInitialBackoffMs (),
-                                                                                APConfig.getRetrySendingBackoffMultiplier (),
-                                                                                APConfig.getRetrySendingMaxBackoffMs ());
+                                                                                APCoreConfig.getRetrySendingInitialBackoffMs (),
+                                                                                APCoreConfig.getRetrySendingBackoffMultiplier (),
+                                                                                APCoreConfig.getRetrySendingMaxBackoffMs ());
         aTxMgr.updateStatusAndRetry (sID, EOutboundStatus.FAILED, nNewAttemptCount, aNextRetry, ex.getMessage ());
       }
     }

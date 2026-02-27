@@ -28,9 +28,9 @@ import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 
 @Immutable
-public final class APConfig
+public final class APCoreConfig
 {
-  private APConfig ()
+  private APCoreConfig ()
   {}
 
   @NonNull

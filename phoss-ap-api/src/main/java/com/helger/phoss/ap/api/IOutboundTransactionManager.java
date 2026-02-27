@@ -1,0 +1,189 @@
+/*
+ * Copyright (C) 2015-2026 Philip Helger (www.helger.com)
+ * philip[at]helger[dot]com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.helger.phoss.ap.api;
+
+import java.time.OffsetDateTime;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import com.helger.annotation.Nonnegative;
+import com.helger.collection.commons.ICommonsList;
+import com.helger.phoss.ap.api.codelist.ESourceType;
+import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
+import com.helger.phoss.ap.api.codelist.EOutboundStatus;
+import com.helger.phoss.ap.api.codelist.ETransactionType;
+
+/**
+ * Manager interface for creating and querying outbound transactions.
+ *
+ * @author Philip Helger
+ */
+public interface IOutboundTransactionManager
+{
+  /**
+   * Create a new outbound transaction.
+   *
+   * @param eTransactionType
+   *        The transaction type. Never <code>null</code>.
+   * @param sSenderID
+   *        Peppol Participant ID of the sender. Never <code>null</code>.
+   * @param sReceiverID
+   *        Peppol Participant ID of the receiver. Never <code>null</code>.
+   * @param sDocTypeID
+   *        Peppol Document Type Identifier. Never <code>null</code>.
+   * @param sProcessID
+   *        Peppol Process Identifier. Never <code>null</code>.
+   * @param sSbdhInstanceID
+   *        SBDH Instance Identifier. Never <code>null</code>.
+   * @param eSourceType
+   *        Source type indicating how the document was submitted (raw XML or pre-built SBD).
+   *        Never <code>null</code>.
+   * @param aDocumentBytes
+   *        Raw document bytes. Never <code>null</code>.
+   * @param nDocumentSize
+   *        Size of the document in bytes.
+   * @param sDocumentHash
+   *        SHA-256 hash of the document. Never <code>null</code>.
+   * @param sC1CountryCode
+   *        Country code of the sender (C1). Never <code>null</code>.
+   * @param sMlsTo
+   *        Optional MLS_TO override. May be <code>null</code>.
+   * @param sMlsInboundTransactionID
+   *        ID of the inbound transaction for MLS responses. May be
+   *        <code>null</code>.
+   * @return The created transaction. Never <code>null</code>.
+   */
+  @NonNull
+  IOutboundTransaction create (@NonNull ETransactionType eTransactionType,
+                               @NonNull String sSenderID,
+                               @NonNull String sReceiverID,
+                               @NonNull String sDocTypeID,
+                               @NonNull String sProcessID,
+                               @NonNull String sSbdhInstanceID,
+                               @NonNull ESourceType eSourceType,
+                               byte @NonNull [] aDocumentBytes,
+                               @Nonnegative long nDocumentSize,
+                               @NonNull String sDocumentHash,
+                               @NonNull String sC1CountryCode,
+                               @Nullable String sMlsTo,
+                               @Nullable String sMlsInboundTransactionID);
+
+  /**
+   * Look up a transaction by its unique ID.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @return The transaction, or <code>null</code> if not found.
+   */
+  @Nullable
+  IOutboundTransaction getByID (@NonNull String sID);
+
+  /**
+   * Look up a transaction by its SBDH Instance Identifier.
+   *
+   * @param sSbdhInstanceID
+   *        The SBDH Instance Identifier. Never <code>null</code>.
+   * @return The transaction, or <code>null</code> if not found.
+   */
+  @Nullable
+  IOutboundTransaction getBySbdhInstanceID (@NonNull String sSbdhInstanceID);
+
+  /**
+   * Update the status of a transaction.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eStatus
+   *        The new status. Never <code>null</code>.
+   */
+  void updateStatus (@NonNull String sID, @NonNull EOutboundStatus eStatus);
+
+  /**
+   * Update the status after a failed attempt with retry information.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eStatus
+   *        The new status. Never <code>null</code>.
+   * @param nAttemptCount
+   *        The updated attempt count.
+   * @param aNextRetryDT
+   *        The next retry date/time. May be <code>null</code>.
+   * @param sErrorDetails
+   *        Error details. May be <code>null</code>.
+   */
+  void updateStatusAndRetry (@NonNull String sID,
+                             @NonNull EOutboundStatus eStatus,
+                             @Nonnegative int nAttemptCount,
+                             @Nullable OffsetDateTime aNextRetryDT,
+                             @Nullable String sErrorDetails);
+
+  /**
+   * Mark a transaction as completed.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eStatus
+   *        The final status. Never <code>null</code>.
+   */
+  void updateStatusCompleted (@NonNull String sID, @NonNull EOutboundStatus eStatus);
+
+  /**
+   * Update MLS reception status for an outbound business document.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eMlsStatus
+   *        The new MLS reception status. Never <code>null</code>.
+   * @param aMlsReceivedDT
+   *        When the MLS response was received. May be <code>null</code>.
+   * @param sMlsID
+   *        The MLS message ID. May be <code>null</code>.
+   */
+  void updateMlsStatus (@NonNull String sID,
+                        @NonNull EMlsReceptionStatus eMlsStatus,
+                        @Nullable OffsetDateTime aMlsReceivedDT,
+                        @Nullable String sMlsID);
+
+  /**
+   * @return All outbound transactions that are not yet in a final state. Never
+   *         <code>null</code>.
+   */
+  @NonNull
+  ICommonsList <IOutboundTransaction> getInTransmission ();
+
+  /**
+   * Get failed outbound transactions eligible for retry.
+   *
+   * @param nBatchSize
+   *        Maximum number of transactions to return.
+   * @return The list of transactions. Never <code>null</code>.
+   */
+  @NonNull
+  ICommonsList <IOutboundTransaction> getForRetry (@Nonnegative int nBatchSize);
+
+  /**
+   * Get completed outbound transactions eligible for archival.
+   *
+   * @param nBatchSize
+   *        Maximum number of transactions to return.
+   * @return The list of transactions. Never <code>null</code>.
+   */
+  @NonNull
+  ICommonsList <IOutboundTransaction> getForArchival (@Nonnegative int nBatchSize);
+}

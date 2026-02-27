@@ -22,10 +22,12 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.Nonnegative;
+import com.helger.annotation.style.ReturnsMutableCopy;
+import com.helger.base.state.ESuccess;
 import com.helger.collection.commons.ICommonsList;
-import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
+import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 
 /**
@@ -51,8 +53,8 @@ public interface IOutboundTransactionManager
    * @param sSbdhInstanceID
    *        SBDH Instance Identifier. Never <code>null</code>.
    * @param eSourceType
-   *        Source type indicating how the document was submitted (raw XML or pre-built SBD).
-   *        Never <code>null</code>.
+   *        Source type indicating how the document was submitted (raw XML or pre-built SBD). Never
+   *        <code>null</code>.
    * @param aDocumentBytes
    *        Raw document bytes. Never <code>null</code>.
    * @param nDocumentSize
@@ -64,10 +66,10 @@ public interface IOutboundTransactionManager
    * @param sMlsTo
    *        Optional MLS_TO override. May be <code>null</code>.
    * @param sMlsInboundTransactionID
-   *        ID of the inbound transaction for MLS responses. May be
-   *        <code>null</code>.
+   *        ID of the inbound transaction for MLS responses. May be <code>null</code>.
    * @return The created transaction. Never <code>null</code>.
    */
+  // TODO do we need the created object here?
   @NonNull
   IOutboundTransaction create (@NonNull ETransactionType eTransactionType,
                                @NonNull String sSenderID,
@@ -110,8 +112,10 @@ public interface IOutboundTransactionManager
    *        The transaction ID. Never <code>null</code>.
    * @param eStatus
    *        The new status. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatus (@NonNull String sID, @NonNull EOutboundStatus eStatus);
+  @NonNull
+  ESuccess updateStatus (@NonNull String sID, @NonNull EOutboundStatus eStatus);
 
   /**
    * Update the status after a failed attempt with retry information.
@@ -126,12 +130,14 @@ public interface IOutboundTransactionManager
    *        The next retry date/time. May be <code>null</code>.
    * @param sErrorDetails
    *        Error details. May be <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatusAndRetry (@NonNull String sID,
-                             @NonNull EOutboundStatus eStatus,
-                             @Nonnegative int nAttemptCount,
-                             @Nullable OffsetDateTime aNextRetryDT,
-                             @Nullable String sErrorDetails);
+  @NonNull
+  ESuccess updateStatusAndRetry (@NonNull String sID,
+                                 @NonNull EOutboundStatus eStatus,
+                                 @Nonnegative int nAttemptCount,
+                                 @Nullable OffsetDateTime aNextRetryDT,
+                                 @Nullable String sErrorDetails);
 
   /**
    * Mark a transaction as completed.
@@ -140,8 +146,10 @@ public interface IOutboundTransactionManager
    *        The transaction ID. Never <code>null</code>.
    * @param eStatus
    *        The final status. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatusCompleted (@NonNull String sID, @NonNull EOutboundStatus eStatus);
+  @NonNull
+  ESuccess updateStatusCompleted (@NonNull String sID, @NonNull EOutboundStatus eStatus);
 
   /**
    * Update MLS reception status for an outbound business document.
@@ -154,18 +162,20 @@ public interface IOutboundTransactionManager
    *        When the MLS response was received. May be <code>null</code>.
    * @param sMlsID
    *        The MLS message ID. May be <code>null</code>.
-   */
-  void updateMlsStatus (@NonNull String sID,
-                        @NonNull EMlsReceptionStatus eMlsStatus,
-                        @Nullable OffsetDateTime aMlsReceivedDT,
-                        @Nullable String sMlsID);
-
-  /**
-   * @return All outbound transactions that are not yet in a final state. Never
-   *         <code>null</code>.
+   * @return {@link ESuccess}
    */
   @NonNull
-  ICommonsList <IOutboundTransaction> getInTransmission ();
+  ESuccess updateMlsStatus (@NonNull String sID,
+                            @NonNull EMlsReceptionStatus eMlsStatus,
+                            @Nullable OffsetDateTime aMlsReceivedDT,
+                            @Nullable String sMlsID);
+
+  /**
+   * @return All outbound transactions that are not yet in a final state. Never <code>null</code>.
+   */
+  @NonNull
+  @ReturnsMutableCopy
+  ICommonsList <IOutboundTransaction> getAllInTransmission ();
 
   /**
    * Get failed outbound transactions eligible for retry.
@@ -175,7 +185,8 @@ public interface IOutboundTransactionManager
    * @return The list of transactions. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IOutboundTransaction> getForRetry (@Nonnegative int nBatchSize);
+  @ReturnsMutableCopy
+  ICommonsList <IOutboundTransaction> getAllForRetry (@Nonnegative int nBatchSize);
 
   /**
    * Get completed outbound transactions eligible for archival.
@@ -185,5 +196,6 @@ public interface IOutboundTransactionManager
    * @return The list of transactions. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IOutboundTransaction> getForArchival (@Nonnegative int nBatchSize);
+  @ReturnsMutableCopy
+  ICommonsList <IOutboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
 }

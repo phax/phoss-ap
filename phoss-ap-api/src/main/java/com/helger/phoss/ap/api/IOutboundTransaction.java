@@ -99,7 +99,7 @@ public interface IOutboundTransaction extends IHasID <String>
   byte @NonNull [] getDocumentBytes ();
 
   /**
-   * @return The size of the document in bytes.
+   * @return The size of the document in bytes. Must be &ge; 0.
    */
   @Nonnegative
   long getDocumentSize ();

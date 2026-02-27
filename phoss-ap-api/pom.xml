@@ -41,6 +41,10 @@
       <artifactId>ph-collection</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.helger.commons</groupId>
+      <artifactId>ph-config</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.helger.peppol</groupId>
       <artifactId>peppol-sbdh</artifactId>
     </dependency>

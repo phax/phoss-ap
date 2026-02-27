@@ -123,6 +123,7 @@ public interface IInboundTransaction extends IHasID <String>
    * @return The AS4 Message ID from the inbound message. Never <code>null</code>.
    */
   @NonNull
+  @Nonempty
   String getAS4MessageID ();
 
   /**
@@ -136,6 +137,7 @@ public interface IInboundTransaction extends IHasID <String>
    * @return The SBDH Instance Identifier. Never <code>null</code>.
    */
   @NonNull
+  @Nonempty
   String getSbdhInstanceID ();
 
   /**

@@ -22,6 +22,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.Nonnegative;
+import com.helger.base.state.ESuccess;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
@@ -132,8 +133,10 @@ public interface IInboundTransactionManager
    *        The transaction ID. Never <code>null</code>.
    * @param eStatus
    *        The new status. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatus (@NonNull String sID, @NonNull EInboundStatus eStatus);
+  @NonNull
+  ESuccess updateStatus (@NonNull String sID, @NonNull EInboundStatus eStatus);
 
   /**
    * Update the status after a failed attempt with retry information.
@@ -148,12 +151,14 @@ public interface IInboundTransactionManager
    *        The next retry date/time. May be <code>null</code>.
    * @param sErrorDetails
    *        Error details. May be <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatusAndRetry (@NonNull String sID,
-                             @NonNull EInboundStatus eStatus,
-                             @Nonnegative int nAttemptCount,
-                             @Nullable OffsetDateTime aNextRetryDT,
-                             @Nullable String sErrorDetails);
+  @NonNull
+  ESuccess updateStatusAndRetry (@NonNull String sID,
+                                 @NonNull EInboundStatus eStatus,
+                                 @Nonnegative int nAttemptCount,
+                                 @Nullable OffsetDateTime aNextRetryDT,
+                                 @Nullable String sErrorDetails);
 
   /**
    * Mark a transaction as completed.
@@ -162,8 +167,10 @@ public interface IInboundTransactionManager
    *        The transaction ID. Never <code>null</code>.
    * @param eStatus
    *        The final status. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateStatusCompleted (@NonNull String sID, @NonNull EInboundStatus eStatus);
+  @NonNull
+  ESuccess updateStatusCompleted (@NonNull String sID, @NonNull EInboundStatus eStatus);
 
   /**
    * Update the C4 country code for reporting.
@@ -172,8 +179,10 @@ public interface IInboundTransactionManager
    *        The transaction ID. Never <code>null</code>.
    * @param sC4CountryCode
    *        The C4 country code. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateC4CountryCode (@NonNull String sID, @NonNull String sC4CountryCode);
+  @NonNull
+  ESuccess updateC4CountryCode (@NonNull String sID, @NonNull String sC4CountryCode);
 
   /**
    * Update MLS-related fields after an MLS response has been determined or sent.
@@ -184,16 +193,18 @@ public interface IInboundTransactionManager
    *        The MLS response code. May be <code>null</code>.
    * @param sMlsOutboundTransactionID
    *        The ID of the MLS outbound transaction. May be <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void updateMlsFields (@NonNull String sID,
-                        @Nullable EPeppolMLSResponseCode eMlsResponseCode,
-                        @Nullable String sMlsOutboundTransactionID);
+  @NonNull
+  ESuccess updateMlsFields (@NonNull String sID,
+                            @Nullable EPeppolMLSResponseCode eMlsResponseCode,
+                            @Nullable String sMlsOutboundTransactionID);
 
   /**
    * @return All inbound transactions that are not yet in a final state. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IInboundTransaction> getInProcessing ();
+  ICommonsList <IInboundTransaction> getAllInProcessing ();
 
   /**
    * Get failed inbound transactions eligible for retry.
@@ -203,7 +214,7 @@ public interface IInboundTransactionManager
    * @return The list of transactions. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IInboundTransaction> getForRetry (@Nonnegative int nBatchSize);
+  ICommonsList <IInboundTransaction> getAllForRetry (@Nonnegative int nBatchSize);
 
   /**
    * Get completed inbound transactions eligible for archival.
@@ -213,5 +224,5 @@ public interface IInboundTransactionManager
    * @return The list of transactions. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IInboundTransaction> getForArchival (@Nonnegative int nBatchSize);
+  ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
 }

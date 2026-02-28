@@ -24,10 +24,12 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APMetaManager;
 import com.helger.phoss.ap.core.StartupRecovery;
 import com.helger.phoss.ap.core.job.ArchivalScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 @SpringBootApplication
 public class PhossAPApplication
@@ -44,7 +46,9 @@ public class PhossAPApplication
   {
     LOGGER.info ("Initializing phoss-ap");
 
-    // Initialize all managers (Flyway, JDBC managers, SPI loading)
+    // Initialize all managers
+    APBasicMetaManager.getInstance ();
+    APJdbcMetaManager.getInstance ();
     APMetaManager.init ();
 
     // Recover transactions that were in-flight during unclean shutdown

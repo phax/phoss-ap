@@ -27,45 +27,42 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.db.jdbc.IHasDataSource;
-import com.helger.phoss.ap.db.config.APJDBCConfiguration;
+import com.helger.phoss.ap.db.config.APJdbcConfiguration;
 
-public class APDataSourceProvider implements IHasDataSource, Closeable
+final class APDataSourceProvider implements IHasDataSource, Closeable
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APDataSourceProvider.class);
 
   private final BasicDataSource m_aDS;
 
-  public APDataSourceProvider ()
+  public APDataSourceProvider (@NonNull final APJdbcConfiguration aJdbcConfig)
   {
     m_aDS = new BasicDataSource ();
-    m_aDS.setDriverClassName (APJDBCConfiguration.getJdbcDriver ());
-    m_aDS.setUrl (APJDBCConfiguration.getJdbcUrl ());
-    m_aDS.setUsername (APJDBCConfiguration.getJdbcUser ());
-    m_aDS.setPassword (APJDBCConfiguration.getJdbcPassword ());
+    m_aDS.setDriverClassName (aJdbcConfig.getJdbcDriver ());
+    m_aDS.setUrl (aJdbcConfig.getJdbcUrl ());
+    m_aDS.setUsername (aJdbcConfig.getJdbcUser ());
+    m_aDS.setPassword (aJdbcConfig.getJdbcPassword ());
     m_aDS.setDefaultAutoCommit (Boolean.FALSE);
     m_aDS.setPoolPreparedStatements (true);
 
-    final int nMaxConnections = APJDBCConfiguration.getJdbcPoolingMaxConnections ();
+    final int nMaxConnections = aJdbcConfig.getJdbcPoolingMaxConnections ();
     m_aDS.setMaxTotal (nMaxConnections);
-    m_aDS.setMaxWait (Duration.ofMillis (APJDBCConfiguration.getJdbcPoolingMaxWaitMillis ()));
+    m_aDS.setMaxWait (Duration.ofMillis (aJdbcConfig.getJdbcPoolingMaxWaitMillis ()));
     m_aDS.setInitialSize (Math.min (4, nMaxConnections));
     m_aDS.setMinIdle (Math.min (4, nMaxConnections));
     m_aDS.setMaxIdle (nMaxConnections);
 
-    final long nBetweenEvictionRunsMillis = APJDBCConfiguration.getJdbcPoolingBetweenEvictionRunsMillis ();
+    final long nBetweenEvictionRunsMillis = aJdbcConfig.getJdbcPoolingBetweenEvictionRunsMillis ();
     if (nBetweenEvictionRunsMillis > 0)
     {
       m_aDS.setDurationBetweenEvictionRuns (Duration.ofMillis (nBetweenEvictionRunsMillis));
       m_aDS.setTestWhileIdle (true);
     }
-    m_aDS.setMinEvictableIdle (Duration.ofMillis (APJDBCConfiguration.getJdbcPoolingMinEvictableIdleMillis ()));
+    m_aDS.setMinEvictableIdle (Duration.ofMillis (aJdbcConfig.getJdbcPoolingMinEvictableIdleMillis ()));
     m_aDS.setRemoveAbandonedOnBorrow (true);
-    m_aDS.setRemoveAbandonedTimeout (Duration.ofMillis (APJDBCConfiguration.getJdbcPoolingRemoveAbandonedTimeoutMillis ()));
+    m_aDS.setRemoveAbandonedTimeout (Duration.ofMillis (aJdbcConfig.getJdbcPoolingRemoveAbandonedTimeoutMillis ()));
 
-    LOGGER.info ("AP DataSource created with max " +
-                 nMaxConnections +
-                 " connections to " +
-                 APJDBCConfiguration.getJdbcUrl ());
+    LOGGER.info ("AP DataSource created with max " + nMaxConnections + " connections to " + aJdbcConfig.getJdbcUrl ());
   }
 
   @NonNull

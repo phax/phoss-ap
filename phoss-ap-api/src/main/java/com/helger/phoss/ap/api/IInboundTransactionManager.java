@@ -27,6 +27,7 @@ import com.helger.collection.commons.ICommonsList;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
@@ -67,6 +68,8 @@ public interface IInboundTransactionManager
    *        The AS4 MessageInfo/Timestamp (UTC). Never <code>null</code>.
    * @param sSbdhInstanceID
    *        The SBDH Instance Identifier. Never <code>null</code>.
+   * @param sC1CountryCode
+   *        The C1 country code. Never <code>null</code>.
    * @param bIsDuplicateAS4
    *        Whether this is a duplicate on the AS4 Message ID level.
    * @param bIsDuplicateSBDH
@@ -92,6 +95,7 @@ public interface IInboundTransactionManager
                  @NonNull String sAS4MessageID,
                  @NonNull OffsetDateTime aAS4Timestamp,
                  @NonNull String sSbdhInstanceID,
+                 @NonNull String sC1CountryCode,
                  boolean bIsDuplicateAS4,
                  boolean bIsDuplicateSBDH,
                  @Nullable String sMlsTo,
@@ -218,6 +222,18 @@ public interface IInboundTransactionManager
   ESuccess updateMlsFields (@NonNull String sID,
                             @Nullable EPeppolMLSResponseCode eMlsResponseCode,
                             @Nullable String sMlsOutboundTransactionID);
+
+  /**
+   * Update the reporting status for a transaction.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eReportingStatus
+   *        The new reporting status. Never <code>null</code>.
+   * @return {@link ESuccess}
+   */
+  @NonNull
+  ESuccess updateReportingStatus (@NonNull String sID, @NonNull EReportingStatus eReportingStatus);
 
   /**
    * @return All inbound transactions that are not yet in a final state. Never <code>null</code>.

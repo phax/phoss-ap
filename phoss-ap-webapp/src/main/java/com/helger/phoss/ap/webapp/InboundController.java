@@ -26,8 +26,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.helger.collection.commons.ICommonsList;
+import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.core.ReportingManager;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.ReportResponse;
 
@@ -39,18 +42,23 @@ public class InboundController
   public ResponseEntity <ReportResponse> reportInbound (@RequestParam ("sbdhInstanceID") final String sSbdhInstanceID,
                                                         @RequestParam ("c4CountryCode") final String sC4CountryCode)
   {
-    final IInboundTransaction aTx = APJDBCMetaManager.getInboundTransactionMgr ().getBySbdhInstanceID (sSbdhInstanceID);
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sSbdhInstanceID);
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
 
-    APJDBCMetaManager.getInboundTransactionMgr ().updateC4CountryCode (aTx.getID (), sC4CountryCode);
+    // Store the country code
+    aTxMgr.updateC4CountryCode (aTx.getID (), sC4CountryCode);
+    ReportingManager.storeInboundForReporting (aTx);
+
     return ResponseEntity.ok (new ReportResponse (aTx.getID (), "updated", "C4 country code set to " + sC4CountryCode));
   }
 
   @GetMapping ("/status/{sbdhInstanceID}")
   public ResponseEntity <InboundTransactionResponse> getStatus (@PathVariable final String sbdhInstanceID)
   {
-    final IInboundTransaction aTx = APJDBCMetaManager.getInboundTransactionMgr ().getBySbdhInstanceID (sbdhInstanceID);
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
 
@@ -60,8 +68,10 @@ public class InboundController
   @GetMapping ("/in-processing")
   public ResponseEntity <List <InboundTransactionResponse>> getInProcessing ()
   {
-    final var aTxs = APJDBCMetaManager.getInboundTransactionMgr ().getAllInProcessing ();
-    final List <InboundTransactionResponse> aResult = aTxs.getAllMapped (InboundTransactionResponse::fromDomain);
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final var aTxs = aTxMgr.getAllInProcessing ();
+
+    final ICommonsList <InboundTransactionResponse> aResult = aTxs.getAllMapped (InboundTransactionResponse::fromDomain);
     return ResponseEntity.ok (aResult);
   }
 }

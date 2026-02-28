@@ -23,25 +23,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.base.enforce.ValueEnforcer;
-import com.helger.db.api.EDatabaseSystemType;
-import com.helger.db.api.helper.DBSystemHelper;
 import com.helger.db.jdbc.executor.DBExecutor;
-import com.helger.phoss.ap.db.config.APJDBCConfiguration;
 
 /**
  * Special {@link DBExecutor} for the AP
  *
  * @author Philip Helger
  */
-public final class APDBExecutor extends DBExecutor
+final class APDBExecutor extends DBExecutor
 {
-  public static final EDatabaseSystemType DB_SYSTEM_TYPE = EDatabaseSystemType.POSTGRESQL;
-  public static final String TABLE_NAME_PREFIX;
-  static
-  {
-    TABLE_NAME_PREFIX = DBSystemHelper.getTableNamePrefix (DB_SYSTEM_TYPE, APJDBCConfiguration.getJdbcSchema ());
-  }
-
   private static final Logger LOGGER = LoggerFactory.getLogger (APDBExecutor.class);
 
   private static APDataSourceProvider s_aDSP;
@@ -67,13 +57,14 @@ public final class APDBExecutor extends DBExecutor
   {
     super (_getDSPNotNull ());
 
-    setDebugConnections (APJDBCConfiguration.isJdbcDebugConnections ());
-    setDebugTransactions (APJDBCConfiguration.isJdbcDebugTransactions ());
-    setDebugSQLStatements (APJDBCConfiguration.isJdbcDebugSQL ());
+    final var aJdbcConfig = APJdbcMetaManager.getJdbcConfig ();
+    setDebugConnections (aJdbcConfig.isJdbcDebugConnections ());
+    setDebugTransactions (aJdbcConfig.isJdbcDebugTransactions ());
+    setDebugSQLStatements (aJdbcConfig.isJdbcDebugSQL ());
 
-    if (APJDBCConfiguration.isJdbcExecutionTimeWarningEnabled ())
+    if (aJdbcConfig.isJdbcExecutionTimeWarningEnabled ())
     {
-      final long nMillis = APJDBCConfiguration.getJdbcExecutionTimeWarningMilliseconds ();
+      final long nMillis = aJdbcConfig.getJdbcExecutionTimeWarningMilliseconds ();
       if (nMillis > 0)
         setExecutionDurationWarnMS (nMillis);
       else

@@ -33,12 +33,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.helger.phoss.ap</groupId>
-      <artifactId>phoss-ap-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.helger.commons</groupId>
       <artifactId>ph-scopes</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.web</groupId>
+      <artifactId>ph-httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.phoss.ap</groupId>
+      <artifactId>phoss-ap-api</artifactId>
     </dependency>
   </dependencies>
 </project>

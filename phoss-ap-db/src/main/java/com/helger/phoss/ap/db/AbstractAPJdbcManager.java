@@ -30,11 +30,11 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
  *
  * @author Philip Helger
  */
-public abstract class AbstractAPJDBCManager extends AbstractJDBCEnabledManager
+public abstract class AbstractAPJdbcManager extends AbstractJDBCEnabledManager
 {
   private final IAPTimestampManager m_aTimestampMgr;
 
-  protected AbstractAPJDBCManager (@NonNull final IAPTimestampManager aTimestampMgr)
+  protected AbstractAPJdbcManager (@NonNull final IAPTimestampManager aTimestampMgr)
   {
     super (APDBExecutor.createNew ());
     m_aTimestampMgr = aTimestampMgr;

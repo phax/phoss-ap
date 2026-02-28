@@ -18,6 +18,7 @@ package com.helger.phoss.ap.core;
 
 import java.security.cert.X509Certificate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -26,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.unece.cefact.namespaces.sbdh.StandardBusinessDocument;
 
 import com.helger.annotation.style.IsSPIImplementation;
+import com.helger.base.string.StringHelper;
 import com.helger.http.header.HttpHeaderMap;
+import com.helger.peppol.reporting.api.CPeppolReporting;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.phase4.ebms3header.Ebms3UserMessage;
 import com.helger.phase4.error.AS4Error;
@@ -48,7 +51,7 @@ import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.helper.HashHelper;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.security.certificate.CertificateHelper;
 
 @IsSPIImplementation
@@ -58,8 +61,8 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
 
   private void _forwardDocument (@Nullable final IInboundTransaction aTx)
   {
-    final IInboundTransactionManager aTxMgr = APJDBCMetaManager.getInboundTransactionMgr ();
-    final IInboundForwardingAttemptManager aAttemptMgr = APJDBCMetaManager.getInboundForwardingAttemptMgr ();
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundForwardingAttemptManager aAttemptMgr = APJdbcMetaManager.getInboundForwardingAttemptMgr ();
 
     final IDocumentForwarderSPI aForwarder = APMetaManager.getForwarder ();
     if (aForwarder == null)
@@ -95,6 +98,13 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       aAttemptMgr.createSuccess (aTx.getID ());
       aTxMgr.updateStatusCompleted (aTx.getID (), EInboundStatus.FORWARDED);
       LOGGER.info ("Forwarding successful for transaction: " + aTx);
+
+      if (aResult.hasCountryCodeC4 ())
+      {
+        // We can store the reporting item immediately
+        aTxMgr.updateC4CountryCode (aTx.getID (), aResult.getCountryCodeC4 ());
+        ReportingManager.storeInboundForReporting (aTx);
+      }
     }
     else
     {
@@ -143,7 +153,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                  @NonNull final IAS4IncomingMessageState aIncomingState,
                                  @NonNull final AS4ErrorList aProcessingErrorMessages) throws Exception
   {
-    final IInboundTransactionManager aTxMgr = APJDBCMetaManager.getInboundTransactionMgr ();
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
 
     final String sIncomingID = aMessageMetadata.getIncomingUniqueID ();
     final String sAS4MessageID = aIncomingState.getMessageID ();
@@ -152,6 +162,12 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     final String sDocTypeID = aPeppolSBD.getDocumentTypeAsIdentifier ().getURIEncoded ();
     final String sProcessID = aPeppolSBD.getProcessAsIdentifier ().getURIEncoded ();
     final String sSbdhInstanceID = aPeppolSBD.getInstanceIdentifier ();
+    String sC1CountryCode = aPeppolSBD.getCountryC1 ();
+    if (StringHelper.isEmpty (sC1CountryCode))
+    {
+      // Fallback to ZZ to make sure the reporting item can be created
+      sC1CountryCode = CPeppolReporting.REPLACEMENT_COUNTRY_CODE;
+    }
     final String sC2ID = CertificateHelper.getSubjectCN (aIncomingState.getSigningCertificate ());
     final String sC3ID = APCoreConfig.getPeppolSeatID ();
 
@@ -214,17 +230,26 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
     }
 
-    // Store in DB
     final String sSbdhHash = HashHelper.sha256Hex (aSBDBytes);
     final OffsetDateTime aAS4Timestamp;
     if (aIncomingState.getMessageTimestamp () != null)
-      aAS4Timestamp = aIncomingState.getMessageTimestamp ().toOffsetDateTime ();
+    {
+      // Was an offset provided?
+      if (aIncomingState.getMessageTimestamp ().getOffset () != null)
+        aAS4Timestamp = aIncomingState.getMessageTimestamp ().toOffsetDateTime ();
+      else
+      {
+        // Default to UTC as per spec
+        aAS4Timestamp = OffsetDateTime.of (aIncomingState.getMessageTimestamp ().toLocalDateTime (), ZoneOffset.UTC);
+      }
+    }
     else
     {
       aAS4Timestamp = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
       LOGGER.warn ("The incoming AS4 message has not AS4 message timestamp - using the current date time instead");
     }
 
+    // Store in DB
     final String sTxID = aTxMgr.create (sIncomingID,
                                         sC2ID,
                                         sC3ID,
@@ -239,6 +264,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                         sAS4MessageID,
                                         aAS4Timestamp,
                                         sSbdhInstanceID,
+                                        sC1CountryCode,
                                         bIsDuplicateAS4,
                                         bIsDuplicateSBDH,
                                         null,

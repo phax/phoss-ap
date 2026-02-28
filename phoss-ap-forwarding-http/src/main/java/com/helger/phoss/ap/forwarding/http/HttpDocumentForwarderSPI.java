@@ -26,31 +26,52 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.style.IsSPIImplementation;
+import com.helger.base.exception.InitializationException;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
+import com.helger.base.url.URLHelper;
+import com.helger.collection.commons.CommonsArrayList;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.httpclient.HttpClientManager;
 import com.helger.httpclient.HttpClientSettings;
 import com.helger.httpclient.HttpClientSettingsConfig;
 import com.helger.httpclient.response.ExtendedHttpResponseException;
 import com.helger.httpclient.response.ResponseHandlerByteArray;
+import com.helger.json.IJsonObject;
+import com.helger.json.serialize.JsonReader;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderSPI;
 
+/**
+ * Implementation of {@link IDocumentForwarderSPI} for using HTTP.
+ *
+ * @author Philip Helger
+ */
 @IsSPIImplementation
 public class HttpDocumentForwarderSPI implements IDocumentForwarderSPI
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (HttpDocumentForwarderSPI.class);
 
-  private final HttpClientSettings m_aHCS = new HttpClientSettings ();
+  private EHttpMode m_eHttpMode;
   private String m_sEndpointURL;
+  private final HttpClientSettings m_aHCS = new HttpClientSettings ();
 
   public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
-    HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, "forwarding.");
+    m_eHttpMode = EHttpMode.getFromIDOrNull (aConfig.getAsString (APConfigurationProperties.FORWARDING_HTTP_ENDPOINT));
+    if (m_eHttpMode == null)
+      throw new InitializationException ("The provided forwarding HTTP mode is invalid. Must be one of " +
+                                         new CommonsArrayList <> (EHttpMode.values (), EHttpMode::getID));
+
     m_sEndpointURL = aConfig.getAsString (APConfigurationProperties.FORWARDING_HTTP_ENDPOINT);
+    if (URLHelper.getAsURL (m_sEndpointURL) == null)
+      throw new InitializationException ("The provided forwarding HTTP endpoint '" +
+                                         m_sEndpointURL +
+                                         "' is not a valid URL");
+
+    HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, "forwarding.");
   }
 
   @NonNull
@@ -75,10 +96,25 @@ public class HttpDocumentForwarderSPI implements IDocumentForwarderSPI
                    m_sEndpointURL +
                    "'");
 
-      aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
+      final byte [] aResponse = aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
+      return switch (m_eHttpMode)
+      {
+        case SYNC ->
+        {
+          final IJsonObject aJsonObject = JsonReader.builder ().source (aResponse).readAsObject ();
+          if (aJsonObject == null)
+            yield ForwardingResult.failure ("http_response_error", "Failed to parse response as JSON object");
 
-      LOGGER.info ("HTTP forwarding successful for transaction " + aTransaction.getID ());
-      return ForwardingResult.success ();
+          final String sCountryCodeC4 = aJsonObject.getAsString ("countryCodeC4");
+          LOGGER.info ("Received C4 Country Code is '" + sCountryCodeC4 + "'");
+          yield ForwardingResult.success (sCountryCodeC4);
+        }
+        case ASYNC ->
+        {
+          LOGGER.info ("HTTP forwarding successful for transaction " + aTransaction.getID ());
+          yield ForwardingResult.success ();
+        }
+      };
     }
     catch (final ExtendedHttpResponseException ex)
     {
@@ -101,6 +137,9 @@ public class HttpDocumentForwarderSPI implements IDocumentForwarderSPI
   @Override
   public String toString ()
   {
-    return new ToStringGenerator (this).append ("HCS", m_aHCS).append ("EnpointURL", m_sEndpointURL).getToString ();
+    return new ToStringGenerator (this).append ("HttpMode", m_eHttpMode)
+                                       .append ("EnpointURL", m_sEndpointURL)
+                                       .append ("HCS", m_aHCS)
+                                       .getToString ();
   }
 }

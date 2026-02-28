@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.state.ISuccessIndicator;
+import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 
 /**
@@ -32,17 +33,20 @@ import com.helger.base.tostring.ToStringGenerator;
 @Immutable
 public final class ForwardingResult implements ISuccessIndicator
 {
-  private static final ForwardingResult SUCCESS = new ForwardingResult (true, null, null);
+  private static final ForwardingResult SUCCESS = new ForwardingResult (true, null, null, null);
 
   private final boolean m_bSuccess;
+  private final String m_sCountryCodeC4;
   private final String m_sErrorCode;
   private final String m_sErrorDetails;
 
   private ForwardingResult (final boolean bSuccess,
+                            @Nullable final String sCountryCodeC4,
                             @Nullable final String sErrorCode,
                             @Nullable final String sErrorDetails)
   {
     m_bSuccess = bSuccess;
+    m_sCountryCodeC4 = sCountryCodeC4;
     m_sErrorCode = sErrorCode;
     m_sErrorDetails = sErrorDetails;
   }
@@ -50,6 +54,21 @@ public final class ForwardingResult implements ISuccessIndicator
   public boolean isSuccess ()
   {
     return m_bSuccess;
+  }
+
+  /**
+   * @return <code>true</code> if the result contains the country code of C4. This can only happen
+   *         in the success case.
+   */
+  public boolean hasCountryCodeC4 ()
+  {
+    return StringHelper.isNotEmpty (m_sCountryCodeC4);
+  }
+
+  @Nullable
+  public String getCountryCodeC4 ()
+  {
+    return m_sCountryCodeC4;
   }
 
   @Nullable
@@ -68,6 +87,7 @@ public final class ForwardingResult implements ISuccessIndicator
   public String toString ()
   {
     return new ToStringGenerator (null).append ("Success", m_bSuccess)
+                                       .appendIfNotNull ("CountryCodeC4", m_sCountryCodeC4)
                                        .appendIfNotNull ("ErrorCode", m_sErrorCode)
                                        .appendIfNotNull ("ErrorDetails", m_sErrorDetails)
                                        .getToString ();
@@ -80,8 +100,14 @@ public final class ForwardingResult implements ISuccessIndicator
   }
 
   @NonNull
+  public static ForwardingResult success (@Nullable final String sCountryCodeC4)
+  {
+    return new ForwardingResult (true, sCountryCodeC4, null, null);
+  }
+
+  @NonNull
   public static ForwardingResult failure (@Nullable final String sErrorCode, @Nullable final String sErrorDetails)
   {
-    return new ForwardingResult (false, sErrorCode, sErrorDetails);
+    return new ForwardingResult (false, null, sErrorCode, sErrorDetails);
   }
 }

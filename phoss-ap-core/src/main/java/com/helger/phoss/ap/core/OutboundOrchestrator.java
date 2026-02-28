@@ -36,7 +36,7 @@ import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.helper.HashHelper;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 public final class OutboundOrchestrator
 {
@@ -72,7 +72,7 @@ public final class OutboundOrchestrator
       }
     }
 
-    final IOutboundTransactionManager aMgr = APJDBCMetaManager.getOutboundTransactionMgr ();
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     // Create in pending state
     final String sTransactionID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
                                                sSenderID,
@@ -104,7 +104,7 @@ public final class OutboundOrchestrator
 
     final String sDocumentHash = HashHelper.sha256Hex (aSbdBytes);
 
-    final IOutboundTransactionManager aMgr = APJDBCMetaManager.getOutboundTransactionMgr ();
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     // Create in pending state
     final String sTransactionID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
                                                sSenderID,
@@ -126,8 +126,8 @@ public final class OutboundOrchestrator
   {
     final String sID = aTx.getID ();
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
-    final IOutboundTransactionManager aTxMgr = APJDBCMetaManager.getOutboundTransactionMgr ();
-    final IOutboundSendingAttemptManager aAttemptMgr = APJDBCMetaManager.getOutboundSendingAttemptMgr ();
+    final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final IOutboundSendingAttemptManager aAttemptMgr = APJdbcMetaManager.getOutboundSendingAttemptMgr ();
 
     LOGGER.info ("Processing outbound transaction '" + sID + "'");
 

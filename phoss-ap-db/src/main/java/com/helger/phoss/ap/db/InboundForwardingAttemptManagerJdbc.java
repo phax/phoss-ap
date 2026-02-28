@@ -25,63 +25,67 @@ import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBResultRow;
-import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
+import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
-import com.helger.phoss.ap.api.model.IOutboundSendingAttempt;
-import com.helger.phoss.ap.db.dto.OutboundSendingAttemptRow;
+import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
+import com.helger.phoss.ap.db.dto.InboundForwardingAttemptRow;
 
-public class OutboundSendingAttemptManagerJDBC extends AbstractAPJDBCManager implements IOutboundSendingAttemptManager
+public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager implements IInboundForwardingAttemptManager
 {
-  private static final String COLS = "id, outbound_transaction_id, as4_message_id, as4_timestamp," +
-                                     " receipt_message_id, http_status_code, attempt_dt, attempt_status, error_details";
+  private static final String COLS = "id, inbound_transaction_id, attempt_dt, attempt_status, error_code, error_details";
 
-  public OutboundSendingAttemptManagerJDBC (@NonNull final IAPTimestampManager aTimestampMgr)
+  public InboundForwardingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
   {
     super (aTimestampMgr);
   }
 
   @Nullable
-  public String create (@NonNull final String sOutboundTransactionID,
-                        @NonNull final String sAS4MessageID,
-                        @NonNull final OffsetDateTime aAS4Timestamp,
-                        @Nullable final String sReceiptMessageID,
-                        @Nullable final Integer aHttpStatusCode,
+  public String create (@NonNull final String sInboundTransactionID,
                         @NonNull final EAttemptStatus eAttemptStatus,
+                        @Nullable final String sErrorCode,
                         @Nullable final String sErrorDetails)
   {
     final String sID = createUniqueRowID ();
     final OffsetDateTime aNow = now ();
 
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO outbound_sending_attempt (" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO inbound_forwarding_attempt (" +
                                                                       COLS +
                                                                       ")" +
-                                                                      " VALUES (?,?,?,?,?,?,?,?,?)",
+                                                                      " VALUES (?,?,?,?,?,?)",
                                                                       new ConstantPreparedStatementDataProvider (sID,
-                                                                                                                 sOutboundTransactionID,
-                                                                                                                 sAS4MessageID,
-                                                                                                                 aAS4Timestamp,
-                                                                                                                 sReceiptMessageID,
-                                                                                                                 aHttpStatusCode,
+                                                                                                                 sInboundTransactionID,
                                                                                                                  aNow,
                                                                                                                  eAttemptStatus.getID (),
+                                                                                                                 sErrorCode,
                                                                                                                  sErrorDetails));
     return nRowsAffected == 0 ? null : sID;
   }
 
-  @NonNull
-  public ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull final String sOutboundTransactionID)
+  public String createSuccess (final String sInboundTransactionID)
+  {
+    return create (sInboundTransactionID, EAttemptStatus.SUCCESS, null, null);
+  }
+
+  public String createFailure (final String sInboundTransactionID,
+                               final String sErrorCode,
+                               final String sErrorDetails)
+  {
+    return create (sInboundTransactionID, EAttemptStatus.FAILED, sErrorCode, sErrorDetails);
+  }
+
+  public ICommonsList <IInboundForwardingAttempt> getByTransactionID (final String sInboundTransactionID)
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_sending_attempt" +
-                                                                      " WHERE outbound_transaction_id=?" +
+                                                                      " FROM inbound_forwarding_attempt" +
+                                                                      " WHERE inbound_transaction_id=?" +
                                                                       " ORDER BY attempt_dt",
-                                                                      new ConstantPreparedStatementDataProvider (sOutboundTransactionID));
-    final ICommonsList <IOutboundSendingAttempt> ret = new CommonsArrayList <> ();
+                                                                      new ConstantPreparedStatementDataProvider (sInboundTransactionID));
+    final ICommonsList <IInboundForwardingAttempt> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)
-        ret.add (new OutboundSendingAttemptRow (aRow));
+        ret.add (new InboundForwardingAttemptRow (aRow));
     return ret;
   }
 }

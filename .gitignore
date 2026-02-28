@@ -3,6 +3,7 @@
 .settings/
 
 target/
+*.p12
 
 zz
 .claude/

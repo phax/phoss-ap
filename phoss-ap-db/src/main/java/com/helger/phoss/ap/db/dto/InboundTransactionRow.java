@@ -53,6 +53,7 @@ public class InboundTransactionRow implements IInboundTransaction
   private final String m_sAS4MessageID;
   private final OffsetDateTime m_aAS4Timestamp;
   private final String m_sSbdhInstanceID;
+  private final String m_sC1CountryCode;
   private final String m_sC4CountryCode;
   private final boolean m_bIsDuplicateAS4;
   private final boolean m_bIsDuplicateSBDH;
@@ -85,20 +86,21 @@ public class InboundTransactionRow implements IInboundTransaction
     m_sAS4MessageID = aRow.getAsString (12);
     m_aAS4Timestamp = aRow.getAsOffsetDateTime (13);
     m_sSbdhInstanceID = aRow.getAsString (14);
-    m_sC4CountryCode = aRow.getAsString (15);
-    m_bIsDuplicateAS4 = aRow.getAsBoolean (16);
-    m_bIsDuplicateSBDH = aRow.getAsBoolean (17);
-    m_eStatus = EInboundStatus.getFromIDOrNull (aRow.getAsString (18));
-    m_nAttemptCount = aRow.getAsInt (19);
-    m_aReceivedDT = aRow.getAsOffsetDateTime (20);
-    m_aCompletedDT = aRow.getAsOffsetDateTime (21);
-    m_eReportingStatus = EReportingStatus.getFromIDOrNull (aRow.getAsString (22));
-    m_aNextRetryDT = aRow.getAsOffsetDateTime (23);
-    m_sErrorDetails = aRow.getAsString (24);
-    m_sMlsTo = aRow.getAsString (25);
-    m_eMlsType = EPeppolMLSType.getFromIDOrNull (aRow.getAsString (26));
-    m_eMlsResponseCode = EPeppolMLSResponseCode.getFromIDOrNull (aRow.getAsString (27));
-    m_sMlsOutboundTransactionID = aRow.getAsString (28);
+    m_sC1CountryCode = aRow.getAsString (15);
+    m_sC4CountryCode = aRow.getAsString (16);
+    m_bIsDuplicateAS4 = aRow.getAsBoolean (17);
+    m_bIsDuplicateSBDH = aRow.getAsBoolean (18);
+    m_eStatus = EInboundStatus.getFromIDOrNull (aRow.getAsString (19));
+    m_nAttemptCount = aRow.getAsInt (20);
+    m_aReceivedDT = aRow.getAsOffsetDateTime (21);
+    m_aCompletedDT = aRow.getAsOffsetDateTime (22);
+    m_eReportingStatus = EReportingStatus.getFromIDOrNull (aRow.getAsString (23));
+    m_aNextRetryDT = aRow.getAsOffsetDateTime (24);
+    m_sErrorDetails = aRow.getAsString (25);
+    m_sMlsTo = aRow.getAsString (26);
+    m_eMlsType = EPeppolMLSType.getFromIDOrNull (aRow.getAsString (27));
+    m_eMlsResponseCode = EPeppolMLSResponseCode.getFromIDOrNull (aRow.getAsString (28));
+    m_sMlsOutboundTransactionID = aRow.getAsString (29);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notEmpty (m_sIncomingID, "IncomingID");
     ValueEnforcer.notEmpty (m_sC2SeatID, "C2SeatID");
@@ -220,6 +222,12 @@ public class InboundTransactionRow implements IInboundTransaction
   public String getSbdhInstanceID ()
   {
     return m_sSbdhInstanceID;
+  }
+
+  @Nullable
+  public String getC1CountryCode ()
+  {
+    return m_sC1CountryCode;
   }
 
   @Nullable

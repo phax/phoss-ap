@@ -47,9 +47,9 @@ import com.helger.phoss.ap.db.dto.OutboundTransactionRow;
  *
  * @author Philip Helger
  */
-public class OutboundTransactionManagerJDBC extends AbstractAPJDBCManager implements IOutboundTransactionManager
+public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implements IOutboundTransactionManager
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (OutboundTransactionManagerJDBC.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (OutboundTransactionManagerJdbc.class);
 
   private static final String COLS = "id, transaction_type, sender_id, receiver_id, doc_type_id, process_id," +
                                      " sbdh_instance_id, source_type, document_bytes, document_size, document_hash," +
@@ -57,7 +57,7 @@ public class OutboundTransactionManagerJDBC extends AbstractAPJDBCManager implem
                                      " reporting_status, next_retry_dt, error_details, mls_to, mls_status," +
                                      " mls_received_dt, mls_id, mls_inbound_transaction_id";
 
-  public OutboundTransactionManagerJDBC (@NonNull final IAPTimestampManager aTimestampMgr)
+  public OutboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
   {
     super (aTimestampMgr);
   }
@@ -195,6 +195,17 @@ public class OutboundTransactionManagerJDBC extends AbstractAPJDBCManager implem
                                                                       new ConstantPreparedStatementDataProvider (eMlsStatus.getID (),
                                                                                                                  aMlsReceivedDT,
                                                                                                                  sMlsID,
+                                                                                                                 sID));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  @NonNull
+  public ESuccess updateReportingStatus (@NonNull final String sID, @NonNull final EReportingStatus eReportingStatus)
+  {
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+                                                                      " SET reporting_status=?" +
+                                                                      " WHERE id=?",
+                                                                      new ConstantPreparedStatementDataProvider (eReportingStatus.getID (),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }

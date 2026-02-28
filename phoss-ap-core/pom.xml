@@ -33,12 +33,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.helger.phoss.ap</groupId>
-      <artifactId>phoss-ap-api</artifactId>
+      <groupId>com.helger.peppol</groupId>
+      <artifactId>peppol-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.helger.phoss.ap</groupId>
-      <artifactId>phoss-ap-db</artifactId>
+      <groupId>com.helger.peppol</groupId>
+      <artifactId>peppol-mls</artifactId>
     </dependency>
     <dependency>
       <groupId>com.helger.phase4</groupId>
@@ -54,12 +54,18 @@
     </dependency>
     <dependency>
       <groupId>com.helger.peppol</groupId>
-      <artifactId>peppol-commons</artifactId>
+      <artifactId>peppol-reporting-support</artifactId>
+      <version>${peppol-ap-support.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.helger.peppol</groupId>
-      <artifactId>peppol-mls</artifactId>
+      <groupId>com.helger.phoss.ap</groupId>
+      <artifactId>phoss-ap-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.helger.phoss.ap</groupId>
+      <artifactId>phoss-ap-db</artifactId>
+    </dependency>
+    
     <dependency>
       <groupId>dev.failsafe</groupId>
       <artifactId>failsafe</artifactId>

@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.db;
 
+import java.util.EnumSet;
+
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +25,19 @@ import org.slf4j.LoggerFactory;
 import com.helger.annotation.style.UsedViaReflection;
 import com.helger.base.exception.InitializationException;
 import com.helger.base.lang.clazz.ClassHelper;
+import com.helger.base.string.StringImplode;
+import com.helger.config.fallback.IConfigWithFallback;
+import com.helger.db.api.EDatabaseSystemType;
+import com.helger.db.api.flyway.FlywayConfiguration;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
+import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
+import com.helger.phoss.ap.db.config.APFlywayConfigurationBuilder;
+import com.helger.phoss.ap.db.config.APJdbcConfiguration;
 import com.helger.phoss.ap.db.flyway.APFlywayMigrator;
 import com.helger.scope.IScope;
 import com.helger.scope.singleton.AbstractGlobalSingleton;
@@ -38,14 +47,16 @@ import com.helger.scope.singleton.AbstractGlobalSingleton;
  *
  * @author Philip Helger
  */
-public final class APJDBCMetaManager extends AbstractGlobalSingleton
+public final class APJdbcMetaManager extends AbstractGlobalSingleton
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (APJDBCMetaManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (APJdbcMetaManager.class);
+  private static final EnumSet <EDatabaseSystemType> ALLOWED_DB_TYPES = EnumSet.of (EDatabaseSystemType.POSTGRESQL);
 
+  private APJdbcConfiguration m_aJdbcConfig;
   private APDataSourceProvider m_aDSP;
-  private OutboundTransactionManagerJDBC m_aOutboundTxMgr;
-  private OutboundSendingAttemptManagerJDBC m_aOutboundAttemptMgr;
-  private InboundTransactionManagerJDBC m_aInboundTxMgr;
+  private OutboundTransactionManagerJdbc m_aOutboundTxMgr;
+  private OutboundSendingAttemptManagerJdbc m_aOutboundAttemptMgr;
+  private InboundTransactionManagerJdbc m_aInboundTxMgr;
   private IInboundForwardingAttemptManager m_aInboundAttemptMgr;
   private IArchivalManager m_aArchivalMgr;
 
@@ -54,13 +65,13 @@ public final class APJDBCMetaManager extends AbstractGlobalSingleton
    */
   @Deprecated (forRemoval = false)
   @UsedViaReflection
-  public APJDBCMetaManager ()
+  public APJdbcMetaManager ()
   {}
 
   @NonNull
-  public static APJDBCMetaManager getInstance ()
+  public static APJdbcMetaManager getInstance ()
   {
-    return getGlobalSingleton (APJDBCMetaManager.class);
+    return getGlobalSingleton (APJdbcMetaManager.class);
   }
 
   @Override
@@ -69,21 +80,37 @@ public final class APJDBCMetaManager extends AbstractGlobalSingleton
     LOGGER.info ("Initializing " + ClassHelper.getClassLocalName (this));
     try
     {
-      final var aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+      // Init JDBC configuration
+      final IConfigWithFallback aConfig = APConfigProvider.getConfig ();
+      m_aJdbcConfig = new APJdbcConfiguration (aConfig);
+
+      // Resolve database type
+      final EDatabaseSystemType eDBType = m_aJdbcConfig.getJdbcDatabaseSystemType ();
+      if (eDBType == null || !ALLOWED_DB_TYPES.contains (eDBType))
+        throw new IllegalStateException ("The database type MUST be provided and MUST be one of " +
+                                         StringImplode.imploder ()
+                                                      .source (ALLOWED_DB_TYPES, EDatabaseSystemType::getID)
+                                                      .separator (", ")
+                                                      .build () +
+                                         " - provided value is '" +
+                                         m_aJdbcConfig.getJdbcDatabaseType () +
+                                         "'");
 
       // Run Flyway
-      APFlywayMigrator.runFlyway ();
+      final FlywayConfiguration aFlywayConfig = new APFlywayConfigurationBuilder (aConfig, m_aJdbcConfig).build ();
+      APFlywayMigrator.runFlyway (m_aJdbcConfig, aFlywayConfig);
 
       // Create DataSource and DBExecutor
-      m_aDSP = new APDataSourceProvider ();
+      m_aDSP = new APDataSourceProvider (m_aJdbcConfig);
       APDBExecutor.setDataSourceProvider (m_aDSP);
 
       // Create managers
-      m_aOutboundTxMgr = new OutboundTransactionManagerJDBC (aTimestampMgr);
-      m_aOutboundAttemptMgr = new OutboundSendingAttemptManagerJDBC (aTimestampMgr);
-      m_aInboundTxMgr = new InboundTransactionManagerJDBC (aTimestampMgr);
-      m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJDBC (aTimestampMgr);
-      m_aArchivalMgr = new ArchivalManagerJDBC (aTimestampMgr);
+      final var aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+      m_aOutboundTxMgr = new OutboundTransactionManagerJdbc (aTimestampMgr);
+      m_aOutboundAttemptMgr = new OutboundSendingAttemptManagerJdbc (aTimestampMgr);
+      m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr);
+      m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr);
+      m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr);
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }
@@ -108,6 +135,12 @@ public final class APJDBCMetaManager extends AbstractGlobalSingleton
         LOGGER.error ("Error closing DataSource", ex);
       }
     }
+  }
+
+  @NonNull
+  public static APJdbcConfiguration getJdbcConfig ()
+  {
+    return getInstance ().m_aJdbcConfig;
   }
 
   @NonNull

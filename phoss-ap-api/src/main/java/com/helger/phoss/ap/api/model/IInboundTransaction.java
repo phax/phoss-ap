@@ -141,6 +141,12 @@ public interface IInboundTransaction extends IHasID <String>
   String getSbdhInstanceID ();
 
   /**
+   * @return The C1 country code, or <code>null</code> if not yet set.
+   */
+  @Nullable
+  String getC1CountryCode ();
+
+  /**
    * @return The C4 country code, or <code>null</code> if not yet reported.
    */
   @Nullable

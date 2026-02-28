@@ -33,11 +33,11 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
  *
  * @author Philip Helger
  */
-public class ArchivalManagerJDBC extends AbstractAPJDBCManager implements IArchivalManager
+public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchivalManager
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalManagerJDBC.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalManagerJdbc.class);
 
-  public ArchivalManagerJDBC (@NonNull final IAPTimestampManager aTimestampMgr)
+  public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
   {
     super (aTimestampMgr);
   }

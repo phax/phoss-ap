@@ -19,49 +19,59 @@ package com.helger.phoss.ap.db.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import com.helger.db.api.EDatabaseSystemType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
+import com.helger.scope.mock.ScopeTestRule;
 
 /**
- * Test class for {@link APJDBCConfiguration}.
+ * Test class for {@link APJdbcConfiguration}.
  *
  * @author Philip Helger
  */
-public final class APJDBCConfigurationTest
+public final class APJdbcConfigurationTest
 {
+  @Rule
+  public final ScopeTestRule m_aRule = new ScopeTestRule ();
+
   @Test
   public void testDefaultsWhenNoConfigIsSet ()
   {
+    final APJdbcConfiguration aJdbcConfig = APJdbcMetaManager.getJdbcConfig ();
+
     // String properties return null when not configured
-    assertNull (APJDBCConfiguration.getJdbcDriver ());
-    assertNull (APJDBCConfiguration.getJdbcUrl ());
-    assertNull (APJDBCConfiguration.getJdbcUser ());
-    assertNull (APJDBCConfiguration.getJdbcPassword ());
-    assertNull (APJDBCConfiguration.getJdbcSchema ());
-    assertNull (APJDBCConfiguration.getTargetDatabaseType ());
+    assertSame (EDatabaseSystemType.POSTGRESQL, aJdbcConfig.getJdbcDatabaseSystemType ());
+    assertNull (aJdbcConfig.getJdbcDriver ());
+    assertNull (aJdbcConfig.getJdbcUrl ());
+    assertNull (aJdbcConfig.getJdbcUser ());
+    assertNull (aJdbcConfig.getJdbcPassword ());
+    assertNull (aJdbcConfig.getJdbcSchema ());
 
     // Boolean / numeric properties return their defined defaults
-    assertTrue (APJDBCConfiguration.isJdbcExecutionTimeWarningEnabled ());
+    assertTrue (aJdbcConfig.isJdbcExecutionTimeWarningEnabled ());
     assertEquals (APConfigurationProperties.JDBC_EXECUTION_TIME_WARNING_MS_DEFAULT,
-                  APJDBCConfiguration.getJdbcExecutionTimeWarningMilliseconds ());
+                  aJdbcConfig.getJdbcExecutionTimeWarningMilliseconds ());
 
-    assertFalse (APJDBCConfiguration.isJdbcDebugConnections ());
-    assertFalse (APJDBCConfiguration.isJdbcDebugTransactions ());
-    assertFalse (APJDBCConfiguration.isJdbcDebugSQL ());
+    assertFalse (aJdbcConfig.isJdbcDebugConnections ());
+    assertFalse (aJdbcConfig.isJdbcDebugTransactions ());
+    assertFalse (aJdbcConfig.isJdbcDebugSQL ());
 
     assertEquals (APConfigurationProperties.JDBC_POOLING_MAX_CONNECTIONS_DEFAULT,
-                  APJDBCConfiguration.getJdbcPoolingMaxConnections ());
+                  aJdbcConfig.getJdbcPoolingMaxConnections ());
     assertEquals (APConfigurationProperties.JDBC_POOLING_MAX_WAIT_MILLIS_DEFAULT,
-                  APJDBCConfiguration.getJdbcPoolingMaxWaitMillis ());
+                  aJdbcConfig.getJdbcPoolingMaxWaitMillis ());
     assertEquals (APConfigurationProperties.JDBC_POOLING_BETWEEN_EVICTIONS_RUNS_MILLIS_DEFAULT,
-                  APJDBCConfiguration.getJdbcPoolingBetweenEvictionRunsMillis ());
+                  aJdbcConfig.getJdbcPoolingBetweenEvictionRunsMillis ());
     assertEquals (APConfigurationProperties.JDBC_POOLING_MIN_EVICTABLE_IDLE_MILLIS_DEFAULT,
-                  APJDBCConfiguration.getJdbcPoolingMinEvictableIdleMillis ());
+                  aJdbcConfig.getJdbcPoolingMinEvictableIdleMillis ());
     assertEquals (APConfigurationProperties.JDBC_POOLING_REMOVE_ABANDONED_TIMEOUT_MILLIS_DEFAULT,
-                  APJDBCConfiguration.getJdbcPoolingRemoveAbandonedTimeoutMillis ());
+                  aJdbcConfig.getJdbcPoolingRemoveAbandonedTimeoutMillis ());
   }
 
   @Test

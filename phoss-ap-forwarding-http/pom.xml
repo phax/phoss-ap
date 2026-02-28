@@ -33,6 +33,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.helger.commons</groupId>
+      <artifactId>ph-json</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.helger.phoss.ap</groupId>
       <artifactId>phoss-ap-api</artifactId>
     </dependency>

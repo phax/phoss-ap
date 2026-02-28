@@ -32,8 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.base.string.StringHelper;
-import com.helger.phoss.ap.db.config.APFlywayConfiguration;
-import com.helger.phoss.ap.db.config.APJDBCConfiguration;
+import com.helger.db.api.config.IJdbcConfiguration;
+import com.helger.db.api.flyway.IFlywayConfiguration;
 
 public final class APFlywayMigrator
 {
@@ -42,15 +42,16 @@ public final class APFlywayMigrator
   private APFlywayMigrator ()
   {}
 
-  public static void runFlyway ()
+  public static void runFlyway (@NonNull final IJdbcConfiguration aJdbcConfig,
+                                @NonNull final IFlywayConfiguration aFlywayCfg)
   {
-    if (!APFlywayConfiguration.isFlywayEnabled ())
+    if (!aFlywayCfg.isFlywayEnabled ())
     {
       LOGGER.info ("Flyway migration is disabled via configuration");
       return;
     }
 
-    LOGGER.info ("Starting Flyway migration for PostgreSQL");
+    LOGGER.info ("Starting Flyway migration for " + aJdbcConfig.getJdbcDatabaseSystemType ().getDisplayName ());
 
     final Callback aCallbackLogging = new BaseCallback ()
     {
@@ -72,22 +73,22 @@ public final class APFlywayMigrator
 
     final FluentConfiguration aFlywayConfig = Flyway.configure ()
                                                     .dataSource (new DriverDataSource (APFlywayMigrator.class.getClassLoader (),
-                                                                                       APJDBCConfiguration.getJdbcDriver (),
-                                                                                       APFlywayConfiguration.getFlywayJdbcUrl (),
-                                                                                       APFlywayConfiguration.getFlywayJdbcUser (),
-                                                                                       APFlywayConfiguration.getFlywayJdbcPassword ()));
+                                                                                       aJdbcConfig.getJdbcDriver (),
+                                                                                       aFlywayCfg.getFlywayJdbcUrl (),
+                                                                                       aFlywayCfg.getFlywayJdbcUser (),
+                                                                                       aFlywayCfg.getFlywayJdbcPassword ()));
 
     aFlywayConfig.baselineOnMigrate (true);
     aFlywayConfig.validateOnMigrate (false);
-    aFlywayConfig.baselineVersion (Integer.toString (APFlywayConfiguration.getFlywayBaselineVersion ()));
-    aFlywayConfig.locations ("db/migrate-postgresql");
+    aFlywayConfig.baselineVersion (Integer.toString (aFlywayCfg.getFlywayBaselineVersion ()));
+    aFlywayConfig.locations ("db/migrate-" + aJdbcConfig.getJdbcDatabaseSystemType ().getID ());
     aFlywayConfig.callbacks (aCallbackLogging);
 
-    final String sSchema = APJDBCConfiguration.getJdbcSchema ();
+    final String sSchema = aJdbcConfig.getJdbcSchema ();
     if (StringHelper.isNotEmpty (sSchema))
       aFlywayConfig.schemas (sSchema);
 
-    aFlywayConfig.createSchemas (APFlywayConfiguration.isFlywaySchemaCreate ());
+    aFlywayConfig.createSchemas (aFlywayCfg.isFlywaySchemaCreate ());
 
     final Flyway aFlyway = aFlywayConfig.load ();
     aFlyway.migrate ();

@@ -28,14 +28,6 @@ import com.helger.annotation.concurrent.Immutable;
 @Immutable
 public final class APConfigurationProperties
 {
-  // General
-  public static final String GLOBAL_DEBUG = "global.debug";
-  public static final boolean GLOBAL_DEBUG_DEFAULT = false;
-  public static final String GLOBAL_PRODUCTION = "global.production";
-  public static final boolean GLOBAL_PRODUCTION_DEFAULT = false;
-  public static final String GLOBAL_NOSTARTUPINFO = "global.nostartupinfo";
-  public static final String GLOBAL_DATAPATH = "global.datapath";
-
   // Peppol
   public static final String PEPPOL_STAGE = "peppol.stage";
   public static final String PEPPOL_SEATID = "peppol.seatid";
@@ -70,29 +62,19 @@ public final class APConfigurationProperties
   public static final boolean JDBC_DEBUG_SQL_DEFAULT = false;
 
   // Connection pooling
-  public static final String JDBC_POOLING_MAX_CONNECTIONS = "jdbc.pooling.max-connections";
+  public static final String JDBC_POOLING_MAX_CONNECTIONS = "pooling.max-connections";
   public static final int JDBC_POOLING_MAX_CONNECTIONS_DEFAULT = 8;
-  public static final String JDBC_POOLING_MAX_WAIT_MILLIS = "jdbc.pooling.max-wait.millis";
+  public static final String JDBC_POOLING_MAX_WAIT_MILLIS = "pooling.max-wait.millis";
   public static final long JDBC_POOLING_MAX_WAIT_MILLIS_DEFAULT = 10_000L;
-  public static final String JDBC_POOLING_BETWEEN_EVICTIONS_RUNS_MILLIS = "jdbc.pooling.between-evictions-runs.millis";
+  public static final String JDBC_POOLING_BETWEEN_EVICTIONS_RUNS_MILLIS = "pooling.between-evictions-runs.millis";
   public static final long JDBC_POOLING_BETWEEN_EVICTIONS_RUNS_MILLIS_DEFAULT = 300_000L;
-  public static final String JDBC_POOLING_MIN_EVICTABLE_IDLE_MILLIS = "jdbc.pooling.min-evictable-idle.millis";
+  public static final String JDBC_POOLING_MIN_EVICTABLE_IDLE_MILLIS = "pooling.min-evictable-idle.millis";
   public static final long JDBC_POOLING_MIN_EVICTABLE_IDLE_MILLIS_DEFAULT = 1_800_000L;
-  public static final String JDBC_POOLING_REMOVE_ABANDONED_TIMEOUT_MILLIS = "jdbc.pooling.remove-abandoned-timeout.millis";
+  public static final String JDBC_POOLING_REMOVE_ABANDONED_TIMEOUT_MILLIS = "pooling.remove-abandoned-timeout.millis";
   public static final long JDBC_POOLING_REMOVE_ABANDONED_TIMEOUT_MILLIS_DEFAULT = 300_000L;
 
-  // Flyway
-  public static final String FLYWAY_ENABLED = "flyway.enabled";
-  public static final boolean FLYWAY_ENABLED_DEFAULT = true;
-  public static final String FLYWAY_JDBC_URL = "flyway.jdbc.url";
-  public static final String FLYWAY_JDBC_USER = "flyway.jdbc.user";
-  public static final String FLYWAY_JDBC_PASSWORD = "flyway.jdbc.password";
-  public static final String FLYWAY_JDBC_SCHEMA_CREATE = "flyway.jdbc.schema-create";
-  public static final boolean FLYWAY_JDBC_SCHEMA_CREATE_DEFAULT = false;
-  public static final String FLYWAY_BASELINE_VERSION = "flyway.baseline.version";
-  public static final int FLYWAY_BASELINE_VERSION_DEFAULT = 0;
-
   // Forwarding
+  public static final String FORWARDING_HTTP_MODE = "forwarding.http.mode";
   public static final String FORWARDING_HTTP_ENDPOINT = "forwarding.http.endpoint";
 
   // S3

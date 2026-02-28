@@ -28,7 +28,7 @@ import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APMetaManager;
 import com.helger.phoss.ap.core.OutboundOrchestrator;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 public final class RetryScheduler
 {
@@ -71,7 +71,7 @@ public final class RetryScheduler
   {
     try
     {
-      final ICommonsList <IOutboundTransaction> aTransactions = APJDBCMetaManager.getOutboundTransactionMgr ()
+      final ICommonsList <IOutboundTransaction> aTransactions = APJdbcMetaManager.getOutboundTransactionMgr ()
                                                                                  .getAllForRetry (BATCH_SIZE);
 
       if (aTransactions.isNotEmpty ())
@@ -99,7 +99,7 @@ public final class RetryScheduler
   {
     try
     {
-      final ICommonsList <IInboundTransaction> aTransactions = APJDBCMetaManager.getInboundTransactionMgr ()
+      final ICommonsList <IInboundTransaction> aTransactions = APJdbcMetaManager.getInboundTransactionMgr ()
                                                                                 .getAllForRetry (BATCH_SIZE);
 
       if (aTransactions.isNotEmpty ())

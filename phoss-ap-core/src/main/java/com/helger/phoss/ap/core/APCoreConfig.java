@@ -18,6 +18,8 @@ package com.helger.phoss.ap.core;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.annotation.concurrent.Immutable;
@@ -31,6 +33,8 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 @Immutable
 public final class APCoreConfig
 {
+  private static final Logger LOGGER = LoggerFactory.getLogger (APCoreConfig.class);
+
   private APCoreConfig ()
   {}
 
@@ -38,25 +42,6 @@ public final class APCoreConfig
   private static IConfigWithFallback _getConfig ()
   {
     return APConfigProvider.getConfig ();
-  }
-
-  // General
-  public static boolean isGlobalDebug ()
-  {
-    return _getConfig ().getAsBoolean (APConfigurationProperties.GLOBAL_DEBUG,
-                                       APConfigurationProperties.GLOBAL_DEBUG_DEFAULT);
-  }
-
-  public static boolean isGlobalProduction ()
-  {
-    return _getConfig ().getAsBoolean (APConfigurationProperties.GLOBAL_PRODUCTION,
-                                       APConfigurationProperties.GLOBAL_PRODUCTION_DEFAULT);
-  }
-
-  @Nullable
-  public static String getGlobalDataPath ()
-  {
-    return _getConfig ().getAsString (APConfigurationProperties.GLOBAL_DATAPATH);
   }
 
   // Peppol

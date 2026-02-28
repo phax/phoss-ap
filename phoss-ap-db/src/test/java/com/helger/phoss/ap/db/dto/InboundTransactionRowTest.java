@@ -53,7 +53,7 @@ public final class InboundTransactionRowTest
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
     final byte [] aDocBytes = { 4, 5, 6 };
 
-    // 29 columns, matching InboundTransactionRow constructor order
+    // 30 columns, matching InboundTransactionRow constructor order
     // 0 id
     // 1 incomingID
     // 2 c2SeatID
@@ -69,20 +69,21 @@ public final class InboundTransactionRowTest
     // 12 as4MessageID
     // 13 as4Timestamp
     // 14 sbdhInstanceID
-    // 15 c4CountryCode (nullable)
-    // 16 isDuplicateAS4
-    // 17 isDuplicateSBDH
-    // 18 status
-    // 19 attemptCount
-    // 20 receivedDT
-    // 21 completedDT (nullable)
-    // 22 reportingStatus
-    // 23 nextRetryDT (nullable)
-    // 24 errorDetails (nullable)
-    // 25 mlsTo (nullable)
-    // 26 mlsType
-    // 27 mlsResponseCode (nullable)
-    // 28 mlsOutboundTransactionID (nullable)
+    // 15 c1CountryCode (nullable)
+    // 16 c4CountryCode (nullable)
+    // 17 isDuplicateAS4
+    // 18 isDuplicateSBDH
+    // 19 status
+    // 20 attemptCount
+    // 21 receivedDT
+    // 22 completedDT (nullable)
+    // 23 reportingStatus
+    // 24 nextRetryDT (nullable)
+    // 25 errorDetails (nullable)
+    // 26 mlsTo (nullable)
+    // 27 mlsType
+    // 28 mlsResponseCode (nullable)
+    // 29 mlsOutboundTransactionID (nullable)
     return DBResultRowHelper.createRow ("ib-001",
                                         "incoming-001",
                                         "POP000001",
@@ -98,6 +99,7 @@ public final class InboundTransactionRowTest
                                         "as4-msg-001@sender.example",
                                         aNow,
                                         "sbdh-ib-001",
+                                        null,
                                         null,
                                         Boolean.FALSE,
                                         Boolean.FALSE,
@@ -148,6 +150,7 @@ public final class InboundTransactionRowTest
   {
     final InboundTransactionRow aTx = new InboundTransactionRow (_createValidRow ());
 
+    assertNull (aTx.getC1CountryCode ());
     assertNull (aTx.getC4CountryCode ());
     assertNull (aTx.getCompletedDT ());
     assertNull (aTx.getNextRetryDT ());
@@ -178,7 +181,8 @@ public final class InboundTransactionRowTest
                                                           "as4-dup@test",
                                                           aNow,
                                                           "sbdh-dup",
-                                                          null,
+                                                          "AT",
+                                                          "DE",
                                                           Boolean.TRUE,
                                                           Boolean.TRUE,
                                                           "received",

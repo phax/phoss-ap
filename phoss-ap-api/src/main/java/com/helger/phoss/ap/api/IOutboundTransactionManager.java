@@ -27,6 +27,7 @@ import com.helger.base.state.ESuccess;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
+import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
@@ -169,6 +170,18 @@ public interface IOutboundTransactionManager
                             @NonNull EMlsReceptionStatus eMlsStatus,
                             @Nullable OffsetDateTime aMlsReceivedDT,
                             @Nullable String sMlsID);
+
+  /**
+   * Update the reporting status for a transaction.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eReportingStatus
+   *        The new reporting status. Never <code>null</code>.
+   * @return {@link ESuccess}
+   */
+  @NonNull
+  ESuccess updateReportingStatus (@NonNull String sID, @NonNull EReportingStatus eReportingStatus);
 
   /**
    * @return All outbound transactions that are not yet in a final state. Never <code>null</code>.

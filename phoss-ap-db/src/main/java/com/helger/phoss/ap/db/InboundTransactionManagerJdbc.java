@@ -38,18 +38,18 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.db.dto.InboundTransactionRow;
 
-public class InboundTransactionManagerJDBC extends AbstractAPJDBCManager implements IInboundTransactionManager
+public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager implements IInboundTransactionManager
 {
   private static final String COLS = "id, incoming_id, c2_seat_id, c3_seat_id, signing_cert_cn," +
                                      " sender_id, receiver_id, doc_type_id, process_id," +
                                      " document_bytes, document_size, document_hash," +
                                      " as4_message_id, as4_timestamp, sbdh_instance_id," +
-                                     " c4_country_code, is_duplicate_as4, is_duplicate_sbdh," +
+                                     " c1_country_code, c4_country_code, is_duplicate_as4, is_duplicate_sbdh," +
                                      " status, attempt_count, received_dt, completed_dt," +
                                      " reporting_status, next_retry_dt, error_details," +
                                      " mls_to, mls_type, mls_response_code, mls_outbound_transaction_id";
 
-  public InboundTransactionManagerJDBC (@NonNull final IAPTimestampManager aTimestampMgr)
+  public InboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
   {
     super (aTimestampMgr);
   }
@@ -69,6 +69,7 @@ public class InboundTransactionManagerJDBC extends AbstractAPJDBCManager impleme
                         @NonNull final String sAS4MessageID,
                         @NonNull final OffsetDateTime aAS4Timestamp,
                         @NonNull final String sSbdhInstanceID,
+                        @NonNull final String sC1CountryCode,
                         final boolean bIsDuplicateAS4,
                         final boolean bIsDuplicateSBDH,
                         @Nullable final String sMlsTo,
@@ -81,7 +82,7 @@ public class InboundTransactionManagerJDBC extends AbstractAPJDBCManager impleme
     final long nRowsAffected = aExecutor.insertOrUpdateOrDelete ("INSERT INTO inbound_transaction (" +
                                                                  COLS +
                                                                  ")" +
-                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                                                  new ConstantPreparedStatementDataProvider (sID,
                                                                                                             sIncomingID,
                                                                                                             sC2SeatID,
@@ -97,6 +98,7 @@ public class InboundTransactionManagerJDBC extends AbstractAPJDBCManager impleme
                                                                                                             sAS4MessageID,
                                                                                                             aAS4Timestamp,
                                                                                                             sSbdhInstanceID,
+                                                                                                            sC1CountryCode,
                                                                                                             null,
                                                                                                             Boolean.valueOf (bIsDuplicateAS4),
                                                                                                             Boolean.valueOf (bIsDuplicateSBDH),
@@ -235,6 +237,17 @@ public class InboundTransactionManagerJDBC extends AbstractAPJDBCManager impleme
                                                                       new ConstantPreparedStatementDataProvider (eMlsResponseCode != null ? eMlsResponseCode.getID ()
                                                                                                                                           : null,
                                                                                                                  sMlsOutboundTransactionID,
+                                                                                                                 sID));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  @NonNull
+  public ESuccess updateReportingStatus (@NonNull final String sID, @NonNull final EReportingStatus eReportingStatus)
+  {
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE inbound_transaction" +
+                                                                      " SET reporting_status=?" +
+                                                                      " WHERE id=?",
+                                                                      new ConstantPreparedStatementDataProvider (eReportingStatus.getID (),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }

@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.core.OutboundOrchestrator;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.dto.OutboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.SubmitResponse;
 
@@ -92,7 +92,7 @@ public class OutboundController
   @GetMapping ("/status/{sbdhInstanceID}")
   public ResponseEntity <OutboundTransactionResponse> getStatus (@PathVariable final String sbdhInstanceID)
   {
-    final IOutboundTransaction aTx = APJDBCMetaManager.getOutboundTransactionMgr ()
+    final IOutboundTransaction aTx = APJdbcMetaManager.getOutboundTransactionMgr ()
                                                       .getBySbdhInstanceID (sbdhInstanceID);
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
@@ -103,7 +103,7 @@ public class OutboundController
   @GetMapping ("/in-transmission")
   public ResponseEntity <List <OutboundTransactionResponse>> getInTransmission ()
   {
-    final var aTxs = APJDBCMetaManager.getOutboundTransactionMgr ().getAllInTransmission ();
+    final var aTxs = APJdbcMetaManager.getOutboundTransactionMgr ().getAllInTransmission ();
     final List <OutboundTransactionResponse> aResult = aTxs.getAllMapped (OutboundTransactionResponse::fromDomain);
     return ResponseEntity.ok (aResult);
   }

@@ -20,9 +20,19 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.base.enforce.ValueEnforcer;
+import com.helger.base.string.StringHelper;
+import com.helger.peppol.reporting.api.PeppolReportingItem;
+import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
+import com.helger.peppolid.IDocumentTypeIdentifier;
+import com.helger.peppolid.IProcessIdentifier;
+import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
-import com.helger.phoss.ap.db.APJDBCMetaManager;
+import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.config.APConfigProvider;
+import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 public final class ReportingManager
 {
@@ -31,18 +41,64 @@ public final class ReportingManager
   private ReportingManager ()
   {}
 
-  public static void markOutboundReported (@NonNull final String sTransactionID)
+  public static void storeOutboundForReporting (@NonNull final String sTransactionID)
   {
     LOGGER.info ("Marking outbound transaction as reported: " + sTransactionID);
-    final IOutboundTransactionManager aTxMgr = APJDBCMetaManager.getOutboundTransactionMgr ();
-    // Update reporting_status to REPORTED
-    // Integration with peppol-reporting library for TSR/EUSR generation
+    final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.REPORTED);
   }
 
-  public static void markInboundReported (@NonNull final String sTransactionID)
+  public static void storeInboundForReporting (@NonNull final IInboundTransaction aTx)
   {
-    LOGGER.info ("Marking inbound transaction as reported: " + sTransactionID);
-    final IInboundTransactionManager aTxMgr = APJDBCMetaManager.getInboundTransactionMgr ();
-    // Update reporting_status to REPORTED
+    ValueEnforcer.notNull (aTx, "InboundTransaction");
+
+    final String sTransactionID = aTx.getID ();
+    LOGGER.info ("Marking inbound transaction as reported '" + sTransactionID + "'");
+
+    if (StringHelper.isEmpty (aTx.getC4CountryCode ()))
+      throw new IllegalStateException ("Inbound transaction '" + sTransactionID + "' has no C4 country code yet");
+
+    try
+    {
+      final IDocumentTypeIdentifier aDocTypeID = PeppolIdentifierFactory.INSTANCE.parseDocumentTypeIdentifier (aTx.getDocTypeID ());
+      if (aDocTypeID == null)
+        throw new IllegalStateException ("Inbound transaction '" +
+                                         sTransactionID +
+                                         "' contains the invalid document type ID '" +
+                                         aTx.getDocTypeID () +
+                                         "'");
+
+      final IProcessIdentifier aProcessID = PeppolIdentifierFactory.INSTANCE.parseProcessIdentifier (aTx.getProcessID ());
+      if (aProcessID == null)
+        throw new IllegalStateException ("Inbound transaction '" +
+                                         sTransactionID +
+                                         "' contains the invalid process ID '" +
+                                         aTx.getProcessID () +
+                                         "'");
+
+      final PeppolReportingItem aReportingItem = PeppolReportingItem.builder ()
+                                                                    .exchangeDateTime (aTx.getAS4Timestamp ())
+                                                                    .directionReceiving ()
+                                                                    .c2ID (aTx.getC2SeatID ())
+                                                                    .c3ID (aTx.getC3SeatID ())
+                                                                    .docTypeID (aDocTypeID)
+                                                                    .processID (aProcessID)
+                                                                    .transportProtocolPeppolAS4v2 ()
+                                                                    .c1CountryCode (aTx.getC1CountryCode ())
+                                                                    .c4CountryCode (aTx.getC4CountryCode ())
+                                                                    .endUserID (aTx.getReceiverID ())
+                                                                    .build ();
+
+      PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
+                                            aBackend -> aBackend.storeReportingItem (aReportingItem));
+
+      // Remember that we did it
+      final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+      aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.REPORTED);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Failed to store reporting item for inbound transaction '" + sTransactionID + "'");
+    }
   }
 }

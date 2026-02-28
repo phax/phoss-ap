@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unece.cefact.namespaces.sbdh.StandardBusinessDocument;
 
+import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.http.header.HttpHeaderMap;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.phase4.ebms3header.Ebms3UserMessage;
@@ -39,8 +40,8 @@ import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.ForwardingResult;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderSPI;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
@@ -50,9 +51,10 @@ import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.db.APJDBCMetaManager;
 import com.helger.security.certificate.CertificateHelper;
 
-public class InboundMessageProcessor implements IPhase4PeppolIncomingSBDHandlerSPI
+@IsSPIImplementation
+public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSBDHandlerSPI
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (InboundMessageProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (Phase4InboundMessageProcessorSPI.class);
 
   private void _forwardDocument (@Nullable final IInboundTransaction aTx)
   {

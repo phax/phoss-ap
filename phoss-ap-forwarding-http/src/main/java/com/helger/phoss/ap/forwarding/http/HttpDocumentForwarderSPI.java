@@ -25,6 +25,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
@@ -34,20 +35,21 @@ import com.helger.httpclient.HttpClientSettingsConfig;
 import com.helger.httpclient.response.ExtendedHttpResponseException;
 import com.helger.httpclient.response.ResponseHandlerByteArray;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.ForwardingResult;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderSPI;
 
-public class HttpDocumentForwarder implements IDocumentForwarderSPI
+@IsSPIImplementation
+public class HttpDocumentForwarderSPI implements IDocumentForwarderSPI
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (HttpDocumentForwarder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (HttpDocumentForwarderSPI.class);
 
   private final HttpClientSettings m_aHCS = new HttpClientSettings ();
   private String m_sEndpoint;
 
   public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
-    HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, "");
+    HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, "forwarding.");
     m_sEndpoint = aConfig.getAsString (APConfigurationProperties.FORWARDING_HTTP_ENDPOINT);
   }
 

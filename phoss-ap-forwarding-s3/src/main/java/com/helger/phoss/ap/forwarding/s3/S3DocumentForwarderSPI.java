@@ -20,11 +20,12 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.base.string.StringHelper;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.ForwardingResult;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderSPI;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -35,9 +36,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-public class S3DocumentForwarder implements IDocumentForwarderSPI
+@IsSPIImplementation
+public class S3DocumentForwarderSPI implements IDocumentForwarderSPI
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (S3DocumentForwarder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (S3DocumentForwarderSPI.class);
 
   private Region m_aRegion;
   private String m_sBucket;

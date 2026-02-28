@@ -67,7 +67,6 @@ public final class APConfigurationPropertiesTest
   {
     assertEquals ("peppol.seatid", APConfigurationProperties.PEPPOL_SEATID);
     assertEquals ("jdbc.url", APConfigurationProperties.JDBC_URL);
-    assertEquals ("forwarding.mode", APConfigurationProperties.FORWARDING_MODE);
     assertEquals ("retry.sending.max-attempts", APConfigurationProperties.RETRY_SENDING_MAX_ATTEMPTS);
     assertEquals ("mls.type", APConfigurationProperties.MLS_TYPE);
   }

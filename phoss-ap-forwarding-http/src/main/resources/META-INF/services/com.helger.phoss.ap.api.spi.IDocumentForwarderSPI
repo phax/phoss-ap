@@ -1,1 +1,1 @@
-com.helger.phoss.ap.forwarding.http.HttpDocumentForwarder
+com.helger.phoss.ap.forwarding.http.HttpDocumentForwarderSPI

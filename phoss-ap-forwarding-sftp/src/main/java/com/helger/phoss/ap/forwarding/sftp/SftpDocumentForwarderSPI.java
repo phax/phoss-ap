@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.exception.InitializationException;
 import com.helger.base.io.iface.IHasInputStream;
@@ -32,8 +33,8 @@ import com.helger.base.string.StringHelper;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.io.file.FilenameHelper;
 import com.helger.network.WebExceptionHelper;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.ForwardingResult;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderSPI;
 import com.helger.photon.connect.sftp.AbstractChannelSftpRunnable;
 import com.helger.photon.connect.sftp.ISftpSettings;
@@ -45,9 +46,10 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 
-public class SftpDocumentForwarder implements IDocumentForwarderSPI
+@IsSPIImplementation
+public class SftpDocumentForwarderSPI implements IDocumentForwarderSPI
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (SftpDocumentForwarder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (SftpDocumentForwarderSPI.class);
   private static final String SFTP_DATETIME_PATTERN = "yyyyMMddHHmmss";
   private static final AtomicInteger WRITE_FILE_COUNT = new AtomicInteger (0);
 

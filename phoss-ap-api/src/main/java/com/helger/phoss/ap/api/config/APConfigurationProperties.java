@@ -93,10 +93,7 @@ public final class APConfigurationProperties
   public static final int FLYWAY_BASELINE_VERSION_DEFAULT = 0;
 
   // Forwarding
-  public static final String FORWARDING_MODE = "forwarding.mode";
   public static final String FORWARDING_HTTP_ENDPOINT = "forwarding.http.endpoint";
-  public static final String FORWARDING_HTTP_CONNECTION_TIMEOUT_MS = "forwarding.http.connection-timeout.ms";
-  public static final String FORWARDING_HTTP_RESPONSE_TIMEOUT_MS = "forwarding.http.response-timeout.ms";
 
   // S3
   public static final String FORWARDING_S3_BUCKET = "forwarding.s3.bucket";
@@ -104,20 +101,6 @@ public final class APConfigurationProperties
   public static final String FORWARDING_S3_ACCESS_KEY_ID = "forwarding.s3.access-key-id";
   public static final String FORWARDING_S3_SECRET_ACCESS_KEY = "forwarding.s3.secret-access-key";
   public static final String FORWARDING_S3_KEY_PREFIX = "forwarding.s3.key-prefix";
-  public static final String FORWARDING_S3_LINK_ENDPOINT = "forwarding.s3.link.endpoint";
-
-  // SFTP
-  public static final String FORWARDING_SFTP_HOST = "forwarding.sftp.host";
-  public static final String FORWARDING_SFTP_PORT = "forwarding.sftp.port";
-  public static final String FORWARDING_SFTP_CONNECTION_TIMEOUT_MS = "forwarding.sftp.connectiontimeoutms";
-  public static final String FORWARDING_SFTP_USER = "forwarding.sftp.user";
-  public static final String FORWARDING_SFTP_PASSWORD = "forwarding.sftp.password";
-  public static final String FORWARDING_SFTP_KEYPAIR_PRIVATEKEYPATH = "forwarding.sftp.keypair.privatekeypath";
-  public static final String FORWARDING_SFTP_KEYPAIR_PUBLICKEYPATH = "forwarding.sftp.keypair.publickeypath";
-  public static final String FORWARDING_SFTP_KEYPAIR_PASSPHRASE = "forwarding.sftp.keypair.passphrase";
-  public static final String FORWARDING_SFTP_KNOWNHOSTSPATH = "forwarding.sftp.knownhostspath";
-  public static final String FORWARDING_SFTP_MAXCONNECTIONS = "forwarding.sftp.maxconnections";
-  public static final String FORWARDING_SFTP_DIRECTORY = "forwarding.sftp.directory";
 
   // Retry sending
   public static final String RETRY_SENDING_MAX_ATTEMPTS = "retry.sending.max-attempts";

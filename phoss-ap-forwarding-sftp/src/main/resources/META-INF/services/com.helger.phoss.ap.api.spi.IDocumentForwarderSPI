@@ -1,1 +1,1 @@
-com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder
+com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarderSPI

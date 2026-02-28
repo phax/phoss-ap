@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.helger.phoss.ap.api.model.ForwardingResult;
+
 /**
  * Test class for class {@link ForwardingResult}.
  *

@@ -20,6 +20,7 @@ import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.style.IsSPIInterface;
 import com.helger.config.fallback.IConfigWithFallback;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**

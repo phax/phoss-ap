@@ -29,6 +29,7 @@ import com.helger.base.string.StringImplode;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.api.flyway.FlywayConfiguration;
+import com.helger.db.api.helper.DBSystemHelper;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
@@ -105,12 +106,14 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       APDBExecutor.setDataSourceProvider (m_aDSP);
 
       // Create managers
+      final String sTableNamePrefix = DBSystemHelper.getTableNamePrefix (m_aJdbcConfig.getJdbcDatabaseSystemType (),
+                                                                         m_aJdbcConfig.getJdbcSchema ());
       final var aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
-      m_aOutboundTxMgr = new OutboundTransactionManagerJdbc (aTimestampMgr);
-      m_aOutboundAttemptMgr = new OutboundSendingAttemptManagerJdbc (aTimestampMgr);
-      m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr);
-      m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr);
-      m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr);
+      m_aOutboundTxMgr = new OutboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aOutboundAttemptMgr = new OutboundSendingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix);
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }

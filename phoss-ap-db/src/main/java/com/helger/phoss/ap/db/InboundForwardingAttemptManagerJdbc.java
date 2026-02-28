@@ -31,13 +31,18 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
 import com.helger.phoss.ap.db.dto.InboundForwardingAttemptRow;
 
-public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager implements IInboundForwardingAttemptManager
+public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager implements
+                                                 IInboundForwardingAttemptManager
 {
   private static final String COLS = "id, inbound_transaction_id, attempt_dt, attempt_status, error_code, error_details";
 
-  public InboundForwardingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
+  private final String m_sTableNameName;
+
+  public InboundForwardingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
+                                              @NonNull final String sTableNamePrefix)
   {
     super (aTimestampMgr);
+    m_sTableNameName = sTableNamePrefix + "inbound_forwarding_attempt";
   }
 
   @Nullable
@@ -49,7 +54,9 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
     final String sID = createUniqueRowID ();
     final OffsetDateTime aNow = now ();
 
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO inbound_forwarding_attempt (" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO " +
+                                                                      m_sTableNameName +
+                                                                      " (" +
                                                                       COLS +
                                                                       ")" +
                                                                       " VALUES (?,?,?,?,?,?)",
@@ -67,9 +74,7 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
     return create (sInboundTransactionID, EAttemptStatus.SUCCESS, null, null);
   }
 
-  public String createFailure (final String sInboundTransactionID,
-                               final String sErrorCode,
-                               final String sErrorDetails)
+  public String createFailure (final String sInboundTransactionID, final String sErrorCode, final String sErrorDetails)
   {
     return create (sInboundTransactionID, EAttemptStatus.FAILED, sErrorCode, sErrorDetails);
   }
@@ -78,7 +83,8 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM inbound_forwarding_attempt" +
+                                                                      " FROM " +
+                                                                      m_sTableNameName +
                                                                       " WHERE inbound_transaction_id=?" +
                                                                       " ORDER BY attempt_dt",
                                                                       new ConstantPreparedStatementDataProvider (sInboundTransactionID));

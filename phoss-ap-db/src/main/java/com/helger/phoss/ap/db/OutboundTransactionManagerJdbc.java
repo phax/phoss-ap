@@ -57,9 +57,13 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                      " reporting_status, next_retry_dt, error_details, mls_to, mls_status," +
                                      " mls_received_dt, mls_id, mls_inbound_transaction_id";
 
-  public OutboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
+  private final String m_sTableName;
+
+  public OutboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
+                                         @NonNull final String sTableNamePrefix)
   {
     super (aTimestampMgr);
+    m_sTableName = sTableNamePrefix + "outbound_transaction";
   }
 
   @Nullable
@@ -81,7 +85,9 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     final OffsetDateTime aNow = now ();
 
     final DBExecutor aExecutor = newExecutor ();
-    final long nRowsAffected = aExecutor.insertOrUpdateOrDelete ("INSERT INTO outbound_transaction (" +
+    final long nRowsAffected = aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
+                                                                 m_sTableName +
+                                                                 " (" +
                                                                  COLS +
                                                                  ")" +
                                                                  " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -121,7 +127,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_transaction" +
+                                                                      " FROM " +
+                                                                      m_sTableName +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (sID));
     if (aRows != null && aRows.size () == 1)
@@ -134,7 +141,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_transaction" +
+                                                                      " FROM " +
+                                                                      m_sTableName +
                                                                       " WHERE sbdh_instance_id=?",
                                                                       new ConstantPreparedStatementDataProvider (sSbdhInstanceID));
     if (aRows != null && aRows.size () == 1)
@@ -145,7 +153,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   @NonNull
   public ESuccess updateStatus (@NonNull final String sID, @NonNull final EOutboundStatus eStatus)
   {
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
                                                                       " SET status=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
@@ -160,7 +169,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                         @Nullable final OffsetDateTime aNextRetryDT,
                                         @Nullable final String sErrorDetails)
   {
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
                                                                       " SET status=?, attempt_count=?, next_retry_dt=?, error_details=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
@@ -174,7 +184,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   @NonNull
   public ESuccess updateStatusCompleted (@NonNull final String sID, @NonNull final EOutboundStatus eStatus)
   {
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
                                                                       " SET status=?, completed_dt=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
@@ -189,7 +200,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                    @Nullable final OffsetDateTime aMlsReceivedDT,
                                    @Nullable final String sMlsID)
   {
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
                                                                       " SET mls_status=?, mls_received_dt=?, mls_id=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eMlsStatus.getID (),
@@ -202,7 +214,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   @NonNull
   public ESuccess updateReportingStatus (@NonNull final String sID, @NonNull final EReportingStatus eReportingStatus)
   {
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE outbound_transaction" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
                                                                       " SET reporting_status=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eReportingStatus.getID (),
@@ -216,7 +229,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_transaction" +
+                                                                      " FROM " +
+                                                                      m_sTableName +
                                                                       " WHERE status IN (?,?,?)",
                                                                       new ConstantPreparedStatementDataProvider (EOutboundStatus.PENDING.getID (),
                                                                                                                  EOutboundStatus.SENDING.getID (),
@@ -236,7 +250,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
 
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_transaction" +
+                                                                      " FROM " +
+                                                                      m_sTableName +
                                                                       " WHERE status=? AND next_retry_dt <= NOW()" +
                                                                       " ORDER BY next_retry_dt" +
                                                                       " LIMIT " +
@@ -256,7 +271,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_transaction" +
+                                                                      " FROM " +
+                                                                      m_sTableName +
                                                                       " WHERE status IN (?,?) AND reporting_status=?" +
                                                                       " ORDER BY completed_dt" +
                                                                       " LIMIT " +

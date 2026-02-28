@@ -36,9 +36,13 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
   private static final String COLS = "id, outbound_transaction_id, as4_message_id, as4_timestamp," +
                                      " receipt_message_id, http_status_code, attempt_dt, attempt_status, error_details";
 
-  public OutboundSendingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
+  private final String m_sTableNameName;
+
+  public OutboundSendingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
+                                            @NonNull final String sTableNamePrefix)
   {
     super (aTimestampMgr);
+    m_sTableNameName = sTableNamePrefix + "outbound_sending_attempt";
   }
 
   @Nullable
@@ -53,7 +57,9 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
     final String sID = createUniqueRowID ();
     final OffsetDateTime aNow = now ();
 
-    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO outbound_sending_attempt (" +
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("INSERT INTO " +
+                                                                      m_sTableNameName +
+                                                                      " (" +
                                                                       COLS +
                                                                       ")" +
                                                                       " VALUES (?,?,?,?,?,?,?,?,?)",
@@ -74,7 +80,8 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
-                                                                      " FROM outbound_sending_attempt" +
+                                                                      " FROM " +
+                                                                      m_sTableNameName +
                                                                       " WHERE outbound_transaction_id=?" +
                                                                       " ORDER BY attempt_dt",
                                                                       new ConstantPreparedStatementDataProvider (sOutboundTransactionID));

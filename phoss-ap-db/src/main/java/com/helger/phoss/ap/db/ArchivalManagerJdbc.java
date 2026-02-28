@@ -37,11 +37,15 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalManagerJdbc.class);
 
-  public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr)
+  private final String m_sTableNamePrefix;
+
+  public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr, @NonNull final String sTableNamePrefix)
   {
     super (aTimestampMgr);
+    m_sTableNamePrefix = sTableNamePrefix;
   }
 
+  @NonNull
   public ESuccess archiveOutboundTransaction (@Nonempty final String sID)
   {
     ValueEnforcer.notEmpty (sID, "ID");
@@ -49,23 +53,37 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     final DBExecutor aExecutor = newExecutor ();
     return aExecutor.performInTransaction ( () -> {
       // Copy sending attempts first
-      aExecutor.insertOrUpdateOrDelete ("INSERT INTO outbound_sending_attempt_archive" +
-                                        " SELECT * FROM outbound_sending_attempt WHERE outbound_transaction_id=?",
+      aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
+                                        m_sTableNamePrefix +
+                                        "outbound_sending_attempt_archive" +
+                                        " SELECT * FROM " +
+                                        m_sTableNamePrefix +
+                                        "outbound_sending_attempt" +
+                                        " WHERE outbound_transaction_id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
-      aExecutor.insertOrUpdateOrDelete ("DELETE FROM outbound_sending_attempt WHERE outbound_transaction_id=?",
+      aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                        m_sTableNamePrefix +
+                                        "outbound_sending_attempt" +
+                                        " WHERE outbound_transaction_id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
 
       // Copy main transaction
-      aExecutor.insertOrUpdateOrDelete ("INSERT INTO outbound_transaction_archive" +
-                                        " SELECT * FROM outbound_transaction WHERE id=?",
+      aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
+                                        m_sTableNamePrefix +
+                                        "outbound_transaction_archive" +
+                                        " SELECT * FROM " +
+                                        m_sTableNamePrefix +
+                                        "outbound_transaction" +
+                                        " WHERE id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
-      aExecutor.insertOrUpdateOrDelete ("DELETE FROM outbound_transaction WHERE id=?",
+      aExecutor.insertOrUpdateOrDelete ("DELETE FROM " + m_sTableNamePrefix + "outbound_transaction" + " WHERE id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
 
       LOGGER.info ("Archived outbound transaction '" + sID + "'");
     });
   }
 
+  @NonNull
   public ESuccess archiveInboundTransaction (final String sID)
   {
     ValueEnforcer.notEmpty (sID, "ID");
@@ -73,17 +91,30 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     final DBExecutor aExecutor = newExecutor ();
     return aExecutor.performInTransaction ( () -> {
       // Copy forwarding attempts first
-      aExecutor.insertOrUpdateOrDelete ("INSERT INTO inbound_forwarding_attempt_archive" +
-                                        " SELECT * FROM inbound_forwarding_attempt WHERE inbound_transaction_id=?",
+      aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
+                                        m_sTableNamePrefix +
+                                        "inbound_forwarding_attempt_archive" +
+                                        " SELECT * FROM " +
+                                        m_sTableNamePrefix +
+                                        "inbound_forwarding_attempt" +
+                                        " WHERE inbound_transaction_id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
-      aExecutor.insertOrUpdateOrDelete ("DELETE FROM inbound_forwarding_attempt WHERE inbound_transaction_id=?",
+      aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                        m_sTableNamePrefix +
+                                        "inbound_forwarding_attempt" +
+                                        " WHERE inbound_transaction_id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
 
       // Copy main transaction
-      aExecutor.insertOrUpdateOrDelete ("INSERT INTO inbound_transaction_archive" +
-                                        " SELECT * FROM inbound_transaction WHERE id=?",
+      aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
+                                        m_sTableNamePrefix +
+                                        "inbound_transaction_archive" +
+                                        " SELECT * FROM " +
+                                        m_sTableNamePrefix +
+                                        "inbound_transaction" +
+                                        " WHERE id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
-      aExecutor.insertOrUpdateOrDelete ("DELETE FROM inbound_transaction WHERE id=?",
+      aExecutor.insertOrUpdateOrDelete ("DELETE FROM " + m_sTableNamePrefix + "inbound_transaction" + " WHERE id=?",
                                         new ConstantPreparedStatementDataProvider (sID));
 
       LOGGER.info ("Archived inbound transaction '" + sID + "'");

@@ -27,8 +27,8 @@ import org.junit.Test;
 
 import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.api.config.JdbcConfiguration;
+import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
-import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.scope.mock.ScopeTestRule;
 
 /**
@@ -42,19 +42,19 @@ public final class APJdbcConfigurationTest
   public final ScopeTestRule m_aRule = new ScopeTestRule ();
 
   @Test
-  public void testDefaultsWhenNoConfigIsSet ()
+  public void testConfigFromProperties ()
   {
-    final APJdbcConfiguration aJdbcConfig = APJdbcMetaManager.getJdbcConfig ();
+    final APJdbcConfiguration aJdbcConfig = new APJdbcConfiguration (APConfigProvider.getConfig ());
 
-    // String properties return null when not configured
+    // Values from test application.properties
     assertSame (EDatabaseSystemType.POSTGRESQL, aJdbcConfig.getJdbcDatabaseSystemType ());
-    assertNull (aJdbcConfig.getJdbcDriver ());
-    assertNull (aJdbcConfig.getJdbcUrl ());
-    assertNull (aJdbcConfig.getJdbcUser ());
-    assertNull (aJdbcConfig.getJdbcPassword ());
-    assertNull (aJdbcConfig.getJdbcSchema ());
+    assertEquals ("org.postgresql.Driver", aJdbcConfig.getJdbcDriver ());
+    assertEquals ("jdbc:postgresql://localhost:5432/phoss-ap", aJdbcConfig.getJdbcUrl ());
+    assertEquals ("peppol", aJdbcConfig.getJdbcUser ());
+    assertEquals ("peppol", aJdbcConfig.getJdbcPassword ());
+    assertEquals ("ap-test", aJdbcConfig.getJdbcSchema ());
 
-    // Boolean / numeric properties return their defined defaults
+    // Boolean / numeric properties return their defined defaults (not set in test properties)
     assertTrue (aJdbcConfig.isJdbcExecutionTimeWarningEnabled ());
     assertEquals (JdbcConfiguration.DEFAULT_EXECUTION_DURATION_WARN_MS,
                   aJdbcConfig.getJdbcExecutionTimeWarningMilliseconds ());
@@ -63,6 +63,7 @@ public final class APJdbcConfigurationTest
     assertFalse (aJdbcConfig.isJdbcDebugTransactions ());
     assertFalse (aJdbcConfig.isJdbcDebugSQL ());
 
+    // Pooling defaults
     assertEquals (APConfigurationProperties.JDBC_POOLING_MAX_CONNECTIONS_DEFAULT,
                   aJdbcConfig.getJdbcPoolingMaxConnections ());
     assertEquals (APConfigurationProperties.JDBC_POOLING_MAX_WAIT_MILLIS_DEFAULT,

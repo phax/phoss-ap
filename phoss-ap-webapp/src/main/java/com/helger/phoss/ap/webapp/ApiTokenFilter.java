@@ -22,6 +22,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.helger.base.string.StringHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 
 import jakarta.servlet.FilterChain;
@@ -32,7 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class ApiTokenFilter extends OncePerRequestFilter
 {
-  private static final String HEADER_TOKEN = "X-Token";
+  private static final String HEADER_X_TOKEN = "X-Token";
 
   @Override
   protected boolean shouldNotFilter (@NonNull final HttpServletRequest request)
@@ -47,9 +48,9 @@ public class ApiTokenFilter extends OncePerRequestFilter
                                    @NonNull final FilterChain filterChain) throws ServletException, IOException
   {
     final String sRequiredToken = APCoreConfig.getPhase4ApiRequiredToken ();
-    if (sRequiredToken != null && !sRequiredToken.isEmpty ())
+    if (StringHelper.isNotEmpty (sRequiredToken))
     {
-      final String sProvidedToken = request.getHeader (HEADER_TOKEN);
+      final String sProvidedToken = request.getHeader (HEADER_X_TOKEN);
       if (!sRequiredToken.equals (sProvidedToken))
       {
         response.setStatus (HttpServletResponse.SC_UNAUTHORIZED);

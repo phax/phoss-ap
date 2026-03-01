@@ -54,6 +54,11 @@ public final class ArchivalScheduler
           aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
         }
       }
+      else
+      {
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Found no outbound transactions for archiving");
+      }
     }
     catch (final Exception ex)
     {
@@ -76,6 +81,11 @@ public final class ArchivalScheduler
           aArchivalMgr.archiveInboundTransaction (aTx.getID ());
         }
       }
+      else
+      {
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Found no inbound transactions for archiving");
+      }
     }
     catch (final Exception ex)
     {
@@ -87,12 +97,12 @@ public final class ArchivalScheduler
   {
     if (!APCoreConfig.isArchivalSchedulerEnabled ())
     {
-      LOGGER.info ("Archival scheduler is disabled");
+      LOGGER.info ("phoss AP archival scheduler is disabled");
       return;
     }
 
     final long nIntervalMs = APCoreConfig.getArchivalSchedulerIntervalMs ();
-    LOGGER.info ("Starting archival scheduler with interval " + nIntervalMs + " ms");
+    LOGGER.info ("Starting phoss AP archival scheduler with interval " + nIntervalMs + " ms");
 
     s_aTimer = new Timer ("ap-archival-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()
@@ -112,7 +122,7 @@ public final class ArchivalScheduler
     {
       s_aTimer.cancel ();
       s_aTimer = null;
-      LOGGER.info ("Archival scheduler stopped");
+      LOGGER.info ("phoss AP archival scheduler stopped");
     }
   }
 }

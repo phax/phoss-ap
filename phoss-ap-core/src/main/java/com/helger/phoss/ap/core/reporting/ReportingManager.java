@@ -42,15 +42,16 @@ public final class ReportingManager
   {}
 
   @NonNull
-  public static ESuccess storeOutboundForReporting (@NonNull final String sTransactionID)
+  public static ESuccess createOutboundPeppolReportingItem (@NonNull final String sTransactionID)
   {
     LOGGER.info ("Marking outbound transaction as reported: " + sTransactionID);
     final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    // TODO outbound reporting
     return aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.REPORTED);
   }
 
   @NonNull
-  public static ESuccess storeInboundForReporting (@NonNull final String sTransactionID)
+  public static ESuccess createInboundPeppolReportingItem (@NonNull final String sTransactionID)
   {
     ValueEnforcer.notNull (sTransactionID, "TransactionID");
 

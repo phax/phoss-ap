@@ -62,6 +62,9 @@ public class OutboundController
     if (aTx == null)
       return ResponseEntity.unprocessableContent ().body (new SubmitResponse (null, sSbdhInstanceID, "rejected"));
 
+    // Perform actual sending
+    OutboundOrchestrator.processPendingOutbound (aTx);
+
     return ResponseEntity.ok (new SubmitResponse (aTx.getID (), aTx.getSbdhInstanceID (), aTx.getStatus ().getID ()));
   }
 
@@ -87,6 +90,9 @@ public class OutboundController
                                                                              sMlsTo);
     if (aTx == null)
       return ResponseEntity.unprocessableContent ().body (new SubmitResponse (null, sSbdhInstanceID, "rejected"));
+
+    // Perform actual sending
+    OutboundOrchestrator.processPendingOutbound (aTx);
 
     return ResponseEntity.ok (new SubmitResponse (aTx.getID (), aTx.getSbdhInstanceID (), aTx.getStatus ().getID ()));
   }

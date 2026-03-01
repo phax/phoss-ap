@@ -31,6 +31,11 @@ import com.helger.phoss.ap.core.inbound.InboundOrchestrator;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
+/**
+ * This class makes sure the inbound and outbound transactions are automatically retried.
+ *
+ * @author Philip Helger
+ */
 public final class RetryScheduler
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (RetryScheduler.class);
@@ -41,10 +46,78 @@ public final class RetryScheduler
   private RetryScheduler ()
   {}
 
+  private static void _retryOutbound ()
+  {
+    try
+    {
+      final ICommonsList <IOutboundTransaction> aTransactions = APJdbcMetaManager.getOutboundTransactionMgr ()
+                                                                                 .getAllForRetry (BATCH_SIZE);
+
+      if (aTransactions.isNotEmpty ())
+      {
+        LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
+
+        for (final IOutboundTransaction aTx : aTransactions)
+        {
+          try
+          {
+            OutboundOrchestrator.processPendingOutbound (aTx);
+          }
+          catch (final Exception ex)
+          {
+            LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
+          }
+        }
+      }
+      else
+      {
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Found no outbound transactions for retry");
+      }
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error in outbound retry cycle", ex);
+    }
+  }
+
+  private static void _retryInbound ()
+  {
+    try
+    {
+      final ICommonsList <IInboundTransaction> aTransactions = APJdbcMetaManager.getInboundTransactionMgr ()
+                                                                                .getAllForRetry (BATCH_SIZE);
+
+      if (aTransactions.isNotEmpty ())
+      {
+        LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
+
+        for (final IInboundTransaction aTx : aTransactions)
+        {
+          // Re-forward using the original InboundOrchestrator logic
+          if (InboundOrchestrator.forwardDocument (aTx).isFailure ())
+          {
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onInboundForwardingError (aTx.getID (), true);
+          }
+        }
+      }
+      else
+      {
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Found no inbound transactions for retry");
+      }
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error in inbound retry cycle", ex);
+    }
+  }
+
   public static void start ()
   {
     final long nIntervalMs = APCoreConfig.getRetrySchedulerIntervalMs ();
-    LOGGER.info ("Starting retry scheduler with interval " + nIntervalMs + " ms");
+    LOGGER.info ("Starting phoss AP retry scheduler with interval " + nIntervalMs + " ms");
 
     s_aTimer = new Timer ("ap-retry-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()
@@ -64,66 +137,7 @@ public final class RetryScheduler
     {
       s_aTimer.cancel ();
       s_aTimer = null;
-      LOGGER.info ("Retry scheduler stopped");
-    }
-  }
-
-  private static void _retryOutbound ()
-  {
-    try
-    {
-      final ICommonsList <IOutboundTransaction> aTransactions = APJdbcMetaManager.getOutboundTransactionMgr ()
-                                                                                 .getAllForRetry (BATCH_SIZE);
-
-      if (aTransactions.isNotEmpty ())
-        LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
-
-      for (final IOutboundTransaction aTx : aTransactions)
-      {
-        try
-        {
-          OutboundOrchestrator.processPendingOutbound (aTx);
-        }
-        catch (final Exception ex)
-        {
-          LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
-        }
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in outbound retry cycle", ex);
-    }
-  }
-
-  private static void _retryInbound ()
-  {
-    try
-    {
-      final ICommonsList <IInboundTransaction> aTransactions = APJdbcMetaManager.getInboundTransactionMgr ()
-                                                                                .getAllForRetry (BATCH_SIZE);
-
-      if (aTransactions.isNotEmpty ())
-        LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
-
-      final var aForwarder = APCoreMetaManager.getForwarder ();
-      if (aForwarder == null)
-        return;
-
-      for (final IInboundTransaction aTx : aTransactions)
-      {
-        // Re-forward using the same InboundMessageProcessor logic
-        // The forwarding is handled through the forwarder directly here
-        if (InboundOrchestrator.forwardDocument (aTx).isFailure ())
-        {
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onInboundForwardingError (aTx.getID (), true);
-        }
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in inbound retry cycle", ex);
+      LOGGER.info ("phoss AP retry scheduler stopped");
     }
   }
 }

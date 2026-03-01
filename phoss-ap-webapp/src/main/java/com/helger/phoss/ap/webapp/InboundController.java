@@ -54,7 +54,7 @@ public class InboundController
 
     // Store the country code for C4 and create the reporting entry
     aTxMgr.updateC4CountryCode (aTx.getID (), sC4CountryCode);
-    ReportingManager.storeInboundForReporting (aTx.getID ());
+    ReportingManager.createInboundPeppolReportingItem (aTx.getID ());
 
     return ResponseEntity.ok (new ReportResponse (aTx.getID (),
                                                   "updated",

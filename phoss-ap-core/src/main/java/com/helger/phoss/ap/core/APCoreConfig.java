@@ -19,6 +19,7 @@ package com.helger.phoss.ap.core;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import com.helger.annotation.CheckForSigned;
 import com.helger.annotation.Nonnegative;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.config.fallback.IConfigWithFallback;
@@ -245,5 +246,29 @@ public final class APCoreConfig
   {
     return _getConfig ().getAsLong (APConfigurationProperties.SHUTDOWN_TIMEOUT_MS,
                                     APConfigurationProperties.SHUTDOWN_TIMEOUT_MS_DEFAULT);
+  }
+
+  // Peppol Reporting
+  public static boolean isPeppolReportingScheduled ()
+  {
+    return _getConfig ().getAsBoolean ("peppol.reporting.schedule.enabled", true);
+  }
+
+  @CheckForSigned
+  public static int getPeppolReportingScheduleDayOfMonth ()
+  {
+    return _getConfig ().getAsInt ("peppol.reporting.schedule.day-of-month", 2);
+  }
+
+  @CheckForSigned
+  public static int getPeppolReportingScheduleHour ()
+  {
+    return _getConfig ().getAsInt ("peppol.reporting.schedule.hour", 6);
+  }
+
+  @CheckForSigned
+  public static int getPeppolReportingScheduleMinute ()
+  {
+    return _getConfig ().getAsInt ("peppol.reporting.schedule.minute", 7);
   }
 }

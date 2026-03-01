@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.webapp.dto;
 
+import org.jspecify.annotations.NonNull;
+
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 public class InboundTransactionResponse
@@ -41,7 +43,8 @@ public class InboundTransactionResponse
   public InboundTransactionResponse ()
   {}
 
-  public static InboundTransactionResponse fromDomain (final IInboundTransaction aTx)
+  @NonNull
+  public static InboundTransactionResponse fromDomain (@NonNull final IInboundTransaction aTx)
   {
     final InboundTransactionResponse aResp = new InboundTransactionResponse ();
     aResp.id = aTx.getID ();
@@ -64,38 +67,173 @@ public class InboundTransactionResponse
     return aResp;
   }
 
-  public String getID () { return id; }
-  public void setID (final String s) { id = s; }
-  public String getSenderID () { return senderID; }
-  public void setSenderID (final String s) { senderID = s; }
-  public String getReceiverID () { return receiverID; }
-  public void setReceiverID (final String s) { receiverID = s; }
-  public String getDocTypeID () { return docTypeID; }
-  public void setDocTypeID (final String s) { docTypeID = s; }
-  public String getProcessID () { return processID; }
-  public void setProcessID (final String s) { processID = s; }
-  public String getAS4MessageID () { return as4MessageID; }
-  public void setAS4MessageID (final String s) { as4MessageID = s; }
-  public String getSbdhInstanceID () { return sbdhInstanceID; }
-  public void setSbdhInstanceID (final String s) { sbdhInstanceID = s; }
-  public String getStatus () { return status; }
-  public void setStatus (final String s) { status = s; }
-  public int getAttemptCount () { return attemptCount; }
-  public void setAttemptCount (final int n) { attemptCount = n; }
-  public String getReceivedDT () { return receivedDT; }
-  public void setReceivedDT (final String s) { receivedDT = s; }
-  public String getCompletedDT () { return completedDT; }
-  public void setCompletedDT (final String s) { completedDT = s; }
-  public String getReportingStatus () { return reportingStatus; }
-  public void setReportingStatus (final String s) { reportingStatus = s; }
-  public String getNextRetryDT () { return nextRetryDT; }
-  public void setNextRetryDT (final String s) { nextRetryDT = s; }
-  public String getErrorDetails () { return errorDetails; }
-  public void setErrorDetails (final String s) { errorDetails = s; }
-  public boolean isDuplicateAS4 () { return isDuplicateAS4; }
-  public void setDuplicateAS4 (final boolean b) { isDuplicateAS4 = b; }
-  public boolean isDuplicateSBDH () { return isDuplicateSBDH; }
-  public void setDuplicateSBDH (final boolean b) { isDuplicateSBDH = b; }
-  public String getMlsResponseCode () { return mlsResponseCode; }
-  public void setMlsResponseCode (final String s) { mlsResponseCode = s; }
+  public String getID ()
+  {
+    return id;
+  }
+
+  public void setID (final String s)
+  {
+    id = s;
+  }
+
+  public String getSenderID ()
+  {
+    return senderID;
+  }
+
+  public void setSenderID (final String s)
+  {
+    senderID = s;
+  }
+
+  public String getReceiverID ()
+  {
+    return receiverID;
+  }
+
+  public void setReceiverID (final String s)
+  {
+    receiverID = s;
+  }
+
+  public String getDocTypeID ()
+  {
+    return docTypeID;
+  }
+
+  public void setDocTypeID (final String s)
+  {
+    docTypeID = s;
+  }
+
+  public String getProcessID ()
+  {
+    return processID;
+  }
+
+  public void setProcessID (final String s)
+  {
+    processID = s;
+  }
+
+  public String getAS4MessageID ()
+  {
+    return as4MessageID;
+  }
+
+  public void setAS4MessageID (final String s)
+  {
+    as4MessageID = s;
+  }
+
+  public String getSbdhInstanceID ()
+  {
+    return sbdhInstanceID;
+  }
+
+  public void setSbdhInstanceID (final String s)
+  {
+    sbdhInstanceID = s;
+  }
+
+  public String getStatus ()
+  {
+    return status;
+  }
+
+  public void setStatus (final String s)
+  {
+    status = s;
+  }
+
+  public int getAttemptCount ()
+  {
+    return attemptCount;
+  }
+
+  public void setAttemptCount (final int n)
+  {
+    attemptCount = n;
+  }
+
+  public String getReceivedDT ()
+  {
+    return receivedDT;
+  }
+
+  public void setReceivedDT (final String s)
+  {
+    receivedDT = s;
+  }
+
+  public String getCompletedDT ()
+  {
+    return completedDT;
+  }
+
+  public void setCompletedDT (final String s)
+  {
+    completedDT = s;
+  }
+
+  public String getReportingStatus ()
+  {
+    return reportingStatus;
+  }
+
+  public void setReportingStatus (final String s)
+  {
+    reportingStatus = s;
+  }
+
+  public String getNextRetryDT ()
+  {
+    return nextRetryDT;
+  }
+
+  public void setNextRetryDT (final String s)
+  {
+    nextRetryDT = s;
+  }
+
+  public String getErrorDetails ()
+  {
+    return errorDetails;
+  }
+
+  public void setErrorDetails (final String s)
+  {
+    errorDetails = s;
+  }
+
+  public boolean isDuplicateAS4 ()
+  {
+    return isDuplicateAS4;
+  }
+
+  public void setDuplicateAS4 (final boolean b)
+  {
+    isDuplicateAS4 = b;
+  }
+
+  public boolean isDuplicateSBDH ()
+  {
+    return isDuplicateSBDH;
+  }
+
+  public void setDuplicateSBDH (final boolean b)
+  {
+    isDuplicateSBDH = b;
+  }
+
+  public String getMlsResponseCode ()
+  {
+    return mlsResponseCode;
+  }
+
+  public void setMlsResponseCode (final String s)
+  {
+    mlsResponseCode = s;
+  }
 }

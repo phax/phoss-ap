@@ -83,7 +83,7 @@ public final class InboundOrchestrator
         {
           // We can store the reporting item immediately
           aTxMgr.updateC4CountryCode (aTx.getID (), aResult.getCountryCodeC4 ());
-          if (ReportingManager.storeInboundForReporting (aTx.getID ()).isFailure ())
+          if (ReportingManager.createInboundPeppolReportingItem (aTx.getID ()).isFailure ())
             LOGGER.error ("Forwarding successful, but failed to store Peppol Reporting entry for '" +
                           aTx.getID () +
                           "'");

@@ -219,7 +219,7 @@ public class APServletInit
 
   public static void init (@NonNull final ServletContext aSC)
   {
-    LOGGER.info ("Initializing phoss-ap");
+    LOGGER.info ("Initializing phoss AP");
 
     WebScopeManager.onGlobalBegin (aSC);
     _initGlobalSettings (aSC);
@@ -238,12 +238,12 @@ public class APServletInit
     RetryScheduler.start ();
     ArchivalScheduler.start ();
 
-    LOGGER.info ("phoss-ap initialized successfully");
+    LOGGER.info ("phoss AP initialized successfully");
   }
 
   public static void shutdown ()
   {
-    LOGGER.info ("Shutting down phoss-ap");
+    LOGGER.info ("Shutting down phoss AP");
 
     RetryScheduler.stop ();
     ArchivalScheduler.stop ();
@@ -261,6 +261,6 @@ public class APServletInit
       WebScopeManager.onGlobalEnd ();
     }
 
-    LOGGER.info ("phoss-ap shutdown complete");
+    LOGGER.info ("phoss AP shutdown complete");
   }
 }

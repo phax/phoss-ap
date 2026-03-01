@@ -41,21 +41,21 @@ public final class CircuitBreakerManager
   private static CircuitBreaker <Void> _getOrCreate (@NonNull final String sEndpointURL)
   {
     return BREAKERS.computeIfAbsent (sEndpointURL, k -> {
-      LOGGER.info ("Creating circuit breaker for endpoint URL '" + k + "'");
+      LOGGER.info ("Creating circuit breaker for '" + k + "'");
       return CircuitBreaker.<Void> builder ()
                            .withFailureThreshold (APCoreConfig.getCircuitBreakerFailureThreshold ())
                            .withDelay (Duration.ofMillis (APCoreConfig.getCircuitBreakerOpenDurationMs ()))
                            .withSuccessThreshold (APCoreConfig.getCircuitBreakerHalfOpenMaxAttempts ())
+                           .onOpen (e -> LOGGER.info ("The circuit breaker for '" + k + "' was opened"))
+                           .onClose (e -> LOGGER.info ("The circuit breaker for '" + k + "' was closed"))
+                           .onHalfOpen (e -> LOGGER.info ("The circuit breaker for '" + k + "' was half-opened"))
                            .build ();
     });
   }
 
-  public static boolean isOpen (@NonNull final String sEndpointURL)
+  public static boolean tryAcquirePermit (@NonNull final String sEndpointURL)
   {
-    final CircuitBreaker <Void> aCB = BREAKERS.get (sEndpointURL);
-    if (aCB == null)
-      return false;
-    return aCB.isOpen ();
+    return _getOrCreate (sEndpointURL).tryAcquirePermit ();
   }
 
   public static void recordSuccess (@NonNull final String sEndpointURL)

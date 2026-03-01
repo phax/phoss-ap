@@ -115,6 +115,8 @@ public interface INotificationHandlerSPI
    *
    * @param sTxID
    *        The inbound transaction ID. May not be <code>null</code>.
+   * @param bIsRetry
+   *        <code>true</code> if it is a retry, <code>false</code> if it is the original request.
    */
-  void onInboundForwardingError (@NonNull String sTxID);
+  void onInboundForwardingError (@NonNull String sTxID, boolean bIsRetry);
 }

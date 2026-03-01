@@ -30,7 +30,7 @@ import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.core.ReportingManager;
+import com.helger.phoss.ap.core.reporting.ReportingManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.ReportResponse;

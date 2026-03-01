@@ -27,7 +27,8 @@ import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
-import com.helger.phoss.ap.core.OutboundOrchestrator;
+import com.helger.phoss.ap.core.inbound.InboundOrchestrator;
+import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 public final class RetryScheduler
@@ -111,15 +112,12 @@ public final class RetryScheduler
 
       for (final IInboundTransaction aTx : aTransactions)
       {
-        try
+        // Re-forward using the same InboundMessageProcessor logic
+        // The forwarding is handled through the forwarder directly here
+        if (InboundOrchestrator.forwardDocument (aTx).isFailure ())
         {
-          // Re-forward using the same InboundMessageProcessor logic
-          // The forwarding is handled through the forwarder directly here
-          aForwarder.forwardDocument (aTx);
-        }
-        catch (final Exception ex)
-        {
-          LOGGER.error ("Error retrying inbound forwarding '" + aTx.getID () + "'", ex);
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onInboundForwardingError (aTx.getID (), true);
         }
       }
     }

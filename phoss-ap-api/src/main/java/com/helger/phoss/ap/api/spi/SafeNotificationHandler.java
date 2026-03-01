@@ -116,11 +116,11 @@ public final class SafeNotificationHandler implements INotificationHandlerSPI
     }
   }
 
-  public void onInboundForwardingError (@NonNull final String sTxID)
+  public void onInboundForwardingError (@NonNull final String sTxID, final boolean bIsRetry)
   {
     try
     {
-      m_aHdl.onInboundForwardingError (sTxID);
+      m_aHdl.onInboundForwardingError (sTxID, bIsRetry);
     }
     catch (final Exception ex)
     {

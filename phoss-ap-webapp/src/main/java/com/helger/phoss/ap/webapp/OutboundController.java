@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
-import com.helger.phoss.ap.core.OutboundOrchestrator;
+import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.dto.OutboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.SubmitResponse;

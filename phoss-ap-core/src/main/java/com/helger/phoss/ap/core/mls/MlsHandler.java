@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.core;
+package com.helger.phoss.ap.core.mls;
 
 import java.io.File;
 import java.time.OffsetDateTime;
@@ -40,6 +40,7 @@ import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
+import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 

@@ -20,6 +20,7 @@ import java.io.File;
 import java.security.cert.X509Certificate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Locale;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -29,9 +30,14 @@ import org.unece.cefact.namespaces.sbdh.StandardBusinessDocument;
 
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.base.string.StringHelper;
+import com.helger.diagnostics.error.IError;
+import com.helger.diagnostics.error.list.ErrorList;
 import com.helger.http.header.HttpHeaderMap;
+import com.helger.peppol.mls.PeppolMLSBuilder;
+import com.helger.peppol.mls.PeppolMLSMarshaller;
 import com.helger.peppol.reporting.api.CPeppolReporting;
 import com.helger.peppol.sbdh.PeppolSBDHData;
+import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
 import com.helger.phase4.ebms3header.Ebms3UserMessage;
 import com.helger.phase4.error.AS4Error;
 import com.helger.phase4.error.AS4ErrorList;
@@ -58,6 +64,8 @@ import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.security.certificate.CertificateHelper;
+
+import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
 @IsSPIImplementation
 public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSBDHandlerSPI
@@ -159,6 +167,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                  @NonNull final AS4ErrorList aProcessingErrorMessages) throws Exception
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final Locale aDisplayLocale = CPhossAP.DEFAULT_LOCALE;
 
     final String sIncomingID = aMessageMetadata.getIncomingUniqueID ();
     final String sAS4MessageID = aIncomingState.getMessageID ();
@@ -196,7 +205,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         final String sMsg = "Rejecting duplicate AS4 message '" + sAS4MessageID + "'";
         LOGGER.error (sMsg);
         aProcessingErrorMessages.add (AS4Error.builder ()
-                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (CPhossAP.DEFAULT_LOCALE)
+                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
                                                                                .refToMessageInError (aIncomingState.getMessageID ())
                                                                                .errorDetail (sMsg))
                                               .build ());
@@ -212,7 +221,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         final String sMsg = "Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'";
         LOGGER.error (sMsg);
         aProcessingErrorMessages.add (AS4Error.builder ()
-                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (CPhossAP.DEFAULT_LOCALE)
+                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
                                                                                .refToMessageInError (aIncomingState.getMessageID ())
                                                                                .errorDetail (sMsg))
                                               .build ());
@@ -227,7 +236,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       {
         LOGGER.error ("Receiver not serviced '" + sReceiverID + "'");
         aProcessingErrorMessages.add (AS4Error.builder ()
-                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (CPhossAP.DEFAULT_LOCALE)
+                                              .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
                                                                                .refToMessageInError (aIncomingState.getMessageID ())
                                                                                .errorDetail ("PEPPOL:NOT_SERVICED"))
                                               .build ());
@@ -300,6 +309,31 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
           return;
         }
       }
+    }
+
+    if (sDocTypeID.equals (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded ()))
+    {
+      LOGGER.info ("Handling incoming MLS message");
+      final ErrorList aXSDErrors = new ErrorList ();
+      final ApplicationResponseType aMLS = new PeppolMLSMarshaller ().setCollectErrors (aXSDErrors)
+                                                                     .read (aPeppolSBD.getBusinessMessageNoClone ());
+      if (aMLS == null)
+      {
+        LOGGER.error ("Failed to parse incoming MLS");
+        // Add all XSD errors to the output
+        for (final IError aError : aXSDErrors)
+        {
+          final String sDetails = "Peppol MLS XSD Issue: " + aError.getAsString (aDisplayLocale);
+          aProcessingErrorMessages.add (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                             .refToMessageInError (sAS4MessageID)
+                                                             .errorDetail (sDetails)
+                                                             .build ());
+        }
+        return;
+      }
+
+      final PeppolMLSBuilder aBuilder = PeppolMLSBuilder.createForApplicationResponse (aMLS);
+      // TODO handle incoming MLS
     }
 
     // Forward

@@ -1,7 +1,6 @@
 package com.helger.phoss.ap.core.inbound;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ public final class InboundOrchestrator
   {}
 
   @NonNull
-  public static ESuccess forwardDocument (@Nullable final IInboundTransaction aTx)
+  public static ESuccess forwardDocument (@NonNull final String sLogPrefix, @NonNull final IInboundTransaction aTx)
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final IInboundForwardingAttemptManager aAttemptMgr = APJdbcMetaManager.getInboundForwardingAttemptMgr ();
@@ -45,7 +44,7 @@ public final class InboundOrchestrator
       final IDocumentForwarder aForwarder = APCoreMetaManager.getForwarder ();
       if (aForwarder == null)
       {
-        LOGGER.error ("Internal error - No document forwarder configured");
+        LOGGER.error (sLogPrefix + "Internal error - No document forwarder configured");
         aTxMgr.updateStatus (aTx.getID (), EInboundStatus.PERMANENTLY_FAILED);
         return ESuccess.FAILURE;
       }
@@ -77,14 +76,15 @@ public final class InboundOrchestrator
         aAttemptMgr.createSuccess (aTx.getID ());
 
         aTxMgr.updateStatusCompleted (aTx.getID (), EInboundStatus.FORWARDED);
-        LOGGER.info ("Forwarding successful for transaction '" + aTx.getID () + "'");
+        LOGGER.info (sLogPrefix + "Forwarding successful for transaction '" + aTx.getID () + "'");
 
         if (aResult.hasCountryCodeC4 ())
         {
           // We can store the reporting item immediately
           aTxMgr.updateC4CountryCode (aTx.getID (), aResult.getCountryCodeC4 ());
           if (ReportingManager.createInboundPeppolReportingItem (aTx.getID ()).isFailure ())
-            LOGGER.error ("Forwarding successful, but failed to store Peppol Reporting entry for '" +
+            LOGGER.error (sLogPrefix +
+                          "Forwarding successful, but failed to store Peppol Reporting entry for '" +
                           aTx.getID () +
                           "'");
         }

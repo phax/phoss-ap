@@ -41,6 +41,12 @@ public interface IOutboundSendingAttemptManager
                  @NonNull EAttemptStatus eAttemptStatus,
                  @Nullable String sErrorDetails);
 
+  @Nullable
+  String createSuccess (@NonNull String sOutboundTransactionID,
+                        @NonNull String sAS4MessageID,
+                        @NonNull OffsetDateTime aAS4Timestamp,
+                        @NonNull String sReceiptMessageID);
+
   @NonNull
   ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull String sOutboundTransactionID);
 }

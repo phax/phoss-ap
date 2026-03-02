@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.webapp.dto;
 
+import org.jspecify.annotations.Nullable;
+
 public class SubmitResponse
 {
   private String transactionID;
@@ -25,7 +27,9 @@ public class SubmitResponse
   public SubmitResponse ()
   {}
 
-  public SubmitResponse (final String sTransactionID, final String sSbdhInstanceID, final String sStatus)
+  public SubmitResponse (@Nullable final String sTransactionID,
+                         @Nullable final String sSbdhInstanceID,
+                         @Nullable final String sStatus)
   {
     transactionID = sTransactionID;
     sbdhInstanceID = sSbdhInstanceID;

@@ -123,18 +123,24 @@ public final class MlsHandler
    * @return {@link ESuccess}
    */
   @NonNull
-  public static ESuccess handleIncomingMls (@NonNull final String sSbdhInstanceID,
+  public static ESuccess handleIncomingMls (@NonNull final String sLogPrefix,
+                                            @NonNull final String sSbdhInstanceID,
                                             @NonNull final EPeppolMLSResponseCode eResponseCode,
                                             @NonNull final OffsetDateTime aMlsAS4ReceivedDT,
                                             @Nullable final String sMlsID)
   {
-    LOGGER.info ("Received MLS response (" + eResponseCode.getID () + ") for SBDH '" + sSbdhInstanceID + "'");
+    LOGGER.info (sLogPrefix +
+                 "Received MLS response (" +
+                 eResponseCode.getID () +
+                 ") for SBDH '" +
+                 sSbdhInstanceID +
+                 "'");
 
     final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final IOutboundTransaction aTx = aOutboundMgr.getBySbdhInstanceID (sSbdhInstanceID);
     if (aTx == null)
     {
-      LOGGER.warn ("No outbound transaction found for SBDH '" + sSbdhInstanceID + "'");
+      LOGGER.warn (sLogPrefix + "No outbound transaction found for SBDH '" + sSbdhInstanceID + "'");
       return ESuccess.FAILURE;
     }
 
@@ -149,7 +155,12 @@ public final class MlsHandler
     if (aOutboundMgr.updateMlsStatus (aTx.getID (), eMlsStatus, aMlsAS4ReceivedDT, sMlsID).isFailure ())
       return ESuccess.FAILURE;
 
-    LOGGER.info ("Updated MLS status for transaction '" + aTx.getID () + "' to '" + eMlsStatus.getID () + "'");
+    LOGGER.info (sLogPrefix +
+                 "Updated MLS status for transaction '" +
+                 aTx.getID () +
+                 "' to '" +
+                 eMlsStatus.getID () +
+                 "'");
     return ESuccess.SUCCESS;
   }
 }

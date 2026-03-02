@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
@@ -44,55 +46,44 @@ public class OutboundController
                                                             @RequestParam ("receiverID") final String sReceiverID,
                                                             @RequestParam ("docTypeID") final String sDocTypeID,
                                                             @RequestParam ("processID") final String sProcessID,
-                                                            @RequestParam ("sbdhInstanceID") final String sSbdhInstanceID,
                                                             @RequestParam ("c1CountryCode") final String sC1CountryCode,
                                                             @RequestParam ("document") final MultipartFile aDocument,
+                                                            @RequestParam (value = "sbdhInstanceID",
+                                                                           required = false) final String sSbdhInstanceID,
                                                             @RequestParam (value = "mlsTo",
                                                                            required = false) final String sMlsTo) throws Exception
   {
-    final byte [] aDocBytes = aDocument.getBytes ();
+    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
+                                                                                      : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
     final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument (sSenderID,
                                                                              sReceiverID,
                                                                              sDocTypeID,
                                                                              sProcessID,
-                                                                             sSbdhInstanceID,
+                                                                             sEffectiveSbdhInstanceID,
                                                                              sC1CountryCode,
-                                                                             aDocBytes,
+                                                                             aDocument.getInputStream (),
                                                                              sMlsTo);
     if (aTx == null)
-      return ResponseEntity.unprocessableContent ().body (new SubmitResponse (null, sSbdhInstanceID, "rejected"));
+      return ResponseEntity.unprocessableContent ()
+                           .body (new SubmitResponse (null, sEffectiveSbdhInstanceID, "rejected"));
 
     // Perform actual sending
-    OutboundOrchestrator.processPendingOutbound (aTx);
+    OutboundOrchestrator.processPendingOutbound ("[SubmitRaw] ", aTx);
 
     return ResponseEntity.ok (new SubmitResponse (aTx.getID (), aTx.getSbdhInstanceID (), aTx.getStatus ().getID ()));
   }
 
   @PostMapping ("/submit-sbd")
-  public ResponseEntity <SubmitResponse> submitPrebuiltSBD (@RequestParam ("senderID") final String sSenderID,
-                                                            @RequestParam ("receiverID") final String sReceiverID,
-                                                            @RequestParam ("docTypeID") final String sDocTypeID,
-                                                            @RequestParam ("processID") final String sProcessID,
-                                                            @RequestParam ("sbdhInstanceID") final String sSbdhInstanceID,
-                                                            @RequestParam ("c1CountryCode") final String sC1CountryCode,
-                                                            @RequestParam ("document") final MultipartFile aDocument,
+  public ResponseEntity <SubmitResponse> submitPrebuiltSBD (@RequestParam ("document") final MultipartFile aDocument,
                                                             @RequestParam (value = "mlsTo",
                                                                            required = false) final String sMlsTo) throws Exception
   {
-    final byte [] aDocBytes = aDocument.getBytes ();
-    final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD (sSenderID,
-                                                                             sReceiverID,
-                                                                             sDocTypeID,
-                                                                             sProcessID,
-                                                                             sSbdhInstanceID,
-                                                                             sC1CountryCode,
-                                                                             aDocBytes,
-                                                                             sMlsTo);
+    final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD (aDocument.getInputStream (), sMlsTo);
     if (aTx == null)
-      return ResponseEntity.unprocessableContent ().body (new SubmitResponse (null, sSbdhInstanceID, "rejected"));
+      return ResponseEntity.unprocessableContent ().body (new SubmitResponse (null, null, "rejected"));
 
     // Perform actual sending
-    OutboundOrchestrator.processPendingOutbound (aTx);
+    OutboundOrchestrator.processPendingOutbound ("[SubmitPrebuiltSBD] ", aTx);
 
     return ResponseEntity.ok (new SubmitResponse (aTx.getID (), aTx.getSbdhInstanceID (), aTx.getStatus ().getID ()));
   }

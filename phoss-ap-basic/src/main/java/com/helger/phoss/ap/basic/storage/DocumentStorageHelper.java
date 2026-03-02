@@ -18,14 +18,18 @@ package com.helger.phoss.ap.basic.storage;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
+import com.helger.base.io.nonblocking.NonBlockingBufferedOutputStream;
 import com.helger.base.string.StringHelper;
 
 /**
@@ -39,6 +43,19 @@ public final class DocumentStorageHelper
 {
   private DocumentStorageHelper ()
   {}
+
+  @NonNull
+  private static File _getStorageDir (@NonNull final File aBaseDir, @NonNull final OffsetDateTime aReferenceDT)
+  {
+    return new File (aBaseDir,
+                     Integer.toString (aReferenceDT.getYear ()) +
+                               "/" +
+                               StringHelper.getLeadingZero (aReferenceDT.getMonthValue (), 2) +
+                               "/" +
+                               StringHelper.getLeadingZero (aReferenceDT.getDayOfMonth (), 2) +
+                               "/" +
+                               StringHelper.getLeadingZero (aReferenceDT.getHour (), 2));
+  }
 
   /**
    * Write bytes to a file under the given base directory, using the provided filename. Creates the
@@ -65,15 +82,7 @@ public final class DocumentStorageHelper
     ValueEnforcer.notNull (sFilename, "Filename");
     ValueEnforcer.notNull (aBytes, "Bytes");
 
-    final File aEffectiveBaseDir = new File (aBaseDir,
-                                             Integer.toString (aReferenceDT.getYear ()) +
-                                                       "/" +
-                                                       StringHelper.getLeadingZero (aReferenceDT.getMonthValue (), 2) +
-                                                       "/" +
-                                                       StringHelper.getLeadingZero (aReferenceDT.getDayOfMonth (), 2) +
-                                                       "/" +
-                                                       StringHelper.getLeadingZero (aReferenceDT.getHour (), 2));
-
+    final File aEffectiveBaseDir = _getStorageDir (aBaseDir, aReferenceDT);
     try
     {
       Files.createDirectories (aEffectiveBaseDir.toPath ());
@@ -90,6 +99,43 @@ public final class DocumentStorageHelper
                                        "'",
                                        ex);
     }
+  }
+
+  @NonNull
+  public static OutputStream openDocumentStream (@NonNull final File aBaseDir,
+                                                 @NonNull final OffsetDateTime aReferenceDT,
+                                                 @NonNull final String sFilename,
+                                                 @NonNull final Consumer <File> aFileConsumer)
+  {
+    ValueEnforcer.notNull (aBaseDir, "BaseDir");
+    ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
+    ValueEnforcer.notNull (aFileConsumer, "FileConsumer");
+
+    final File aEffectiveBaseDir = _getStorageDir (aBaseDir, aReferenceDT);
+    try
+    {
+      Files.createDirectories (aEffectiveBaseDir.toPath ());
+      final Path aFilePath = aEffectiveBaseDir.toPath ().resolve (sFilename);
+      aFileConsumer.accept (aFilePath.toFile ());
+      return new NonBlockingBufferedOutputStream (Files.newOutputStream (aFilePath));
+    }
+    catch (final Exception ex)
+    {
+      throw new IllegalStateException ("Failed to create file '" +
+                                       sFilename +
+                                       "' in " +
+                                       aEffectiveBaseDir.getAbsolutePath () +
+                                       "'",
+                                       ex);
+    }
+  }
+
+  @NonNull
+  public static OutputStream openTemporaryDocumentStream (@NonNull final File aBaseDir,
+                                                          @NonNull final OffsetDateTime aReferenceDT,
+                                                          @NonNull final Consumer <File> aFileConsumer)
+  {
+    return openDocumentStream (aBaseDir, aReferenceDT, UUID.randomUUID ().toString () + ".tmp", aFileConsumer);
   }
 
   /**

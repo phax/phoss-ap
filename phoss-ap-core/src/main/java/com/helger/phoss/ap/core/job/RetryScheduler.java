@@ -56,12 +56,13 @@ public final class RetryScheduler
       if (aTransactions.isNotEmpty ())
       {
         LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
+        final String sLogPrefix = "[RetryOutbound] ";
 
         for (final IOutboundTransaction aTx : aTransactions)
         {
           try
           {
-            OutboundOrchestrator.processPendingOutbound (aTx);
+            OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
           }
           catch (final Exception ex)
           {
@@ -91,11 +92,12 @@ public final class RetryScheduler
       if (aTransactions.isNotEmpty ())
       {
         LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
+        final String sLogPrefix = "[RetryInbound] ";
 
         for (final IInboundTransaction aTx : aTransactions)
         {
           // Re-forward using the original InboundOrchestrator logic
-          if (InboundOrchestrator.forwardDocument (aTx).isFailure ())
+          if (InboundOrchestrator.forwardDocument (sLogPrefix, aTx).isFailure ())
           {
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
               aHandler.onInboundForwardingError (aTx.getID (), true);

@@ -25,13 +25,15 @@ import com.helger.security.messagedigest.EMessageDigestAlgorithm;
 @Immutable
 public final class HashHelper
 {
+  public static final EMessageDigestAlgorithm MD_ALGO = EMessageDigestAlgorithm.SHA_256;
+
   private HashHelper ()
   {}
 
   @NonNull
   public static String sha256Hex (final byte @NonNull [] aBytes)
   {
-    final byte [] aHash = EMessageDigestAlgorithm.SHA_256.createMessageDigest ().digest (aBytes);
+    final byte [] aHash = MD_ALGO.createMessageDigest ().digest (aBytes);
     return StringHex.getHexEncoded (aHash);
   }
 }

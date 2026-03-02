@@ -64,10 +64,10 @@
     <spring-boot.version>4.0.3</spring-boot.version>
 
     <ph-commons.version>12.1.3</ph-commons.version>
-    <ph-web.version>11.2.2-SNAPSHOT</ph-web.version>
+    <ph-web.version>11.2.2</ph-web.version>
     <ph-oton.version>10.2.1-SNAPSHOT</ph-oton.version>
     <peppol-ap-support.version>2.1.1</peppol-ap-support.version>
-    <peppol-commons.version>12.3.11-SNAPSHOT</peppol-commons.version>
+    <peppol-commons.version>12.3.11</peppol-commons.version>
     <peppol-reporting.version>4.1.0</peppol-reporting.version>
     <phase4.version>4.3.0</phase4.version>
     <ph-db.version>8.1.2</ph-db.version>

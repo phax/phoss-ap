@@ -24,42 +24,42 @@ public class SchedulerConfig implements SchedulingConfigurer
   @Override
   public void configureTasks (@NonNull final ScheduledTaskRegistrar aTaskRegistrar)
   {
-    // Check configuration
-    final int nDayOfMonth = APCoreConfig.getPeppolReportingScheduleDayOfMonth ();
-    if (nDayOfMonth < 1 || nDayOfMonth > 15)
-      throw new IllegalStateException ("The Peppol Reporting Schedule 'day of month' parameter (" +
-                                       nDayOfMonth +
-                                       ") is invalid. Must be between 1 and 15.");
-    final int nHour = APCoreConfig.getPeppolReportingScheduleHour ();
-    if (nHour < 0 || nHour > 23)
-      throw new IllegalStateException ("The Peppol Reporting Schedule 'hour' parameter (" +
-                                       nHour +
-                                       ") is invalid. Must be between 0 and 23.");
-    final int nMinute = APCoreConfig.getPeppolReportingScheduleMinute ();
-    if (nMinute < 0 || nMinute > 59)
-      throw new IllegalStateException ("The Peppol Reporting Schedule 'minute' parameter (" +
-                                       nMinute +
-                                       ") is invalid. Must be between 0 and 59.");
+    if (APCoreConfig.isPeppolReportingScheduled ())
+    {
+      // Check configuration
+      final int nDayOfMonth = APCoreConfig.getPeppolReportingScheduleDayOfMonth ();
+      if (nDayOfMonth < 1 || nDayOfMonth > 15)
+        throw new IllegalStateException ("The Peppol Reporting Schedule 'day of month' parameter (" +
+                                         nDayOfMonth +
+                                         ") is invalid. Must be between 1 and 15.");
+      final int nHour = APCoreConfig.getPeppolReportingScheduleHour ();
+      if (nHour < 0 || nHour > 23)
+        throw new IllegalStateException ("The Peppol Reporting Schedule 'hour' parameter (" +
+                                         nHour +
+                                         ") is invalid. Must be between 0 and 23.");
+      final int nMinute = APCoreConfig.getPeppolReportingScheduleMinute ();
+      if (nMinute < 0 || nMinute > 59)
+        throw new IllegalStateException ("The Peppol Reporting Schedule 'minute' parameter (" +
+                                         nMinute +
+                                         ") is invalid. Must be between 0 and 59.");
 
-    LOGGER.info ("Scheduling Peppol Reporting job to run monthly on day " +
-                 nDayOfMonth +
-                 " at " +
-                 StringHelper.getLeadingZero (nHour, 2) +
-                 ':' +
-                 StringHelper.getLeadingZero (nMinute, 2));
+      LOGGER.info ("Scheduling Peppol Reporting job to run monthly on day " +
+                   nDayOfMonth +
+                   " at " +
+                   StringHelper.getLeadingZero (nHour, 2) +
+                   ':' +
+                   StringHelper.getLeadingZero (nMinute, 2));
 
-    // Schedule task
-    final String sCronKey = "0 " + nMinute + " " + nHour + " " + nDayOfMonth + " * *";
-    aTaskRegistrar.addCronTask (new CronTask ( () -> {
-      if (APCoreConfig.isPeppolReportingScheduled ())
-      {
+      // Schedule task
+      final String sCronKey = "0 " + nMinute + " " + nHour + " " + nDayOfMonth + " * *";
+      aTaskRegistrar.addCronTask (new CronTask ( () -> {
         LOGGER.info ("Running scheduled creation and sending of Peppol Reporting messages");
         // Use the previous month
         final YearMonth aYearMonth = YearMonth.now ().minusMonths (1);
         AppReportingHelper.createAndSendPeppolReports (aYearMonth);
-      }
-      else
-        LOGGER.warn ("Creating and sending Peppol Reports is disabled in the configuration");
-    }, sCronKey));
+      }, sCronKey));
+    }
+    else
+      LOGGER.info ("Peppol Reporting job is disabled per configuration");
   }
 }

@@ -75,6 +75,15 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
     return nRowsAffected == 0 ? null : sID;
   }
 
+  @Nullable
+  public String createSuccess (@NonNull final String sOutboundTransactionID,
+                               @NonNull final String sAS4MessageID,
+                               @NonNull final OffsetDateTime aAS4Timestamp,
+                               @NonNull final String sReceiptMessageID)
+  {
+    return create (sOutboundTransactionID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.SUCCESS, null);
+  }
+
   @NonNull
   public ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull final String sOutboundTransactionID)
   {

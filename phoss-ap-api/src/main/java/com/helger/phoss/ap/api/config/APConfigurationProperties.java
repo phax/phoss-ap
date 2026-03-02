@@ -109,12 +109,14 @@ public final class APConfigurationProperties
   public static final String MLS_TYPE = "mls.type";
 
   // Reporting
-  public static final String PEPPOL_REPORTING_SENDERID = "peppol.reporting.senderid";
-  public static final String PEPPOL_REPORTING_SCHEDULED = "peppol.reporting.scheduled";
-  public static final String REPORTING_LEADER_ENABLED = "reporting.leader.enabled";
+  public static final String PEPPOL_REPORTING_SCHEDULE_ENABLED = "peppol.reporting.schedule.enabled";
+  public static final boolean PEPPOL_REPORTING_SCHEDULE_ENABLED_DEFAULT = true;
   public static final String PEPPOL_REPORTING_SCHEDULE_DAY_OF_MONTH = "peppol.reporting.schedule.day-of-month";
+  public static final int PEPPOL_REPORTING_SCHEDULE_DAY_OF_MONTH_DEFAULT = 2;
   public static final String PEPPOL_REPORTING_SCHEDULE_HOUR = "peppol.reporting.schedule.hour";
+  public static final int PEPPOL_REPORTING_SCHEDULE_HOUR_DEFAULT = 6;
   public static final String PEPPOL_REPORTING_SCHEDULE_MINUTE = "peppol.reporting.schedule.minute";
+  public static final int PEPPOL_REPORTING_SCHEDULE_MINUTE_DEFAULT = 7;
 
   // Duplicate detection
   public static final String DUPLICATE_DETECTION_AS4_MODE = "duplicate.detection.as4.mode";

@@ -251,24 +251,28 @@ public final class APCoreConfig
   // Peppol Reporting
   public static boolean isPeppolReportingScheduled ()
   {
-    return _getConfig ().getAsBoolean ("peppol.reporting.schedule.enabled", true);
+    return _getConfig ().getAsBoolean (APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_ENABLED,
+                                       APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_ENABLED_DEFAULT);
   }
 
   @CheckForSigned
   public static int getPeppolReportingScheduleDayOfMonth ()
   {
-    return _getConfig ().getAsInt ("peppol.reporting.schedule.day-of-month", 2);
+    return _getConfig ().getAsInt (APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_DAY_OF_MONTH,
+                                   APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_DAY_OF_MONTH_DEFAULT);
   }
 
   @CheckForSigned
   public static int getPeppolReportingScheduleHour ()
   {
-    return _getConfig ().getAsInt ("peppol.reporting.schedule.hour", 6);
+    return _getConfig ().getAsInt (APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_HOUR,
+                                   APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_HOUR_DEFAULT);
   }
 
   @CheckForSigned
   public static int getPeppolReportingScheduleMinute ()
   {
-    return _getConfig ().getAsInt ("peppol.reporting.schedule.minute", 7);
+    return _getConfig ().getAsInt (APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_MINUTE,
+                                   APConfigurationProperties.PEPPOL_REPORTING_SCHEDULE_MINUTE_DEFAULT);
   }
 }

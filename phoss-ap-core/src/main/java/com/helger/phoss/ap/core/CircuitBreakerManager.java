@@ -27,6 +27,11 @@ import com.helger.annotation.concurrent.ThreadSafe;
 
 import dev.failsafe.CircuitBreaker;
 
+/**
+ * This class manages the different circuit breakers used by phoss AP.
+ *
+ * @author Philip Helger
+ */
 @ThreadSafe
 public final class CircuitBreakerManager
 {
@@ -38,9 +43,9 @@ public final class CircuitBreakerManager
   {}
 
   @NonNull
-  private static CircuitBreaker <Void> _getOrCreate (@NonNull final String sEndpointURL)
+  private static CircuitBreaker <Void> _getOrCreate (@NonNull final String sCircuitKey)
   {
-    return BREAKERS.computeIfAbsent (sEndpointURL, k -> {
+    return BREAKERS.computeIfAbsent (sCircuitKey, k -> {
       LOGGER.info ("Creating circuit breaker for '" + k + "'");
       return CircuitBreaker.<Void> builder ()
                            .withFailureThreshold (APCoreConfig.getCircuitBreakerFailureThreshold ())
@@ -53,18 +58,18 @@ public final class CircuitBreakerManager
     });
   }
 
-  public static boolean tryAcquirePermit (@NonNull final String sEndpointURL)
+  public static boolean tryAcquirePermit (@NonNull final String sCircuitKey)
   {
-    return _getOrCreate (sEndpointURL).tryAcquirePermit ();
+    return _getOrCreate (sCircuitKey).tryAcquirePermit ();
   }
 
-  public static void recordSuccess (@NonNull final String sEndpointURL)
+  public static void recordSuccess (@NonNull final String sCircuitKey)
   {
-    _getOrCreate (sEndpointURL).recordSuccess ();
+    _getOrCreate (sCircuitKey).recordSuccess ();
   }
 
-  public static void recordFailure (@NonNull final String sEndpointURL)
+  public static void recordFailure (@NonNull final String sCircuitKey)
   {
-    _getOrCreate (sEndpointURL).recordFailure ();
+    _getOrCreate (sCircuitKey).recordFailure ();
   }
 }

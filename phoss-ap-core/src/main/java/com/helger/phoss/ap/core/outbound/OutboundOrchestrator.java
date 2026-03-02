@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -80,10 +81,10 @@ public final class OutboundOrchestrator
   {}
 
   @Nullable
-  public static IOutboundTransaction submitRawDocument (@NonNull final String sSenderID,
-                                                        @NonNull final String sReceiverID,
-                                                        @NonNull final String sDocTypeID,
-                                                        @NonNull final String sProcessID,
+  public static IOutboundTransaction submitRawDocument (@NonNull final IParticipantIdentifier aSenderID,
+                                                        @NonNull final IParticipantIdentifier aReceiverID,
+                                                        @NonNull final IDocumentTypeIdentifier aDocTypeID,
+                                                        @NonNull final IProcessIdentifier aProcessID,
                                                         @NonNull final String sSbdhInstanceID,
                                                         @NonNull final String sC1CountryCode,
                                                         @NonNull final InputStream aDocumentIS,
@@ -138,7 +139,7 @@ public final class OutboundOrchestrator
     {
       for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
       {
-        if (aVerifier.verifyDocument (aDocumentFile, sDocTypeID, sProcessID).isFailure ())
+        if (aVerifier.verifyDocument (aDocumentFile, aDocTypeID, aProcessID).isFailure ())
         {
           LOGGER.warn ("Outbound document verification failed for SBDH: " + sSbdhInstanceID);
           return null;
@@ -150,10 +151,10 @@ public final class OutboundOrchestrator
 
     // Create in pending state
     final String sTransactionID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                               sSenderID,
-                                               sReceiverID,
-                                               sDocTypeID,
-                                               sProcessID,
+                                               aSenderID.getURIEncoded (),
+                                               aReceiverID.getURIEncoded (),
+                                               aDocTypeID.getURIEncoded (),
+                                               aProcessID.getURIEncoded (),
                                                sSbdhInstanceID,
                                                ESourceType.RAW_XML,
                                                sDocumentPath,
@@ -299,13 +300,17 @@ public final class OutboundOrchestrator
     }
 
     // Perform SMP lookup
-    final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
+    final X509Certificate aReceiverCert;
+    final String sReceiverAPURL;
     final String sCircuitBreakerKeySMP = "smp::" + aSMPClient.getSMPHostURI ();
     if (CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
     {
+      final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
       try
       {
         aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
+        aReceiverCert = aEndpointDetails.getReceiverAPCertificate ();
+        sReceiverAPURL = aEndpointDetails.getReceiverAPEndpointURL ();
         CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
       }
       catch (final Phase4Exception ex)
@@ -317,6 +322,11 @@ public final class OutboundOrchestrator
           onPermanentFailure.accept (ex.getMessage ());
         return;
       }
+    }
+    else
+    {
+      onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
+      return;
     }
 
     try

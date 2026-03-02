@@ -22,6 +22,8 @@ import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.style.IsSPIInterface;
 import com.helger.base.state.ESuccess;
+import com.helger.peppolid.IDocumentTypeIdentifier;
+import com.helger.peppolid.IProcessIdentifier;
 
 /**
  * SPI interface for optional document verification. Implementations are loaded via
@@ -39,13 +41,15 @@ public interface IOutboundDocumentVerifierSPI
    * @param aDocument
    *        The path where the document resides. Must only be opened for reading. Never
    *        <code>null</code>.
-   * @param sDocTypeID
+   * @param aDocTypeID
    *        The Peppol Document Type Identifier. Never <code>null</code>.
-   * @param sProcessID
+   * @param aProcessID
    *        The Peppol Process Identifier. Never <code>null</code>.
    * @return {@link ESuccess#SUCCESS} if the document is valid, {@link ESuccess#FAILURE} if
    *         verification failed.
    */
   @NonNull
-  ESuccess verifyDocument (@NonNull File aDocument, @NonNull String sDocTypeID, @NonNull String sProcessID);
+  ESuccess verifyDocument (@NonNull File aDocument,
+                           @NonNull IDocumentTypeIdentifier aDocTypeID,
+                           @NonNull IProcessIdentifier aProcessID);
 }

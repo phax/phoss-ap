@@ -103,7 +103,11 @@ public final class MlsHandler
                                                  APCoreConfig.getPeppolOwnerCountryCode (),
                                                  aAS4SendingDT,
                                                  null,
-                                                 aTx.getID ());
+                                                 aTx.getID (),
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null);
 
     // Update inbound with MLS fields
     aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, sMlsTxID);

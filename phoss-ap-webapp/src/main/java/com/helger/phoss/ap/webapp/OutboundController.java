@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,11 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.json.JsonValue;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IParticipantIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.IIdentifierFactory;
+import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -49,17 +52,26 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping ("/api/outbound")
 public class OutboundController
 {
-  @PostMapping ("/submit/{senderID}/{receiverID}/{docTypeID}/{processID}/{c1CountryCode}")
-  public ResponseEntity <SubmitResponse> submitRawDocument (@PathVariable ("senderID") final String sSenderID,
-                                                            @PathVariable ("receiverID") final String sReceiverID,
-                                                            @PathVariable ("docTypeID") final String sDocTypeID,
-                                                            @PathVariable ("processID") final String sProcessID,
-                                                            @PathVariable ("c1CountryCode") final String sC1CountryCode,
-                                                            @NonNull final HttpServletRequest aServletRequest,
-                                                            @RequestParam (value = "sbdhInstanceID",
-                                                                           required = false) final String sSbdhInstanceID,
-                                                            @RequestParam (value = "mlsTo",
-                                                                           required = false) final String sMlsTo) throws Exception
+  @PostMapping (value = "/submit/{senderID}/{receiverID}/{docTypeID}/{processID}/{c1CountryCode}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity <String> submitRawDocument (@PathVariable ("senderID") final String sSenderID,
+                                                    @PathVariable ("receiverID") final String sReceiverID,
+                                                    @PathVariable ("docTypeID") final String sDocTypeID,
+                                                    @PathVariable ("processID") final String sProcessID,
+                                                    @PathVariable ("c1CountryCode") final String sC1CountryCode,
+                                                    @NonNull final HttpServletRequest aServletRequest,
+                                                    @RequestParam (value = "sbdhInstanceID",
+                                                                   required = false) final String sSbdhInstanceID,
+                                                    @RequestParam (value = "mlsTo",
+                                                                   required = false) final String sMlsTo,
+                                                    @RequestParam (value = "sbdhStandard",
+                                                                   required = false) final String sSbdhStandard,
+                                                    @RequestParam (value = "sbdhTypeVersion",
+                                                                   required = false) final String sSbdhTypeVersion,
+                                                    @RequestParam (value = "sbdhType",
+                                                                   required = false) final String sSbdhType,
+                                                    @RequestParam (value = "payloadMimeType",
+                                                                   required = false) final String sPayloadMimeType) throws Exception
   {
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
                                                                                       : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -77,11 +89,8 @@ public class OutboundController
     if (aSenderID == null)
     {
       return ResponseEntity.badRequest ()
-                           .body (SubmitResponse.rejected (null,
-                                                           sEffectiveSbdhInstanceID,
-                                                           "Failed to parse the sending participant ID '" +
-                                                                                     sSenderID +
-                                                                                     "'"));
+                           .body (JsonValue.create ("Failed to parse the sending participant ID '" + sSenderID + "'")
+                                           .getAsJsonString ());
     }
 
     IParticipantIdentifier aReceiverID = aIF.parseParticipantIdentifier (sReceiverID);
@@ -93,11 +102,9 @@ public class OutboundController
     if (aReceiverID == null)
     {
       return ResponseEntity.badRequest ()
-                           .body (SubmitResponse.rejected (null,
-                                                           sEffectiveSbdhInstanceID,
-                                                           "Failed to parse the receiving participant ID '" +
-                                                                                     sReceiverID +
-                                                                                     "'"));
+                           .body (JsonValue.create ("Failed to parse the receiving participant ID '" +
+                                                    sReceiverID +
+                                                    "'").getAsJsonString ());
     }
 
     IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (sDocTypeID);
@@ -109,11 +116,8 @@ public class OutboundController
     if (aDocTypeID == null)
     {
       return ResponseEntity.badRequest ()
-                           .body (SubmitResponse.rejected (null,
-                                                           sEffectiveSbdhInstanceID,
-                                                           "Failed to parse the document type ID '" +
-                                                                                     sDocTypeID +
-                                                                                     "'"));
+                           .body (JsonValue.create ("Failed to parse the document type ID '" + sDocTypeID + "'")
+                                           .getAsJsonString ());
     }
 
     IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (sProcessID);
@@ -125,9 +129,8 @@ public class OutboundController
     if (aProcessID == null)
     {
       return ResponseEntity.badRequest ()
-                           .body (SubmitResponse.rejected (null,
-                                                           sEffectiveSbdhInstanceID,
-                                                           "Failed to parse the process ID '" + sProcessID + "'"));
+                           .body (JsonValue.create ("Failed to parse the process ID '" + sProcessID + "'")
+                                           .getAsJsonString ());
     }
 
     // Read the InputStream only once
@@ -140,29 +143,30 @@ public class OutboundController
                                                                                sEffectiveSbdhInstanceID,
                                                                                sC1CountryCode,
                                                                                aIS,
-                                                                               sMlsTo);
+                                                                               sMlsTo,
+                                                                               sSbdhStandard,
+                                                                               sSbdhTypeVersion,
+                                                                               sSbdhType,
+                                                                               sPayloadMimeType);
       if (aTx == null)
       {
         return ResponseEntity.unprocessableContent ()
-                             .body (SubmitResponse.rejected (null,
-                                                             sEffectiveSbdhInstanceID,
-                                                             "Failed to submit outbound transaction"));
+                             .body (JsonValue.create ("Failed to submit outbound transaction").getAsJsonString ());
       }
 
       // Perform actual sending
-      if (OutboundOrchestrator.processPendingOutbound ("[SubmitRaw] ", aTx).isFailure ())
+      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitRaw] ",
+                                                                                                    aTx);
+      if (!aSendingReport.isOverallSuccess ())
       {
-        return ResponseEntity.unprocessableContent ()
-                             .body (SubmitResponse.rejected (aTx.getID (),
-                                                             sEffectiveSbdhInstanceID,
-                                                             "Failed to process pending outbound transaction"));
+        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
       }
 
-      return ResponseEntity.ok (SubmitResponse.success (aTx.getID (), aTx.getSbdhInstanceID (), aTx.getStatus ()));
+      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
     }
   }
 
-  @PostMapping ("/submit-sbd")
+  @PostMapping (value = "/submit-sbd", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity <SubmitResponse> submitPrebuiltSBD (@NonNull final HttpServletRequest aServletRequest,
                                                             @RequestParam (value = "mlsTo",
                                                                            required = false) final String sMlsTo) throws Exception

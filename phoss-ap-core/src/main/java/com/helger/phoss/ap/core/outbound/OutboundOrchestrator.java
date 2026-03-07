@@ -33,18 +33,20 @@ import org.slf4j.LoggerFactory;
 import com.helger.annotation.WillNotClose;
 import com.helger.base.io.stream.CountingInputStream;
 import com.helger.base.io.stream.StreamHelper;
-import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHex;
 import com.helger.base.wrapper.Wrapper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppol.sbdh.PeppolSBDHDataReader;
+import com.helger.peppol.sml.ISMLInfo;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IParticipantIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.IIdentifierFactory;
 import com.helger.phase4.dynamicdiscovery.AS4EndpointDetailProviderPeppol;
+import com.helger.phase4.dynamicdiscovery.Phase4SMPException;
 import com.helger.phase4.model.message.MessageHelperMethods;
+import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phase4.util.Phase4Exception;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
@@ -90,7 +92,11 @@ public final class OutboundOrchestrator
                                                         @NonNull final String sSbdhInstanceID,
                                                         @NonNull final String sC1CountryCode,
                                                         @NonNull @WillNotClose final InputStream aDocumentIS,
-                                                        @Nullable final String sMlsTo)
+                                                        @Nullable final String sMlsTo,
+                                                        @Nullable final String sSbdhStandard,
+                                                        @Nullable final String sSbdhTypeVersion,
+                                                        @Nullable final String sSbdhType,
+                                                        @Nullable final String sPayloadMimeType)
   {
     LOGGER.info ("Submitting raw document with SBDH Instance ID '" + sSbdhInstanceID + "'");
 
@@ -170,7 +176,11 @@ public final class OutboundOrchestrator
                                                sC1CountryCode,
                                                aAS4SendingDT,
                                                sMlsTo,
-                                               null);
+                                               null,
+                                               sSbdhStandard,
+                                               sSbdhTypeVersion,
+                                               sSbdhType,
+                                               sPayloadMimeType);
     return aMgr.getByID (sTransactionID);
   }
 
@@ -243,13 +253,17 @@ public final class OutboundOrchestrator
                                                aData.getCountryC1 (),
                                                aAS4SendingDT,
                                                sMlsTo,
+                                               (String) null,
+                                               (String) null,
+                                               (String) null,
+                                               (String) null,
                                                (String) null);
     return aMgr.getByID (sTransactionID);
   }
 
   @NonNull
-  public static ESuccess processPendingOutbound (@NonNull final String sLogPrefix,
-                                                 @NonNull final IOutboundTransaction aTx)
+  public static Phase4PeppolSendingReport processPendingOutbound (@NonNull final String sLogPrefix,
+                                                                  @NonNull final IOutboundTransaction aTx)
   {
     final String sTxID = aTx.getID ();
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
@@ -257,11 +271,19 @@ public final class OutboundOrchestrator
     final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final IOutboundSendingAttemptManager aAttemptMgr = APJdbcMetaManager.getOutboundSendingAttemptMgr ();
 
+    final ISMLInfo aSMLInfo = APCoreConfig.getPeppolStage ().getSMLInfo ();
+    final Phase4PeppolSendingReport aSendingReport = new Phase4PeppolSendingReport (aSMLInfo);
+    aSendingReport.setSBDHInstanceIdentifier (aTx.getSbdhInstanceID ());
+    aSendingReport.setCountryC1 (aTx.getC1CountryCode ());
+    aSendingReport.setSenderPartyID (APCoreConfig.getPeppolSeatID ());
+
     LOGGER.info (sLogPrefix + "Processing outbound transaction '" + sTxID + "'");
 
     final int nNewAttemptCount = aTx.getAttemptCount () + 1;
     final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
+    aSendingReport.setAS4MessageID (sAS4MessageID);
     final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTime ();
+    aSendingReport.setAS4SendingDT (aAS4Timestamp);
 
     // Callback on recoverable error
     final Consumer <String> onFailed = sErrMsg -> {
@@ -283,35 +305,46 @@ public final class OutboundOrchestrator
         aHandler.onPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
     };
 
-    // SMP lookup to find endpoint URL
+    // Convert all identifiers to structured data - that should have been verified before
+    final IParticipantIdentifier aSenderID = aIF.parseParticipantIdentifier (aTx.getSenderID ());
+    if (aSenderID == null)
+      throw new IllegalStateException ("Failed to parse sender participant identifier '" + aTx.getSenderID () + "'");
+    aSendingReport.setSenderID (aSenderID);
+
     final IParticipantIdentifier aReceiverID = aIF.parseParticipantIdentifier (aTx.getReceiverID ());
     if (aReceiverID == null)
-      throw new IllegalStateException ("Failed to parse participant identifier '" + aTx.getReceiverID () + "'");
+      throw new IllegalStateException ("Failed to parse receiver participant identifier '" +
+                                       aTx.getReceiverID () +
+                                       "'");
+    aSendingReport.setReceiverID (aReceiverID);
 
     final IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (aTx.getDocTypeID ());
     if (aDocTypeID == null)
       throw new IllegalStateException ("Failed to parse document type identifier '" + aTx.getDocTypeID () + "'");
+    aSendingReport.setDocTypeID (aDocTypeID);
 
     final IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (aTx.getProcessID ());
     if (aProcessID == null)
       throw new IllegalStateException ("Failed to parse process identifier '" + aTx.getProcessID () + "'");
+    aSendingReport.setProcessID (aProcessID);
 
+    // SMP lookup to find endpoint URL
     // Try to resolve SMP host
     final SMPClientReadOnly aSMPClient;
     try
     {
-      aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE,
-                                                 aReceiverID,
-                                                 APCoreConfig.getPeppolStage ().getSMLInfo ());
+      aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE, aReceiverID, aSMLInfo);
+      aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
       APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
     }
     catch (final SMPDNSResolutionException ex)
     {
-      onPermanentFailure.accept ("The participant ID '" +
-                                 aTx.getReceiverID () +
-                                 "' is not registered in the Peppol Network. Technical details: " +
-                                 ex.getMessage ());
-      return ESuccess.FAILURE;
+      final String sMsg = "The participant ID '" + aTx.getReceiverID () + "' is not registered in the Peppol Network";
+      aSendingReport.setLookupError (sMsg);
+      aSendingReport.setLookupException (ex);
+      onPermanentFailure.accept (sMsg + ". Technical details: " + ex.getMessage ());
+      // aSendingReport.setSend
+      return aSendingReport;
     }
 
     // Perform SMP lookup
@@ -326,22 +359,40 @@ public final class OutboundOrchestrator
         aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
         aReceiverCert = aEndpointDetails.getReceiverAPCertificate ();
         sReceiverAPURL = aEndpointDetails.getReceiverAPEndpointURL ();
+
+        // Updated sending report
+        aSendingReport.setC3Cert (aReceiverCert);
+        aSendingReport.setC3EndpointURL (sReceiverAPURL);
+        aSendingReport.setC3TechnicalContact (aEndpointDetails.getReceiverTechnicalContact ());
+
         CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
       }
       catch (final Phase4Exception ex)
       {
         CircuitBreakerManager.recordFailure (sCircuitBreakerKeySMP);
+
+        if (ex instanceof Phase4SMPException)
+        {
+          aSendingReport.setLookupError (ex.getMessage ());
+          aSendingReport.setLookupException ((Exception) ex.getCause ());
+        }
+        else
+        {
+          aSendingReport.setLookupError ("Error fetching Service Details from SMP");
+          aSendingReport.setLookupException (ex);
+        }
+
         if (ex.isRetryFeasible ())
           onFailed.accept (ex.getMessage ());
         else
           onPermanentFailure.accept (ex.getMessage ());
-        return ESuccess.FAILURE;
+        return aSendingReport;
       }
     }
     else
     {
       onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
-      return ESuccess.FAILURE;
+      return aSendingReport;
     }
 
     try
@@ -360,8 +411,6 @@ public final class OutboundOrchestrator
       aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
 
       LOGGER.info (sLogPrefix + "Outbound transaction sent successfully '" + sTxID + "'");
-
-      return ESuccess.SUCCESS;
     }
     catch (final Exception ex)
     {
@@ -370,7 +419,7 @@ public final class OutboundOrchestrator
         onPermanentFailure.accept (ex.getMessage ());
       else
         onFailed.accept (ex.getMessage ());
-      return ESuccess.FAILURE;
     }
+    return aSendingReport;
   }
 }

@@ -35,7 +35,7 @@ CREATE TABLE outbound_transaction (
   attempt_count               INT         NOT NULL DEFAULT 0,
   created_dt                  TIMESTAMPTZ NOT NULL,
   completed_dt                TIMESTAMPTZ,
-  reporting_status            TEXT        NOT NULL DEFAULT 'pending',
+  reporting_status            TEXT        NOT NULL,
   next_retry_dt               TIMESTAMPTZ,
   error_details               TEXT,
   mls_to                      TEXT,
@@ -43,6 +43,10 @@ CREATE TABLE outbound_transaction (
   mls_received_dt             TIMESTAMPTZ,
   mls_id                      TEXT,
   mls_inbound_transaction_id  TEXT,
+  sbdh_standard               TEXT,
+  sbdh_type_version           TEXT,
+  sbdh_type                   TEXT,
+  payload_mime_type           TEXT,
   CONSTRAINT pk_outbound_transaction PRIMARY KEY (id),
   CONSTRAINT uq_outbound_sbdh_instance_id UNIQUE (sbdh_instance_id)
 );
@@ -150,6 +154,10 @@ CREATE TABLE outbound_transaction_archive (
   mls_received_dt             TIMESTAMPTZ,
   mls_id                      TEXT,
   mls_inbound_transaction_id  TEXT,
+  sbdh_standard               TEXT,
+  sbdh_type_version           TEXT,
+  sbdh_type                   TEXT,
+  payload_mime_type           TEXT,
   CONSTRAINT pk_outbound_transaction_archive PRIMARY KEY (id)
 );
 

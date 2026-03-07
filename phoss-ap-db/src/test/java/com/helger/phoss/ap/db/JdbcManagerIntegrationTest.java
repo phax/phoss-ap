@@ -89,6 +89,10 @@ public final class JdbcManagerIntegrationTest
                                      "DE",
                                      _now (),
                                      null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
                                      null);
   }
 
@@ -150,6 +154,10 @@ public final class JdbcManagerIntegrationTest
                                      "AT",
                                      _now (),
                                      null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
                                      null);
     assertNotNull (sID);
 
@@ -182,6 +190,10 @@ public final class JdbcManagerIntegrationTest
                                      "DE",
                                      _now (),
                                      "iso6523-actorid-upis::9915:mlsto",
+                                     null,
+                                     null,
+                                     null,
+                                     null,
                                      null);
     assertNotNull (sID);
 
@@ -208,7 +220,11 @@ public final class JdbcManagerIntegrationTest
                                      "DE",
                                      _now (),
                                      null,
-                                     "inbound-tx-ref-123");
+                                     "inbound-tx-ref-123",
+                                     null,
+                                     null,
+                                     null,
+                                     null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -216,6 +232,55 @@ public final class JdbcManagerIntegrationTest
     assertEquals (ETransactionType.MLS_RESPONSE, aTx.getTransactionType ());
     assertNull (aTx.getMlsStatus ());
     assertEquals ("inbound-tx-ref-123", aTx.getMlsInboundTransactionID ());
+  }
+
+  @Test
+  public void testOutboundCreateWithSbdhOverrides ()
+  {
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
+                                     "iso6523-actorid-upis::9915:sender",
+                                     "iso6523-actorid-upis::9915:receiver",
+                                     "busdox-docid-qns::urn:test:facturx",
+                                     "cenbii-procid-ubl::urn:test:process",
+                                     _uniqueID (),
+                                     ESourceType.RAW_XML,
+                                     "/tmp/test-pdf.pdf",
+                                     4096L,
+                                     "hashPdf01234567890123456789012345678901234567890123456789012345",
+                                     "FR",
+                                     _now (),
+                                     null,
+                                     null,
+                                     "urn:peppol:doctype:pdf+xml",
+                                     "0",
+                                     "factur-x",
+                                     "application/pdf");
+    assertNotNull (sID);
+
+    final IOutboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals ("urn:peppol:doctype:pdf+xml", aTx.getSbdhStandard ());
+    assertEquals ("0", aTx.getSbdhTypeVersion ());
+    assertEquals ("factur-x", aTx.getSbdhType ());
+    assertEquals ("application/pdf", aTx.getPayloadMimeType ());
+    assertEquals (4096L, aTx.getDocumentSize ());
+    assertEquals ("FR", aTx.getC1CountryCode ());
+  }
+
+  @Test
+  public void testOutboundCreateWithoutSbdhOverrides ()
+  {
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final String sID = _createOutboundTx ();
+    assertNotNull (sID);
+
+    final IOutboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertNull (aTx.getSbdhStandard ());
+    assertNull (aTx.getSbdhTypeVersion ());
+    assertNull (aTx.getSbdhType ());
+    assertNull (aTx.getPayloadMimeType ());
   }
 
   @Test
@@ -234,6 +299,10 @@ public final class JdbcManagerIntegrationTest
                                      "hashPrebuilt",
                                      "AT",
                                      _now (),
+                                     null,
+                                     null,
+                                     null,
+                                     null,
                                      null,
                                      null);
     assertNotNull (sID);

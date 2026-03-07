@@ -72,7 +72,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
         if (StringHelper.isEmpty (sInboundPath))
           throw new InitializationException ("No Storage Inbound Path provided");
         final File aInboundPath = new File (sInboundPath);
-        if (aFOM.createDirIfNotExisting (aInboundPath).isFailure ())
+        if (aFOM.createDirRecursiveIfNotExisting (aInboundPath).isFailure ())
           throw new InitializationException ("Failed to create the Storage Inbound Path '" + sInboundPath + "'");
         if (!aInboundPath.canWrite ())
           throw new InitializationException ("The Storage Inbound Path '" +
@@ -85,7 +85,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
         if (StringHelper.isEmpty (sOutboundPath))
           throw new InitializationException ("No Storage Outbound Path provided");
         final File aOutboundPath = new File (sOutboundPath);
-        if (aFOM.createDirIfNotExisting (aOutboundPath).isFailure ())
+        if (aFOM.createDirRecursiveIfNotExisting (aOutboundPath).isFailure ())
           throw new InitializationException ("Failed to create the Storage Outbound Path '" + sOutboundPath + "'");
         if (!aOutboundPath.canWrite ())
           throw new InitializationException ("The Storage Outbound Path '" +

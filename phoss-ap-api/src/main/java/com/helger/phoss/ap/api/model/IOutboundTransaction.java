@@ -192,4 +192,32 @@ public interface IOutboundTransaction extends IHasID <String>
    */
   @Nullable
   String getMlsInboundTransactionID ();
+
+  /**
+   * @return The SBDH Standard override, or <code>null</code> if auto-derived from the document
+   *         type. Set to e.g. {@code urn:peppol:doctype:pdf+xml} for binary payloads.
+   */
+  @Nullable
+  String getSbdhStandard ();
+
+  /**
+   * @return The SBDH TypeVersion override, or <code>null</code> if auto-derived from the document
+   *         type.
+   */
+  @Nullable
+  String getSbdhTypeVersion ();
+
+  /**
+   * @return The SBDH Type override, or <code>null</code> if auto-derived from the document type.
+   *         Set to e.g. {@code factur-x} for Factur-X PDF payloads.
+   */
+  @Nullable
+  String getSbdhType ();
+
+  /**
+   * @return The MIME type for binary payloads (e.g. {@code application/pdf}), or <code>null</code>
+   *         if the payload is XML.
+   */
+  @Nullable
+  String getPayloadMimeType ();
 }

@@ -71,6 +71,18 @@ public interface IOutboundTransactionManager
    *        Optional MLS_TO override. May be <code>null</code>.
    * @param sMlsInboundTransactionID
    *        ID of the inbound transaction for MLS responses. May be <code>null</code>.
+   * @param sSbdhStandard
+   *        SBDH Standard override for non-XML payloads (e.g. {@code urn:peppol:doctype:pdf+xml}).
+   *        May be <code>null</code> to auto-derive from document type.
+   * @param sSbdhTypeVersion
+   *        SBDH TypeVersion override for non-XML payloads (e.g. {@code 0}). May be
+   *        <code>null</code> to auto-derive from document type.
+   * @param sSbdhType
+   *        SBDH Type override for non-XML payloads (e.g. {@code factur-x}). May be
+   *        <code>null</code> to auto-derive from document type.
+   * @param sPayloadMimeType
+   *        MIME type for binary payloads (e.g. {@code application/pdf}). May be <code>null</code>
+   *        for XML payloads.
    * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
    */
   @Nullable
@@ -87,7 +99,11 @@ public interface IOutboundTransactionManager
                  @NonNull String sC1CountryCode,
                  @NonNull OffsetDateTime aCreationTD,
                  @Nullable String sMlsTo,
-                 @Nullable String sMlsInboundTransactionID);
+                 @Nullable String sMlsInboundTransactionID,
+                 @Nullable String sSbdhStandard,
+                 @Nullable String sSbdhTypeVersion,
+                 @Nullable String sSbdhType,
+                 @Nullable String sPayloadMimeType);
 
   /**
    * Look up a transaction by its unique ID.

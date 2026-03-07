@@ -86,13 +86,19 @@ public final class OutboundTransactionRowTest
                                         "raw_xml",
                                         "/tmp/test-outbound.sbd",
                                         Long.valueOf (3L),
+                                        // 10
                                         "abc123hash",
                                         "DE",
                                         "pending",
                                         Integer.valueOf (0),
                                         aNow,
                                         null,
-                                        "pending",
+                                        EOutboundStatus.PENDING.getID (),
+                                        null,
+                                        null,
+                                        null,
+                                        // 20
+                                        null,
                                         null,
                                         null,
                                         null,
@@ -124,6 +130,10 @@ public final class OutboundTransactionRowTest
     assertEquals (0, aTx.getAttemptCount ());
     assertNotNull (aTx.getCreatedDT ());
     assertEquals (EReportingStatus.PENDING, aTx.getReportingStatus ());
+    assertNull (aTx.getSbdhStandard ());
+    assertNull (aTx.getSbdhTypeVersion ());
+    assertNull (aTx.getSbdhType ());
+    assertNull (aTx.getPayloadMimeType ());
   }
 
   @Test
@@ -170,7 +180,11 @@ public final class OutboundTransactionRowTest
                                                           "received_ap",
                                                           aMlsReceived,
                                                           "mls-id-123",
-                                                          "mls-inbound-tx-456");
+                                                          "mls-inbound-tx-456",
+                                                          "sbdh-std",
+                                                          "sbdh-type-ver",
+                                                          "sbdh-type",
+                                                          "application/xml");
     final OutboundTransactionRow aTx = new OutboundTransactionRow (aRow);
 
     assertEquals ("tx-full", aTx.getID ());
@@ -187,5 +201,9 @@ public final class OutboundTransactionRowTest
     assertNotNull (aTx.getMlsReceivedDT ());
     assertEquals ("mls-id-123", aTx.getMlsID ());
     assertEquals ("mls-inbound-tx-456", aTx.getMlsInboundTransactionID ());
+    assertEquals ("sbdh-std", aTx.getSbdhStandard ());
+    assertEquals ("sbdh-type-ver", aTx.getSbdhTypeVersion ());
+    assertEquals ("sbdh-type", aTx.getSbdhType ());
+    assertEquals ("application/xml", aTx.getPayloadMimeType ());
   }
 }

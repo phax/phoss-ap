@@ -30,12 +30,15 @@ import com.helger.base.exception.InitializationException;
 import com.helger.base.state.ETriState;
 import com.helger.base.string.StringHelper;
 import com.helger.base.url.URLHelper;
+import com.helger.cache.regex.RegExHelper;
 import com.helger.httpclient.HttpDebugger;
 import com.helger.mime.CMimeType;
+import com.helger.peppol.reporting.api.PeppolReportingHelper;
 import com.helger.peppol.reporting.api.backend.IPeppolReportingBackendSPI;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
 import com.helger.peppol.security.PeppolTrustedCA;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
+import com.helger.peppolid.peppol.PeppolIdentifierHelper;
 import com.helger.phase4.config.AS4Configuration;
 import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
 import com.helger.phase4.crypto.AS4CryptoFactoryInMemoryKeyStore;
@@ -167,28 +170,48 @@ public class APServletInit
     if (eStage == null)
       throw new InitializationException ("The Peppol stage configuration is missing or invalid");
 
+    // Check if the private key is a proper Peppol AP certificate
     final X509Certificate aAPCert = (X509Certificate) aPKE.getCertificate ();
-
-    final TrustedCAChecker aAPCAChecker = eStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
-                                                                 : PeppolTrustedCA.peppolTestAP ();
-
-    // Check the configured Peppol AP certificate
-    // * No caching
-    // * Use global certificate check mode
-    final ECertificateCheckResult eCheckResult = aAPCAChecker.checkCertificate (aAPCert,
-                                                                                MetaAS4Manager.getTimestampMgr ()
-                                                                                              .getCurrentDateTime (),
-                                                                                ETriState.FALSE,
-                                                                                null);
-    if (eCheckResult.isInvalid ())
     {
-      throw new InitializationException ("The provided certificate is not a Peppol AP certificate. Check result: " +
-                                         eCheckResult);
-    }
-    LOGGER.info ("Successfully checked that the provided Peppol AP certificate is from the correct CA");
+      final TrustedCAChecker aAPCAChecker = eStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
+                                                                   : PeppolTrustedCA.peppolTestAP ();
 
-    // Must be set independent on the enabled/disable status
-    Phase4PeppolDefaultReceiverConfiguration.setAPCAChecker (aAPCAChecker);
+      // Check the configured Peppol AP certificate
+      // * No caching
+      // * Use global certificate check mode
+      final ECertificateCheckResult eCheckResult = aAPCAChecker.checkCertificate (aAPCert,
+                                                                                  MetaAS4Manager.getTimestampMgr ()
+                                                                                                .getCurrentDateTime (),
+                                                                                  ETriState.FALSE,
+                                                                                  null);
+      if (eCheckResult.isInvalid ())
+      {
+        throw new InitializationException ("The provided certificate is not a Peppol AP certificate. Check result: " +
+                                           eCheckResult);
+      }
+      LOGGER.info ("Successfully checked that the provided Peppol AP certificate is from the correct CA");
+
+      // Must be set independent on the enabled/disable status
+      Phase4PeppolDefaultReceiverConfiguration.setAPCAChecker (aAPCAChecker);
+    }
+
+    // Check Seat ID configuration
+    final String sSeatID = APCoreConfig.getPeppolSeatID ();
+    if (!RegExHelper.stringMatchesPattern (PeppolIdentifierHelper.REGEX_SEAT_ID, sSeatID))
+    {
+      throw new InitializationException ("The configured Peppol Seat ID '" +
+                                         sSeatID +
+                                         "' does not match the syntactial requirements.");
+    }
+
+    // Check owner country
+    final String sOwnerCountry = APCoreConfig.getPeppolOwnerCountryCode ();
+    if (!PeppolReportingHelper.isValidCountryCode (sOwnerCountry))
+    {
+      throw new InitializationException ("The configured Peppol owner Country Code '" +
+                                         sOwnerCountry +
+                                         "' does not match the syntactial requirements.");
+    }
 
     // Eventually enable the receiver check, so that for each incoming request
     // the validity is crosscheck against the owning SMP

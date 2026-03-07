@@ -55,7 +55,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                      " sbdh_instance_id, source_type, document_path, document_size, document_hash," +
                                      " c1_country_code, status, attempt_count, created_dt, completed_dt," +
                                      " reporting_status, next_retry_dt, error_details, mls_to, mls_status," +
-                                     " mls_received_dt, mls_id, mls_inbound_transaction_id";
+                                     " mls_received_dt, mls_id, mls_inbound_transaction_id," +
+                                     " sbdh_standard, sbdh_type_version, sbdh_type, payload_mime_type";
 
   private final String m_sTableName;
 
@@ -80,7 +81,11 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                         @NonNull final String sC1CountryCode,
                         @NonNull final OffsetDateTime aCreationTD,
                         @Nullable final String sMlsTo,
-                        @Nullable final String sMlsInboundTransactionID)
+                        @Nullable final String sMlsInboundTransactionID,
+                        @Nullable final String sSbdhStandard,
+                        @Nullable final String sSbdhTypeVersion,
+                        @Nullable final String sSbdhType,
+                        @Nullable final String sPayloadMimeType)
   {
     final String sID = createUniqueRowID ();
 
@@ -90,7 +95,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                  " (" +
                                                                  COLS +
                                                                  ")" +
-                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                                                  new ConstantPreparedStatementDataProvider (sID,
                                                                                                             eTransactionType.getID (),
                                                                                                             sSenderID,
@@ -115,7 +120,11 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                                                                                                                    : null,
                                                                                                             null,
                                                                                                             null,
-                                                                                                            sMlsInboundTransactionID));
+                                                                                                            sMlsInboundTransactionID,
+                                                                                                            sSbdhStandard,
+                                                                                                            sSbdhTypeVersion,
+                                                                                                            sSbdhType,
+                                                                                                            sPayloadMimeType));
     if (LOGGER.isDebugEnabled ())
       LOGGER.debug ("Stored new outbound transaction in DB. " + nRowsAffected + " rows affected.");
 

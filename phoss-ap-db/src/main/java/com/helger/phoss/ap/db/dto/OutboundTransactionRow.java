@@ -63,6 +63,10 @@ public class OutboundTransactionRow implements IOutboundTransaction
   private final OffsetDateTime m_aMlsReceivedDT;
   private final String m_sMlsID;
   private final String m_sMlsInboundTransactionID;
+  private final String m_sSbdhStandard;
+  private final String m_sSbdhTypeVersion;
+  private final String m_sSbdhType;
+  private final String m_sPayloadMimeType;
 
   public OutboundTransactionRow (@NonNull final DBResultRow aRow)
   {
@@ -90,6 +94,10 @@ public class OutboundTransactionRow implements IOutboundTransaction
     m_aMlsReceivedDT = aRow.getAsOffsetDateTime (21);
     m_sMlsID = aRow.getAsString (22);
     m_sMlsInboundTransactionID = aRow.getAsString (23);
+    m_sSbdhStandard = aRow.getAsString (24);
+    m_sSbdhTypeVersion = aRow.getAsString (25);
+    m_sSbdhType = aRow.getAsString (26);
+    m_sPayloadMimeType = aRow.getAsString (27);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notNull (m_eTransactionType, "TransactionType");
     ValueEnforcer.notEmpty (m_sSenderID, "SenderID");
@@ -259,5 +267,29 @@ public class OutboundTransactionRow implements IOutboundTransaction
   public String getMlsInboundTransactionID ()
   {
     return m_sMlsInboundTransactionID;
+  }
+
+  @Nullable
+  public String getSbdhStandard ()
+  {
+    return m_sSbdhStandard;
+  }
+
+  @Nullable
+  public String getSbdhTypeVersion ()
+  {
+    return m_sSbdhTypeVersion;
+  }
+
+  @Nullable
+  public String getSbdhType ()
+  {
+    return m_sSbdhType;
+  }
+
+  @Nullable
+  public String getPayloadMimeType ()
+  {
+    return m_sPayloadMimeType;
   }
 }

@@ -47,12 +47,12 @@ CREATE TABLE outbound_transaction (
   sbdh_type_version           TEXT,
   sbdh_type                   TEXT,
   payload_mime_type           TEXT,
-  CONSTRAINT pk_outbound_transaction PRIMARY KEY (id),
-  CONSTRAINT uq_outbound_sbdh_instance_id UNIQUE (sbdh_instance_id)
+  CONSTRAINT pk_outbound_transaction PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_outbound_status_retry ON outbound_transaction (status, next_retry_dt);
 CREATE INDEX idx_outbound_status ON outbound_transaction (status);
+CREATE INDEX idx_outbound_sbdh_instance_id ON outbound_transaction (sbdh_instance_id);
 
 -- Outbound sending attempts
 CREATE TABLE outbound_sending_attempt (
@@ -105,13 +105,13 @@ CREATE TABLE inbound_transaction (
   mls_type                      TEXT        NOT NULL,
   mls_response_code             TEXT,
   mls_outbound_transaction_id   TEXT,
-  CONSTRAINT pk_inbound_transaction PRIMARY KEY (id),
-  CONSTRAINT uq_inbound_as4_message_id UNIQUE (as4_message_id),
-  CONSTRAINT uq_inbound_sbdh_instance_id UNIQUE (sbdh_instance_id)
+  CONSTRAINT pk_inbound_transaction PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_inbound_status_retry ON inbound_transaction (status, next_retry_dt);
 CREATE INDEX idx_inbound_status ON inbound_transaction (status);
+CREATE INDEX idx_inbound_as4_message_id ON inbound_transaction (as4_message_id);
+CREATE INDEX idx_inbound_sbdh_instance_id ON inbound_transaction (sbdh_instance_id);
 
 -- Inbound forwarding attempts
 CREATE TABLE inbound_forwarding_attempt (

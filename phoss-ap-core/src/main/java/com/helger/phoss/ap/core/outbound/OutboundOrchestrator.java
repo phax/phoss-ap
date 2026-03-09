@@ -296,6 +296,7 @@ public final class OutboundOrchestrator
 
     LOGGER.info (sLogPrefix + "Processing outbound transaction '" + sTxID + "'");
 
+    // try-catch for overall duration only
     try
     {
       final int nNewAttemptCount = aTx.getAttemptCount () + 1;
@@ -544,7 +545,7 @@ public final class OutboundOrchestrator
                    final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
                    final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
               {
-                aSbdData = new PeppolSBDHDataReader (aIF).extractData (aFileIS);
+                aSbdData = new PeppolSBDHDataReader (aIF).extractData (aDigestIS);
                 if (aSbdData == null)
                   throw new IllegalStateException ("Failed to read SBDH from file '" + aTx.getDocumentPath () + "'");
 
@@ -672,13 +673,13 @@ public final class OutboundOrchestrator
 
         onFailed.accept ("AP access limited by Circuit Breaker '" + sCircuitBreakerKeyAP + "'");
       }
-
-      return aSendingReport;
     }
     finally
     {
       aOverallSW.stop ();
       aSendingReport.setOverallDurationMillis (aOverallSW.getMillis ());
     }
+
+    return aSendingReport;
   }
 }

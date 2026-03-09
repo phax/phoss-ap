@@ -215,12 +215,17 @@ public class OutboundController
   }
 
   @GetMapping ("/status/{sbdhInstanceID}")
-  public ResponseEntity <OutboundTransactionResponse> getStatus (@PathVariable final String sbdhInstanceID)
+  public ResponseEntity <OutboundTransactionResponse> getStatus (@PathVariable ("sbdhInstanceID") final String sSbdhInstanceID)
   {
+    LOGGER.info ("Checking for status of transmission with ID '" + sSbdhInstanceID + "'");
+
     final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
-    final IOutboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
+    final IOutboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sSbdhInstanceID);
     if (aTx == null)
+    {
+      LOGGER.info ("No such transaction");
       return ResponseEntity.notFound ().build ();
+    }
 
     return ResponseEntity.ok (OutboundTransactionResponse.fromDomain (aTx));
   }
@@ -228,6 +233,8 @@ public class OutboundController
   @GetMapping ("/in-transmission")
   public ResponseEntity <List <OutboundTransactionResponse>> getInTransmission ()
   {
+    LOGGER.info ("Checking for all outbound transmissions in progress");
+
     final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final var aTxs = aTxMgr.getAllInTransmission ();
     final ICommonsList <OutboundTransactionResponse> aResult = aTxs.getAllMapped (OutboundTransactionResponse::fromDomain);

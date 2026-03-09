@@ -161,8 +161,16 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       m_sTableName +
                                                                       " WHERE sbdh_instance_id=?",
                                                                       new ConstantPreparedStatementDataProvider (sSbdhInstanceID));
-    if (aRows != null && aRows.size () == 1)
-      return new OutboundTransactionRow (aRows.getFirstOrNull ());
+    if (aRows != null)
+    {
+      if (aRows.size () == 1)
+        return new OutboundTransactionRow (aRows.getFirstOrNull ());
+      LOGGER.warn ("Found " +
+                   aRows.size () +
+                   " transactions that all match the SBDH Instance Identifier '" +
+                   sSbdhInstanceID +
+                   "'");
+    }
     return null;
   }
 

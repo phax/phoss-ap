@@ -30,6 +30,7 @@ import org.jspecify.annotations.NonNull;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.io.nonblocking.NonBlockingBufferedOutputStream;
+import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 
 /**
@@ -174,7 +175,7 @@ public final class DocumentStorageHelper
 
     try
     {
-      return Files.newInputStream (Path.of (sAbsolutePath));
+      return StreamHelper.getBuffered (Files.newInputStream (Path.of (sAbsolutePath)));
     }
     catch (final Exception ex)
     {

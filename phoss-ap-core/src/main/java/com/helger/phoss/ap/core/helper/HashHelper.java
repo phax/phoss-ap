@@ -33,6 +33,12 @@ public final class HashHelper
   {}
 
   @NonNull
+  public static MessageDigest createMessageDigest ()
+  {
+    return MD_ALGO.createMessageDigest ();
+  }
+
+  @NonNull
   public static String getDigestHex (final byte @NonNull [] aBytes)
   {
     return StringHex.getHexEncoded (aBytes);
@@ -47,7 +53,7 @@ public final class HashHelper
   @NonNull
   public static String sha256Hex (final byte @NonNull [] aBytes)
   {
-    final byte [] aHash = MD_ALGO.createMessageDigest ().digest (aBytes);
+    final byte [] aHash = createMessageDigest ().digest (aBytes);
     return getDigestHex (aHash);
   }
 }

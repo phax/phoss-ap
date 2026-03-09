@@ -136,7 +136,8 @@ public class OutboundController
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument (aSenderID,
+      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[SubmitRaw] ",
+                                                                               aSenderID,
                                                                                aReceiverID,
                                                                                aDocTypeID,
                                                                                aProcessID,
@@ -176,7 +177,7 @@ public class OutboundController
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD (aIS, sMlsTo);
+      final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD ("[SubmitPrebuiltSBD] ", aIS, sMlsTo);
       if (aTx == null)
       {
         return ResponseEntity.badRequest ()

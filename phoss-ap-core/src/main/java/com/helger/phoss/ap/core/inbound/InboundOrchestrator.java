@@ -128,7 +128,7 @@ public final class InboundOrchestrator
                                            aResult.getErrorDetails ());
 
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onPermanentForwardingFailure (aTx.getID (), aTx.getSbdhInstanceID (), "Max retries exhausted");
+          aHandler.onInboundPermanentForwardingFailure (aTx.getID (), aTx.getSbdhInstanceID (), "Max retries exhausted");
       }
       else
       {

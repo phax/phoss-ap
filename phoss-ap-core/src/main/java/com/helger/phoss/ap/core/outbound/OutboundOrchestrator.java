@@ -403,7 +403,7 @@ public final class OutboundOrchestrator
 
         // Notify
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
+          aHandler.onOutboundPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
       };
 
       // Convert all identifiers to structured data - that should have been

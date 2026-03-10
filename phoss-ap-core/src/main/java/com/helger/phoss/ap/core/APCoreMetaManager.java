@@ -34,7 +34,7 @@ import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
-import com.helger.phoss.ap.api.spi.SafeNotificationHandler;
+import com.helger.phoss.ap.core.notification.NotificationHandlerManager;
 import com.helger.phoss.ap.forwarding.http.HttpDocumentForwarder;
 import com.helger.phoss.ap.forwarding.s3.S3DocumentForwarder;
 import com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder;
@@ -47,7 +47,6 @@ public final class APCoreMetaManager
   private static final ICommonsList <IInboundDocumentVerifierSPI> s_aInboundVerifiers = new CommonsArrayList <> ();
   private static final ICommonsList <IOutboundDocumentVerifierSPI> s_aOutboundVerifiers = new CommonsArrayList <> ();
   private static final ICommonsList <IPeppolReceiverCheckSPI> s_aReceiverChecks = new CommonsArrayList <> ();
-  private static final ICommonsList <INotificationHandlerSPI> s_aNotificationHandlers = new CommonsArrayList <> ();
 
   private APCoreMetaManager ()
   {}
@@ -93,11 +92,7 @@ public final class APCoreMetaManager
       LOGGER.info ("Loaded receiver check: " + aCheck.getClass ().getName ());
     }
 
-    for (final INotificationHandlerSPI aHandler : ServiceLoader.load (INotificationHandlerSPI.class))
-    {
-      s_aNotificationHandlers.add (new SafeNotificationHandler (aHandler));
-      LOGGER.info ("Loaded notification handler: " + aHandler.getClass ().getName ());
-    }
+    NotificationHandlerManager.initSPI ();
 
     LOGGER.info ("APMetaManager initialized successfully");
   }
@@ -138,6 +133,6 @@ public final class APCoreMetaManager
   @ReturnsMutableCopy
   public static ICommonsList <INotificationHandlerSPI> getAllNotificationHandlers ()
   {
-    return s_aNotificationHandlers.getClone ();
+    return NotificationHandlerManager.getAllNotificationHandlers ();
   }
 }

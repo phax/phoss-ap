@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.api.spi;
+package com.helger.phoss.ap.core.notification;
 
 import java.time.YearMonth;
 
@@ -26,10 +26,11 @@ import org.slf4j.LoggerFactory;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
 
 /**
- * This is a wrapper class around another {@link INotificationHandlerSPI}
- * implementation that wraps all exceptions and logs them accordingly. <br>
+ * This is a wrapper class around another {@link INotificationHandlerSPI} implementation that wraps
+ * all exceptions and logs them accordingly. <br>
  * Note: this class is manually instantiated to wrap SPI loaded instances.
  *
  * @author Philip Helger
@@ -60,20 +61,6 @@ public final class SafeNotificationHandler implements INotificationHandlerSPI
     }
   }
 
-  public void onPermanentSendingFailure (@NonNull final String sTransactionID,
-                                         @NonNull final String sSbdhInstanceID,
-                                         @Nullable final String sErrorDetails)
-  {
-    try
-    {
-      m_aHdl.onPermanentSendingFailure (sTransactionID, sSbdhInstanceID, sErrorDetails);
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error invoking onPermanentSendingFailure on " + m_aHdl, ex);
-    }
-  }
-
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                             @NonNull final String sReceiverID,
                                             @NonNull final String sDocTypeID,
@@ -90,27 +77,13 @@ public final class SafeNotificationHandler implements INotificationHandlerSPI
     }
   }
 
-  public void onPermanentForwardingFailure (@NonNull final String sTransactionID,
-                                            @NonNull final String sSbdhInstanceID,
-                                            @Nullable final String sErrorDetails)
-  {
-    try
-    {
-      m_aHdl.onPermanentForwardingFailure (sTransactionID, sSbdhInstanceID, sErrorDetails);
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error invoking onPermanentForwardingFailure on " + m_aHdl, ex);
-    }
-  }
-
-  public void onInboundMLSCorrelationError (@NonNull final String sTxID,
+  public void onInboundMLSCorrelationError (@NonNull final String sTransactionID,
                                             @NonNull final String sReferencedSbdhInstanceID,
                                             @NonNull final EPeppolMLSResponseCode eMlsResponseCode)
   {
     try
     {
-      m_aHdl.onInboundMLSCorrelationError (sTxID, sReferencedSbdhInstanceID, eMlsResponseCode);
+      m_aHdl.onInboundMLSCorrelationError (sTransactionID, sReferencedSbdhInstanceID, eMlsResponseCode);
     }
     catch (final Exception ex)
     {
@@ -118,15 +91,43 @@ public final class SafeNotificationHandler implements INotificationHandlerSPI
     }
   }
 
-  public void onInboundForwardingError (@NonNull final String sTxID, final boolean bIsRetry)
+  public void onInboundForwardingError (@NonNull final String sTransactionID, final boolean bIsRetry)
   {
     try
     {
-      m_aHdl.onInboundForwardingError (sTxID, bIsRetry);
+      m_aHdl.onInboundForwardingError (sTransactionID, bIsRetry);
     }
     catch (final Exception ex)
     {
       LOGGER.error ("Internal error invoking onInboundForwardingError on " + m_aHdl, ex);
+    }
+  }
+
+  public void onInboundPermanentForwardingFailure (@NonNull final String sTransactionID,
+                                                   @NonNull final String sSbdhInstanceID,
+                                                   @Nullable final String sErrorDetails)
+  {
+    try
+    {
+      m_aHdl.onInboundPermanentForwardingFailure (sTransactionID, sSbdhInstanceID, sErrorDetails);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error invoking onPermanentForwardingFailure on " + m_aHdl, ex);
+    }
+  }
+
+  public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
+                                                 @NonNull final String sSbdhInstanceID,
+                                                 @Nullable final String sErrorDetails)
+  {
+    try
+    {
+      m_aHdl.onOutboundPermanentSendingFailure (sTransactionID, sSbdhInstanceID, sErrorDetails);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error invoking onPermanentSendingFailure on " + m_aHdl, ex);
     }
   }
 

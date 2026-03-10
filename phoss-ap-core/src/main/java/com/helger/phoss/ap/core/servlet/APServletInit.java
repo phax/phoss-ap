@@ -254,6 +254,9 @@ public class APServletInit
     APJdbcMetaManager.getInstance ();
     APCoreMetaManager.init ();
 
+    // This is e.g. the Identifier Factory that is used in the Peppol Receiving processing
+    Phase4PeppolDefaultReceiverConfiguration.setSBDHIdentifierFactory (APBasicMetaManager.getIdentifierFactory ());
+
     // Recover transactions that were in-flight during unclean shutdown
     StartupRecovery.run ();
 

@@ -43,6 +43,9 @@ public final class NotificationHandlerManager
   private NotificationHandlerManager ()
   {}
 
+  /**
+   * Initialization of all SPI handlers. May only be called once upon initialization.
+   */
   public static void initSPI ()
   {
     if (s_aNotificationHandlers.isNotEmpty ())
@@ -55,12 +58,21 @@ public final class NotificationHandlerManager
     }
   }
 
+  /**
+   * Manually register a new handler.
+   *
+   * @param aHandler
+   *        The handler to be registered. May not be <code>null</code>.
+   */
   public static void registerHandler (@NonNull final INotificationHandlerSPI aHandler)
   {
     ValueEnforcer.notNull (aHandler, "Handler");
     s_aNotificationHandlers.add (new SafeNotificationHandler (aHandler));
   }
 
+  /**
+   * @return A copy of all registered handlers. Never <code>null</code> but maybe empty.
+   */
   @NonNull
   @ReturnsMutableCopy
   public static ICommonsList <INotificationHandlerSPI> getAllNotificationHandlers ()

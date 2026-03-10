@@ -224,7 +224,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       {
         for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
         {
-          if (aVerifier.verifyDocument (aSBDBytes, sDocTypeID, sProcessID).isFailure ())
+          if (aVerifier.verifyDocument (sDocumentPath, sDocTypeID, sProcessID).isFailure ())
           {
             LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
             aTxMgr.updateStatus (sTxID, EInboundStatus.REJECTED);

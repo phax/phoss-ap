@@ -18,13 +18,14 @@ package com.helger.phoss.ap.api.spi;
 
 import org.jspecify.annotations.NonNull;
 
+import com.helger.annotation.Nonempty;
 import com.helger.annotation.style.IsSPIInterface;
 import com.helger.base.state.ESuccess;
 
 /**
- * SPI interface for optional document verification. Implementations are loaded
- * via {@link java.util.ServiceLoader}. Multiple verifiers may be registered and
- * are evaluated in order — all must pass for the document to be accepted.
+ * SPI interface for optional document verification. Implementations are loaded via
+ * {@link java.util.ServiceLoader}. Multiple verifiers may be registered and are evaluated in order
+ * — all must pass for the document to be accepted.
  *
  * @author Philip Helger
  */
@@ -32,20 +33,19 @@ import com.helger.base.state.ESuccess;
 public interface IInboundDocumentVerifierSPI
 {
   /**
-   * Verify a document's content against the given document type and process
-   * identifiers.
+   * Verify a document's content against the given document type and process identifiers.
    *
-   * @param aDocBytes
-   *        The raw document bytes. Never <code>null</code>.
+   * @param sDocumentPath
+   *        The absolute path where the document is stored. Never <code>null</code>.
    * @param sDocTypeID
    *        The Peppol Document Type Identifier. Never <code>null</code>.
    * @param sProcessID
    *        The Peppol Process Identifier. Never <code>null</code>.
-   * @return {@link ESuccess#SUCCESS} if the document is valid,
-   *         {@link ESuccess#FAILURE} if verification failed.
+   * @return {@link ESuccess#SUCCESS} if the document is valid, {@link ESuccess#FAILURE} if
+   *         verification failed.
    */
   @NonNull
-  ESuccess verifyDocument (byte @NonNull [] aDocBytes,
-                           @NonNull String sDocTypeID,
-                           @NonNull String sProcessID);
+  ESuccess verifyDocument (@NonNull @Nonempty String sDocumentPath,
+                           @NonNull @Nonempty String sDocTypeID,
+                           @NonNull @Nonempty String sProcessID);
 }

@@ -55,19 +55,19 @@ public final class MlsHandler
   {}
 
   /**
-   * Handle the outcome of an inbound document by creating an outbound MLS
-   * response transaction if required by the MLS strategy.
+   * Handle the outcome of an inbound document by creating an outbound MLS response transaction if
+   * required by the MLS strategy.
    *
    * @param aTx
    *        The inbound transaction. Never <code>null</code>.
    * @param aOutcome
-   *        The MLS outcome carrying the response code, optional response text,
-   *        and optional issues for rejection responses. Never
-   *        <code>null</code>.
+   *        The MLS outcome carrying the response code, optional response text, and optional issues
+   *        for rejection responses. Never <code>null</code>.
    * @return {@link ESuccess}
    */
-  public static ESuccess handleInboundOutcome (@NonNull final IInboundTransaction aTx,
-                                               @NonNull final MlsOutcome aOutcome)
+  @NonNull
+  public static ESuccess triggerSendingInboundResultMls (@NonNull final IInboundTransaction aTx,
+                                                         @NonNull final MlsOutcome aOutcome)
   {
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
@@ -98,14 +98,15 @@ public final class MlsHandler
     // TODO MLS response bytes would be created from peppol-mls library using
     // aOutcome
     final PeppolMLSBuilder aBuilder = aOutcome.getAsMLSBuilder ();
+    aBuilder.randomID ().issueDateTimeNow ();
 
     final byte [] aMlsBytes = {};
     final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
-    final OffsetDateTime aAS4SendingDT = aTimestampMgr.getCurrentDateTimeUTC ();
+    final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
 
     // Store MLS document to disk
     final String sDocumentPath = DocumentStorageHelper.storeDocument (new File (APBasicConfig.getStorageOutboundPath ()),
-                                                                      aAS4SendingDT,
+                                                                      aCreationDT,
                                                                       sMlsSbdhInstanceID + ".mls",
                                                                       aMlsBytes);
 
@@ -121,7 +122,7 @@ public final class MlsHandler
                                                  aMlsBytes.length,
                                                  HashHelper.sha256Hex (aMlsBytes),
                                                  APCoreConfig.getPeppolOwnerCountryCode (),
-                                                 aAS4SendingDT,
+                                                 aCreationDT,
                                                  null,
                                                  aTx.getID (),
                                                  null,
@@ -143,8 +144,7 @@ public final class MlsHandler
    * @param eResponseCode
    *        The MLS response code received. May not be <code>null</code>.
    * @param aMlsAS4ReceivedDT
-   *        The MLS AS4 receiving date time for the SLR. May not be
-   *        <code>null</code>.
+   *        The MLS AS4 receiving date time for the SLR. May not be <code>null</code>.
    * @param sMlsID
    *        The MLS document ID received. May not be <code>null</code>.
    * @return {@link ESuccess}

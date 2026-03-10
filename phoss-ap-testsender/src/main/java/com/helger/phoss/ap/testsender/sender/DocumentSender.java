@@ -189,13 +189,11 @@ public class DocumentSender
         {
           final String sBody = aResp.body ();
           // Check for terminal states in the JSON response
-          if (sBody.contains ("\"sent\"") ||
-            sBody.contains ("\"failed\"") ||
-            sBody.contains ("\"permanently_failed\"") ||
-            sBody.contains ("\"rejected\""))
+          if (sBody.contains ("\"sent\"") || sBody.contains ("\"permanently_failed\""))
           {
             return sBody;
           }
+          // else wait
         }
         else
           if (aResp.statusCode () == 404)

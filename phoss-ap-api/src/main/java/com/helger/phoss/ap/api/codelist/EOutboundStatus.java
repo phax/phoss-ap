@@ -24,8 +24,7 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Lifecycle status of an outbound transaction (business document or MLS
- * response).
+ * Lifecycle status of an outbound transaction (business document or MLS response).
  *
  * @author Philip Helger
  */
@@ -56,6 +55,11 @@ public enum EOutboundStatus implements IHasID <String>
   public String getID ()
   {
     return m_sID;
+  }
+
+  public boolean isFinalState ()
+  {
+    return this == SENT || this == PERMANENTLY_FAILED;
   }
 
   /**

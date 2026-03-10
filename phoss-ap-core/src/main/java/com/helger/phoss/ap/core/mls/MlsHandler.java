@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.base.state.ESuccess;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
@@ -35,8 +36,10 @@ import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
+import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
@@ -51,11 +54,27 @@ public final class MlsHandler
   private MlsHandler ()
   {}
 
-  public static void handleInboundOutcome (@NonNull final IInboundTransaction aTx,
-                                           @NonNull final EPeppolMLSResponseCode eResponseCode)
+  /**
+   * Handle the outcome of an inbound document by creating an outbound MLS
+   * response transaction if required by the MLS strategy.
+   *
+   * @param aTx
+   *        The inbound transaction. Never <code>null</code>.
+   * @param aOutcome
+   *        The MLS outcome carrying the response code, optional response text,
+   *        and optional issues for rejection responses. Never
+   *        <code>null</code>.
+   * @return {@link ESuccess}
+   */
+  public static ESuccess handleInboundOutcome (@NonNull final IInboundTransaction aTx,
+                                               @NonNull final MlsOutcome aOutcome)
   {
-    final EPeppolMLSType eMlsType = aTx.getMlsType ();
+    final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+
+    final EPeppolMLSResponseCode eResponseCode = aOutcome.getResponseCode ();
+    final EPeppolMLSType eMlsType = aTx.getMlsType ();
 
     // Determine if we should send MLS
     if (eMlsType == EPeppolMLSType.FAILURE_ONLY && eResponseCode.isSuccess ())
@@ -65,8 +84,7 @@ public final class MlsHandler
                    " (FAILURE_ONLY, outcome=" +
                    eResponseCode.getID () +
                    ")");
-      aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, null);
-      return;
+      return aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, null);
     }
 
     LOGGER.info ("Creating MLS response (" +
@@ -76,13 +94,14 @@ public final class MlsHandler
                  "'");
 
     // Create an outbound transaction for the MLS response
-    final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
 
-    // TODO MLS response bytes would be created from peppol-mls library
-    // For now, placeholder
+    // TODO MLS response bytes would be created from peppol-mls library using
+    // aOutcome
+    final PeppolMLSBuilder aBuilder = aOutcome.getAsMLSBuilder ();
+
     final byte [] aMlsBytes = {};
     final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
-    final OffsetDateTime aAS4SendingDT = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aAS4SendingDT = aTimestampMgr.getCurrentDateTimeUTC ();
 
     // Store MLS document to disk
     final String sDocumentPath = DocumentStorageHelper.storeDocument (new File (APBasicConfig.getStorageOutboundPath ()),
@@ -90,6 +109,7 @@ public final class MlsHandler
                                                                       sMlsSbdhInstanceID + ".mls",
                                                                       aMlsBytes);
 
+    // TODO send via Outbound Orchestrator
     final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
                                                  aTx.getReceiverID (),
                                                  aTx.getSenderID (),
@@ -110,7 +130,7 @@ public final class MlsHandler
                                                  null);
 
     // Update inbound with MLS fields
-    aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, sMlsTxID);
+    return aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, sMlsTxID);
   }
 
   /**
@@ -123,7 +143,8 @@ public final class MlsHandler
    * @param eResponseCode
    *        The MLS response code received. May not be <code>null</code>.
    * @param aMlsAS4ReceivedDT
-   *        The MLS AS4 receiving date time for the SLR. May not be <code>null</code>.
+   *        The MLS AS4 receiving date time for the SLR. May not be
+   *        <code>null</code>.
    * @param sMlsID
    *        The MLS document ID received. May not be <code>null</code>.
    * @return {@link ESuccess}

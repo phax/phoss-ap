@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -51,8 +52,9 @@ import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.scope.mock.ScopeTestRule;
 
 /**
- * Integration tests for all JDBC managers. Uses a real PostgreSQL database. All tests share a single
- * scope/connection to avoid issues with the static DataSourceProvider in {@link APDBExecutor}.
+ * Integration tests for all JDBC managers. Uses a real PostgreSQL database. All
+ * tests share a single scope/connection to avoid issues with the static
+ * DataSourceProvider in APDBExecutor.
  *
  * @author Philip Helger
  */
@@ -66,9 +68,10 @@ public final class JdbcManagerIntegrationTest
     return "test-" + UUID.randomUUID ().toString ();
   }
 
+  @NonNull
   private static OffsetDateTime _now ()
   {
-    return APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    return APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
   }
 
   // --- OutboundTransactionManager ---
@@ -142,23 +145,23 @@ public final class JdbcManagerIntegrationTest
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final String sSbdhID = _uniqueID ();
     final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     sSbdhID,
-                                     ESourceType.PAYLOAD_ONLY,
-                                     "/tmp/test.sbd",
-                                     512L,
-                                     "hash456",
-                                     "AT",
-                                     _now (),
-                                     null,
-                                     null,
-                                     null,
-                                     null,
-                                     null,
-                                     null);
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    sSbdhID,
+                                    ESourceType.PAYLOAD_ONLY,
+                                    "/tmp/test.sbd",
+                                    512L,
+                                    "hash456",
+                                    "AT",
+                                    _now (),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getBySbdhInstanceID (sSbdhID);
@@ -178,23 +181,23 @@ public final class JdbcManagerIntegrationTest
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     _uniqueID (),
-                                     ESourceType.PAYLOAD_ONLY,
-                                     "/tmp/test.sbd",
-                                     256L,
-                                     "hashMls",
-                                     "DE",
-                                     _now (),
-                                     "iso6523-actorid-upis::9915:mlsto",
-                                     null,
-                                     null,
-                                     null,
-                                     null,
-                                     null);
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    _uniqueID (),
+                                    ESourceType.PAYLOAD_ONLY,
+                                    "/tmp/test.sbd",
+                                    256L,
+                                    "hashMls",
+                                    "DE",
+                                    _now (),
+                                    "iso6523-actorid-upis::9915:mlsto",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -208,23 +211,23 @@ public final class JdbcManagerIntegrationTest
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final String sID = aMgr.create (ETransactionType.MLS_RESPONSE,
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "mls-doc-type",
-                                     "mls-process",
-                                     _uniqueID (),
-                                     ESourceType.PAYLOAD_ONLY,
-                                     "/tmp/test-mls.sbd",
-                                     128L,
-                                     "hashMlsResp",
-                                     "DE",
-                                     _now (),
-                                     null,
-                                     "inbound-tx-ref-123",
-                                     null,
-                                     null,
-                                     null,
-                                     null);
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "mls-doc-type",
+                                    "mls-process",
+                                    _uniqueID (),
+                                    ESourceType.PAYLOAD_ONLY,
+                                    "/tmp/test-mls.sbd",
+                                    128L,
+                                    "hashMlsResp",
+                                    "DE",
+                                    _now (),
+                                    null,
+                                    "inbound-tx-ref-123",
+                                    null,
+                                    null,
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -239,23 +242,23 @@ public final class JdbcManagerIntegrationTest
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:facturx",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     _uniqueID (),
-                                     ESourceType.PAYLOAD_ONLY,
-                                     "/tmp/test-pdf.pdf",
-                                     4096L,
-                                     "hashPdf01234567890123456789012345678901234567890123456789012345",
-                                     "FR",
-                                     _now (),
-                                     null,
-                                     null,
-                                     "urn:peppol:doctype:pdf+xml",
-                                     "0",
-                                     "factur-x",
-                                     "application/pdf");
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:facturx",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    _uniqueID (),
+                                    ESourceType.PAYLOAD_ONLY,
+                                    "/tmp/test-pdf.pdf",
+                                    4096L,
+                                    "hashPdf01234567890123456789012345678901234567890123456789012345",
+                                    "FR",
+                                    _now (),
+                                    null,
+                                    null,
+                                    "urn:peppol:doctype:pdf+xml",
+                                    "0",
+                                    "factur-x",
+                                    "application/pdf");
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -288,23 +291,23 @@ public final class JdbcManagerIntegrationTest
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     _uniqueID (),
-                                     ESourceType.PREBUILT_SBD,
-                                     "/tmp/test-prebuilt.sbd",
-                                     2048L,
-                                     "hashPrebuilt",
-                                     "AT",
-                                     _now (),
-                                     null,
-                                     null,
-                                     null,
-                                     null,
-                                     null,
-                                     null);
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    _uniqueID (),
+                                    ESourceType.PREBUILT_SBD,
+                                    "/tmp/test-prebuilt.sbd",
+                                    2048L,
+                                    "hashPrebuilt",
+                                    "AT",
+                                    _now (),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -505,24 +508,24 @@ public final class JdbcManagerIntegrationTest
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final String sAS4MsgID = _uniqueID ();
     final String sID = aMgr.create (_uniqueID (),
-                                     "POP000001",
-                                     "POP000002",
-                                     "CN=TestCert",
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     "/tmp/test.sbd",
-                                     100L,
-                                     "hash1",
-                                     sAS4MsgID,
-                                     _now (),
-                                     _uniqueID (),
-                                     "AT",
-                                     false,
-                                     false,
-                                     null,
-                                     EPeppolMLSType.FAILURE_ONLY);
+                                    "POP000001",
+                                    "POP000002",
+                                    "CN=TestCert",
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    "/tmp/test.sbd",
+                                    100L,
+                                    "hash1",
+                                    sAS4MsgID,
+                                    _now (),
+                                    _uniqueID (),
+                                    "AT",
+                                    false,
+                                    false,
+                                    null,
+                                    EPeppolMLSType.FAILURE_ONLY);
     assertNotNull (sID);
 
     final IInboundTransaction aTx = aMgr.getByAS4MessageID (sAS4MsgID);
@@ -566,24 +569,24 @@ public final class JdbcManagerIntegrationTest
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final String sSbdhID = _uniqueID ();
     final String sID = aMgr.create (_uniqueID (),
-                                     "POP000001",
-                                     "POP000002",
-                                     "CN=TestCert",
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     "/tmp/test.sbd",
-                                     100L,
-                                     "hash3",
-                                     _uniqueID (),
-                                     _now (),
-                                     sSbdhID,
-                                     "DE",
-                                     false,
-                                     false,
-                                     null,
-                                     EPeppolMLSType.ALWAYS_SEND);
+                                    "POP000001",
+                                    "POP000002",
+                                    "CN=TestCert",
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    "/tmp/test.sbd",
+                                    100L,
+                                    "hash3",
+                                    _uniqueID (),
+                                    _now (),
+                                    sSbdhID,
+                                    "DE",
+                                    false,
+                                    false,
+                                    null,
+                                    EPeppolMLSType.ALWAYS_SEND);
     assertNotNull (sID);
 
     final IInboundTransaction aTx = aMgr.getBySbdhInstanceID (sSbdhID);
@@ -627,24 +630,24 @@ public final class JdbcManagerIntegrationTest
   {
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final String sID = aMgr.create (_uniqueID (),
-                                     "POP000001",
-                                     "POP000002",
-                                     "CN=TestCert",
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     "/tmp/test.sbd",
-                                     100L,
-                                     "hash5",
-                                     _uniqueID (),
-                                     _now (),
-                                     _uniqueID (),
-                                     "DE",
-                                     true,
-                                     true,
-                                     null,
-                                     EPeppolMLSType.ALWAYS_SEND);
+                                    "POP000001",
+                                    "POP000002",
+                                    "CN=TestCert",
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    "/tmp/test.sbd",
+                                    100L,
+                                    "hash5",
+                                    _uniqueID (),
+                                    _now (),
+                                    _uniqueID (),
+                                    "DE",
+                                    true,
+                                    true,
+                                    null,
+                                    EPeppolMLSType.ALWAYS_SEND);
     assertNotNull (sID);
 
     final IInboundTransaction aTx = aMgr.getByID (sID);
@@ -658,24 +661,24 @@ public final class JdbcManagerIntegrationTest
   {
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final String sID = aMgr.create (_uniqueID (),
-                                     "POP000001",
-                                     "POP000002",
-                                     "CN=TestCert",
-                                     "iso6523-actorid-upis::9915:sender",
-                                     "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
-                                     "/tmp/test.sbd",
-                                     100L,
-                                     "hash6",
-                                     _uniqueID (),
-                                     _now (),
-                                     _uniqueID (),
-                                     "DE",
-                                     false,
-                                     false,
-                                     "iso6523-actorid-upis::9915:mlsto",
-                                     EPeppolMLSType.FAILURE_ONLY);
+                                    "POP000001",
+                                    "POP000002",
+                                    "CN=TestCert",
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    "/tmp/test.sbd",
+                                    100L,
+                                    "hash6",
+                                    _uniqueID (),
+                                    _now (),
+                                    _uniqueID (),
+                                    "DE",
+                                    false,
+                                    false,
+                                    "iso6523-actorid-upis::9915:mlsto",
+                                    EPeppolMLSType.FAILURE_ONLY);
     assertNotNull (sID);
 
     final IInboundTransaction aTx = aMgr.getByID (sID);
@@ -836,12 +839,12 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (sTxID);
 
     final String sAttemptID = aMgr.create (sTxID,
-                                            "as4-msg-" + UUID.randomUUID ().toString (),
-                                            _now (),
-                                            "receipt-msg-001",
-                                            Integer.valueOf (200),
-                                            EAttemptStatus.SUCCESS,
-                                            null);
+                                           "as4-msg-" + UUID.randomUUID ().toString (),
+                                           _now (),
+                                           "receipt-msg-001",
+                                           Integer.valueOf (200),
+                                           EAttemptStatus.SUCCESS,
+                                           null);
     assertNotNull (sAttemptID);
 
     final ICommonsList <IOutboundSendingAttempt> aAttempts = aMgr.getByTransactionID (sTxID);
@@ -864,12 +867,12 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (sTxID);
 
     final String sAttemptID = aMgr.create (sTxID,
-                                            "as4-msg-" + UUID.randomUUID ().toString (),
-                                            _now (),
-                                            null,
-                                            null,
-                                            EAttemptStatus.FAILED,
-                                            "Connection refused");
+                                           "as4-msg-" + UUID.randomUUID ().toString (),
+                                           _now (),
+                                           null,
+                                           null,
+                                           EAttemptStatus.FAILED,
+                                           "Connection refused");
     assertNotNull (sAttemptID);
 
     final IOutboundSendingAttempt aAttempt = aMgr.getByTransactionID (sTxID).getFirstOrNull ();
@@ -887,10 +890,20 @@ public final class JdbcManagerIntegrationTest
 
     final OffsetDateTime aNow = _now ();
     aMgr.create (sTxID, _uniqueID (), aNow, null, null, EAttemptStatus.FAILED, "Timeout");
-    aMgr.create (sTxID, _uniqueID (), aNow.plusMinutes (5), null, Integer.valueOf (503), EAttemptStatus.FAILED,
+    aMgr.create (sTxID,
+                 _uniqueID (),
+                 aNow.plusMinutes (5),
+                 null,
+                 Integer.valueOf (503),
+                 EAttemptStatus.FAILED,
                  "Service unavailable");
-    aMgr.create (sTxID, _uniqueID (), aNow.plusMinutes (10), "receipt-002", Integer.valueOf (200),
-                 EAttemptStatus.SUCCESS, null);
+    aMgr.create (sTxID,
+                 _uniqueID (),
+                 aNow.plusMinutes (10),
+                 "receipt-002",
+                 Integer.valueOf (200),
+                 EAttemptStatus.SUCCESS,
+                 null);
 
     final ICommonsList <IOutboundSendingAttempt> aAttempts = aMgr.getByTransactionID (sTxID);
     assertEquals (3, aAttempts.size ());
@@ -989,8 +1002,13 @@ public final class JdbcManagerIntegrationTest
     final String sTxID = _createOutboundTx ();
     assertNotNull (sTxID);
 
-    aAttemptMgr.create (sTxID, _uniqueID (), _now (), "receipt-archive", Integer.valueOf (200),
-                        EAttemptStatus.SUCCESS, null);
+    aAttemptMgr.create (sTxID,
+                        _uniqueID (),
+                        _now (),
+                        "receipt-archive",
+                        Integer.valueOf (200),
+                        EAttemptStatus.SUCCESS,
+                        null);
     aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
 
     assertTrue (aArchivalMgr.archiveOutboundTransaction (sTxID).isSuccess ());

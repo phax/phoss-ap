@@ -31,7 +31,7 @@ import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
-import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
+import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.core.notification.NotificationHandlerManager;
@@ -131,7 +131,7 @@ public final class APCoreMetaManager
 
   @NonNull
   @ReturnsMutableCopy
-  public static ICommonsList <INotificationHandlerSPI> getAllNotificationHandlers ()
+  public static ICommonsList <IAPNotificationHandlerSPI> getAllNotificationHandlers ()
   {
     return NotificationHandlerManager.getAllNotificationHandlers ();
   }

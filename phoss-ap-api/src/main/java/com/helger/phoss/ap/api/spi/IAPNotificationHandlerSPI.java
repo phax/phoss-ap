@@ -32,7 +32,7 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
  * @author Philip Helger
  */
 @IsSPIInterface
-public interface INotificationHandlerSPI
+public interface IAPNotificationHandlerSPI
 {
   /**
    * Called when an inbound receiver is not serviced.

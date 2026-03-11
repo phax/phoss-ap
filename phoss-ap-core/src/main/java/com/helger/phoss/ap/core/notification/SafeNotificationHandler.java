@@ -26,22 +26,22 @@ import org.slf4j.LoggerFactory;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
-import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
+import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
 /**
- * This is a wrapper class around another {@link INotificationHandlerSPI} implementation that wraps
+ * This is a wrapper class around another {@link IAPNotificationHandlerSPI} implementation that wraps
  * all exceptions and logs them accordingly. <br>
  * Note: this class is manually instantiated to wrap SPI loaded instances.
  *
  * @author Philip Helger
  */
-public final class SafeNotificationHandler implements INotificationHandlerSPI
+public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (SafeNotificationHandler.class);
 
-  private final INotificationHandlerSPI m_aHdl;
+  private final IAPNotificationHandlerSPI m_aHdl;
 
-  public SafeNotificationHandler (@NonNull final INotificationHandlerSPI aHdl)
+  public SafeNotificationHandler (@NonNull final IAPNotificationHandlerSPI aHdl)
   {
     ValueEnforcer.notNull (aHdl, "Handler");
     m_aHdl = aHdl;

@@ -27,7 +27,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.exception.InitializationException;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
-import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
+import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
 /**
  * This class is responsible for managing the different notification handlers.
@@ -38,7 +38,7 @@ public final class NotificationHandlerManager
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (NotificationHandlerManager.class);
 
-  private static final ICommonsList <INotificationHandlerSPI> s_aNotificationHandlers = new CommonsArrayList <> ();
+  private static final ICommonsList <IAPNotificationHandlerSPI> s_aNotificationHandlers = new CommonsArrayList <> ();
 
   private NotificationHandlerManager ()
   {}
@@ -51,7 +51,7 @@ public final class NotificationHandlerManager
     if (s_aNotificationHandlers.isNotEmpty ())
       throw new InitializationException ("The Notification Handlers were already initialized");
 
-    for (final INotificationHandlerSPI aHandler : ServiceLoader.load (INotificationHandlerSPI.class))
+    for (final IAPNotificationHandlerSPI aHandler : ServiceLoader.load (IAPNotificationHandlerSPI.class))
     {
       s_aNotificationHandlers.add (new SafeNotificationHandler (aHandler));
       LOGGER.info ("Loaded notification handler: " + aHandler.getClass ().getName ());
@@ -64,7 +64,7 @@ public final class NotificationHandlerManager
    * @param aHandler
    *        The handler to be registered. May not be <code>null</code>.
    */
-  public static void registerHandler (@NonNull final INotificationHandlerSPI aHandler)
+  public static void registerHandler (@NonNull final IAPNotificationHandlerSPI aHandler)
   {
     ValueEnforcer.notNull (aHandler, "Handler");
     s_aNotificationHandlers.add (new SafeNotificationHandler (aHandler));
@@ -75,7 +75,7 @@ public final class NotificationHandlerManager
    */
   @NonNull
   @ReturnsMutableCopy
-  public static ICommonsList <INotificationHandlerSPI> getAllNotificationHandlers ()
+  public static ICommonsList <IAPNotificationHandlerSPI> getAllNotificationHandlers ()
   {
     return s_aNotificationHandlers.getClone ();
   }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.webapp.sentry;
+package com.helger.phoss.ap.sentry;
 
 import java.time.YearMonth;
 import java.util.Map;
@@ -23,29 +23,23 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
-import com.helger.phoss.ap.api.spi.INotificationHandlerSPI;
+import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
 import io.sentry.Sentry;
-import io.sentry.SentryAttribute;
 import io.sentry.SentryAttributes;
 import io.sentry.SentryLogLevel;
 import io.sentry.logger.SentryLogParameters;
 
 /**
- * Special implementation of {@link INotificationHandlerSPI} for Sentry log events.
+ * Special implementation of {@link IAPNotificationHandlerSPI} for Sentry log events.
  *
  * @author Philip Helger
  */
-public class SentryNotificationHandler implements INotificationHandlerSPI
+public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
 {
-  private static void _logError (final String sMsg, final Map <String, String> aParams)
+  private static void _logError (@NonNull final String sMsg, @NonNull final Map <String, Object> aParams)
   {
-    final SentryAttribute [] aSentryAttrs = aParams.entrySet ()
-                                                   .stream ()
-                                                   .map (e -> SentryAttribute.stringAttribute (e.getKey (),
-                                                                                               e.getValue ()))
-                                                   .toArray (SentryAttribute []::new);
-    Sentry.logger ().log (SentryLogLevel.ERROR, SentryLogParameters.create (SentryAttributes.of (aSentryAttrs)), sMsg);
+    Sentry.logger ().log (SentryLogLevel.ERROR, SentryLogParameters.create (SentryAttributes.fromMap (aParams)), sMsg);
   }
 
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
@@ -62,8 +56,8 @@ public class SentryNotificationHandler implements INotificationHandlerSPI
   }
 
   public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                         @NonNull final String sSbdhInstanceID,
-                                         @Nullable final String sErrorDetails)
+                                                 @NonNull final String sSbdhInstanceID,
+                                                 @Nullable final String sErrorDetails)
   {
     _logError ("onPermanentSendingFailure",
                Map.of ("transactionID",
@@ -94,8 +88,8 @@ public class SentryNotificationHandler implements INotificationHandlerSPI
   }
 
   public void onInboundPermanentForwardingFailure (@NonNull final String sTransactionID,
-                                            @NonNull final String sSbdhInstanceID,
-                                            @Nullable final String sErrorDetails)
+                                                   @NonNull final String sSbdhInstanceID,
+                                                   @Nullable final String sErrorDetails)
   {
     _logError ("onPermanentForwardingFailure",
                Map.of ("transactionID",
@@ -122,24 +116,24 @@ public class SentryNotificationHandler implements INotificationHandlerSPI
   public void onInboundForwardingError (@NonNull final String sTransactionID, final boolean bIsRetry)
   {
     _logError ("onInboundForwardingError",
-               Map.of ("transactionID", sTransactionID, "isRetry", Boolean.toString (bIsRetry)));
+               Map.of ("transactionID", sTransactionID, "isRetry", Boolean.valueOf (bIsRetry)));
   }
 
   public void onPeppolReportingTSRFailure (@NonNull final YearMonth aYearMonth)
   {
     _logError ("onPeppolReportingTSRFailure",
                Map.of ("year",
-                       Integer.toString (aYearMonth.getYear ()),
+                       Integer.valueOf (aYearMonth.getYear ()),
                        "month",
-                       Integer.toString (aYearMonth.getMonthValue ())));
+                       Integer.valueOf (aYearMonth.getMonthValue ())));
   }
 
   public void onPeppolReportingEUSRFailure (@NonNull final YearMonth aYearMonth)
   {
     _logError ("onPeppolReportingEUSRFailure",
                Map.of ("year",
-                       Integer.toString (aYearMonth.getYear ()),
+                       Integer.valueOf (aYearMonth.getYear ()),
                        "month",
-                       Integer.toString (aYearMonth.getMonthValue ())));
+                       Integer.valueOf (aYearMonth.getMonthValue ())));
   }
 }

@@ -127,6 +127,11 @@
       </dependency>
       <dependency>
         <groupId>com.helger.phoss.ap</groupId>
+        <artifactId>phoss-ap-sentry</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.phoss.ap</groupId>
         <artifactId>phoss-ap-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -229,6 +234,7 @@
     <module>phoss-ap-basic</module>
     <module>phoss-ap-db</module>
     <module>phoss-ap-forwarding</module>
+    <module>phoss-ap-sentry</module>
     <module>phoss-ap-core</module>
     <module>phoss-ap-webapp</module>
     <module>phoss-ap-testbackend</module>

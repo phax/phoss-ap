@@ -32,11 +32,12 @@ import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.io.file.FilenameHelper;
+import com.helger.jsch.sftp.ChannelSftpHelper;
 import com.helger.network.WebExceptionHelper;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
+import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.photon.connect.sftp.AbstractChannelSftpRunnable;
 import com.helger.photon.connect.sftp.ISftpSettings;
 import com.helger.photon.connect.sftp.SftpMaxParallelRunner;
@@ -44,7 +45,6 @@ import com.helger.photon.connect.sftp.SftpSettings;
 import com.helger.photon.connect.sftp.progress.CountingSftpProgressMonitor;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 
 public class SftpDocumentForwarder implements IDocumentForwarder
@@ -60,78 +60,6 @@ public class SftpDocumentForwarder implements IDocumentForwarder
     m_aSftpSettings = SftpSettings.createFromConfig (aConfig, "forwarding.sftp");
     if (m_aSftpSettings == null)
       throw new InitializationException ("Failed to initialize SFTP settings from configuration");
-  }
-
-  private static boolean _dirExists (@NonNull final ChannelSftp aChannel, @NonNull final String sDirName)
-  {
-    try
-    {
-      final SftpATTRS aAttrs = aChannel.stat (sDirName);
-      if (aAttrs == null)
-        return false;
-
-      if ((aAttrs.getFlags () & SftpATTRS.SSH_FILEXFER_ATTR_PERMISSIONS) == 0)
-      {
-        LOGGER.warn ("Unexpected directory flag: " + aAttrs.getFlags () + " - persmissions not present?");
-        return false;
-      }
-
-      return aAttrs.isDir ();
-    }
-    catch (final SftpException ex)
-    {
-      // E.g. com.jcraft.jsch.SftpException: The requested file does not exist
-      if (false)
-        LOGGER.warn ("Failed to check if dir '" + sDirName + "' exists", ex);
-      return false;
-    }
-  }
-
-  @NonNull
-  private static ESuccess _mkdir (@NonNull final ChannelSftp aChannel, @NonNull final String sDirName)
-  {
-    try
-    {
-      final String [] aDirs = StringHelper.getExplodedArray ('/', sDirName);
-
-      // Special handling for first part
-      if (!StringHelper.startsWith (sDirName, '/'))
-      {
-        String sPwd = aChannel.pwd ();
-
-        // Avoid leading slash
-        if (StringHelper.startsWith (sPwd, '/'))
-          sPwd = sPwd.substring (1);
-
-        if (StringHelper.isNotEmpty (sPwd))
-        {
-          // Append only if something is present
-          if (!StringHelper.endsWith (sPwd, '/'))
-            sPwd += '/';
-          LOGGER.info ("Prefixing dir with '" + sPwd + "'");
-          aDirs[0] = sPwd + aDirs[0];
-        }
-      }
-
-      // Piece by piece
-      for (int i = 1; i < aDirs.length; i++)
-        aDirs[i] = aDirs[i - 1] + '/' + aDirs[i];
-
-      for (final String sDir : aDirs)
-        if (StringHelper.isNotEmpty (sDir) && !_dirExists (aChannel, sDir))
-        {
-          LOGGER.info ("Trying to create SFTP directory '" + sDir + "'");
-          aChannel.mkdir (sDir);
-        }
-
-      return ESuccess.SUCCESS;
-    }
-    catch (final SftpException ex)
-    {
-      // Folder can not be found!
-      LOGGER.warn ("Failed to mkdir '" + sDirName + "'", ex);
-      return ESuccess.FAILURE;
-    }
   }
 
   /**
@@ -179,11 +107,11 @@ public class SftpDocumentForwarder implements IDocumentForwarder
         public void execute (@NonNull final ChannelSftp aChannel) throws SftpException
         {
           // Ensure directory exists
-          _mkdir (aChannel, sRealTargetDirectory);
+          if (ChannelSftpHelper.mkdir (aChannel, sRealTargetDirectory).isFailure ())
+            return;
 
           // goto "in" directory (will fail
-          // if
-          // mkdir failed)
+          // if mkdir failed)
           aChannel.cd (sRealTargetDirectory);
 
           /*

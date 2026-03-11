@@ -65,7 +65,7 @@
     <spring-boot.version>4.0.3</spring-boot.version>
 
     <ph-commons.version>12.1.4</ph-commons.version>
-    <ph-web.version>11.2.3</ph-web.version>
+    <ph-web.version>11.2.4-SNAPSHOT</ph-web.version>
     <ph-oton.version>10.2.2</ph-oton.version>
     <peppol-ap-support.version>2.1.1</peppol-ap-support.version>
     <peppol-commons.version>12.3.12</peppol-commons.version>

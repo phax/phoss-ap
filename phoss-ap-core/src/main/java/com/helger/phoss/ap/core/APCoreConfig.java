@@ -228,13 +228,6 @@ public final class APCoreConfig
                                     APConfigurationProperties.ARCHIVAL_SCHEDULER_INTERVAL_MS_DEFAULT);
   }
 
-  // Notification
-  public static boolean isNotificationEnabled ()
-  {
-    return _getConfig ().getAsBoolean (APConfigurationProperties.NOTIFICATION_ENABLED,
-                                       APConfigurationProperties.NOTIFICATION_ENABLED_DEFAULT);
-  }
-
   // Startup recovery
   public static boolean isStartupRecoveryEnabled ()
   {

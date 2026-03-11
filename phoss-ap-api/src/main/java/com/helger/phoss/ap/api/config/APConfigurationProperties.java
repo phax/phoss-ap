@@ -57,10 +57,12 @@ public final class APConfigurationProperties
 
   // Forwarding
   public static final String FORWARDING_MODE = "forwarding.mode";
+
+  // Forwarding - HTTP
   public static final String FORWARDING_HTTP_MODE = "forwarding.http.mode";
   public static final String FORWARDING_HTTP_ENDPOINT = "forwarding.http.endpoint";
 
-  // S3
+  // Forwarding - S3
   public static final String FORWARDING_S3_BUCKET = "forwarding.s3.bucket";
   public static final String FORWARDING_S3_REGION = "forwarding.s3.region";
   public static final String FORWARDING_S3_ACCESS_KEY_ID = "forwarding.s3.access-key-id";
@@ -127,10 +129,6 @@ public final class APConfigurationProperties
   public static final boolean ARCHIVAL_SCHEDULER_ENABLED_DEFAULT = true;
   public static final String ARCHIVAL_SCHEDULER_INTERVAL_MS = "archival.scheduler.interval.ms";
   public static final long ARCHIVAL_SCHEDULER_INTERVAL_MS_DEFAULT = 3_600_000L;
-
-  // Notification
-  public static final String NOTIFICATION_ENABLED = "notification.enabled";
-  public static final boolean NOTIFICATION_ENABLED_DEFAULT = true;
 
   // Document storage
   public static final String STORAGE_INBOUND_PATH = "storage.inbound.path";

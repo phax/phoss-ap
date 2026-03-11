@@ -26,6 +26,7 @@ import com.helger.annotation.concurrent.Immutable;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.httpclient.HttpClientSettings;
 import com.helger.httpclient.HttpClientSettingsConfig;
+import com.helger.phoss.ap.api.codelist.EPeppolIdentifierMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 
@@ -56,6 +57,13 @@ public final class APBasicConfig
   {
     return _getConfig ().getAsString (APConfigurationProperties.STORAGE_OUTBOUND_PATH,
                                       APConfigurationProperties.STORAGE_OUTBOUND_PATH_DEFAULT);
+  }
+
+  @NonNull
+  public static EPeppolIdentifierMode getPeppolIdentifierMode ()
+  {
+    final String sVal = _getConfig ().getAsString (APConfigurationProperties.PEPPOL_IDENTIFIER_MODE);
+    return EPeppolIdentifierMode.getFromIDOrDefault (sVal);
   }
 
   private static final AtomicBoolean PROXY_INITED = new AtomicBoolean (false);

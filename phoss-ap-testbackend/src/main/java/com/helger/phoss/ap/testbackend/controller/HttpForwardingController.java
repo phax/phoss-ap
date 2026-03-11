@@ -33,22 +33,20 @@ import com.helger.base.io.nonblocking.NonBlockingByteArrayInputStream;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppol.sbdh.PeppolSBDHDataReadException;
 import com.helger.peppol.sbdh.PeppolSBDHDataReader;
-import com.helger.peppolid.factory.PeppolIdentifierFactory;
+import com.helger.phoss.ap.testbackend.CTestBackend;
 import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 import com.helger.phoss.ap.testbackend.service.ReportingCompletedCallerService;
 import com.helger.phoss.ap.testbackend.store.DocumentStore;
 
 /**
- * Receives HTTP-forwarded documents from phoss-ap's
- * {@code HttpDocumentForwarderSPI}. Handles both sync and async modes:
+ * Receives HTTP-forwarded documents from phoss-ap's {@code HttpDocumentForwarderSPI}. Handles both
+ * sync and async modes:
  * <ul>
- * <li><b>Sync mode</b>: the AP expects a JSON response containing
- * {@code countryCodeC4}</li>
- * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is
- * triggered later via the callback API</li>
+ * <li><b>Sync mode</b>: the AP expects a JSON response containing {@code countryCodeC4}</li>
+ * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is triggered later via the
+ * callback API</li>
  * </ul>
- * The endpoint URL matches the default in phoss-ap's
- * {@code application.properties}:
+ * The endpoint URL matches the default in phoss-ap's {@code application.properties}:
  * {@code forwarding.http.endpoint=http://localhost:8888/forwarding/url}
  *
  * @author Philip Helger
@@ -81,7 +79,7 @@ public class HttpForwardingController
     PeppolSBDHData aSBD;
     try
     {
-      aSBD = new PeppolSBDHDataReader (PeppolIdentifierFactory.INSTANCE).extractData (new NonBlockingByteArrayInputStream (aBody));
+      aSBD = new PeppolSBDHDataReader (CTestBackend.IF).extractData (new NonBlockingByteArrayInputStream (aBody));
     }
     catch (final PeppolSBDHDataReadException ex)
     {
@@ -122,7 +120,7 @@ public class HttpForwardingController
     PeppolSBDHData aSBD;
     try
     {
-      aSBD = new PeppolSBDHDataReader (PeppolIdentifierFactory.INSTANCE).extractData (new NonBlockingByteArrayInputStream (aBody));
+      aSBD = new PeppolSBDHDataReader (CTestBackend.IF).extractData (new NonBlockingByteArrayInputStream (aBody));
     }
     catch (final PeppolSBDHDataReadException ex)
     {

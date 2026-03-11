@@ -37,6 +37,7 @@ public final class APConfigurationProperties
   public static final boolean PEPPOL_SENDING_ENABLED_DEFAULT = true;
   public static final String PEPPOL_RECEIVING_ENABLED = "peppol.receiving.enabled";
   public static final boolean PEPPOL_RECEIVING_ENABLED_DEFAULT = true;
+  public static final String PEPPOL_IDENTIFIER_MODE = "peppol.identifier.mode";
 
   // AS4 endpoint
   public static final String PHASE4_ENDPOINT_ADDRESS = "phase4.endpoint.address";

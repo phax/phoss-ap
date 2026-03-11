@@ -30,6 +30,7 @@ import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.IFileOperationManager;
 import com.helger.peppolid.factory.IIdentifierFactory;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
+import com.helger.peppolid.factory.PeppolLaxIdentifierFactory;
 import com.helger.phoss.ap.api.datetime.APTimestampManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.scope.IScope;
@@ -44,6 +45,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APBasicMetaManager.class);
 
+  private IIdentifierFactory m_aIdentifierFactory;
   private IAPTimestampManager m_aTimestampMgr;
 
   /**
@@ -94,6 +96,21 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
                                              "' is not writable by the application user");
       }
 
+      // Determine identifier factory from configuration
+      m_aIdentifierFactory = switch (APBasicConfig.getPeppolIdentifierMode ())
+      {
+        case STRICT ->
+        {
+          LOGGER.info ("Using strict Peppol Identifier Factory");
+          yield PeppolIdentifierFactory.INSTANCE;
+        }
+        case LAX ->
+        {
+          LOGGER.info ("Using lax Peppol Identifier Factory");
+          yield PeppolLaxIdentifierFactory.INSTANCE;
+        }
+      };
+
       m_aTimestampMgr = new APTimestampManager ();
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
@@ -113,6 +130,6 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   @NonNull
   public static IIdentifierFactory getIdentifierFactory ()
   {
-    return PeppolIdentifierFactory.INSTANCE;
+    return getInstance ().m_aIdentifierFactory;
   }
 }

@@ -65,6 +65,7 @@ CREATE TABLE outbound_sending_attempt (
   attempt_dt               TIMESTAMPTZ NOT NULL,
   attempt_status           TEXT        NOT NULL,
   error_details            TEXT,
+  sending_report           TEXT,
   CONSTRAINT pk_outbound_sending_attempt PRIMARY KEY (id),
   CONSTRAINT uq_outbound_as4_message_id UNIQUE (as4_message_id),
   CONSTRAINT fk_outbound_sending_attempt_tx FOREIGN KEY (outbound_transaction_id)
@@ -171,6 +172,7 @@ CREATE TABLE outbound_sending_attempt_archive (
   attempt_dt               TIMESTAMPTZ NOT NULL,
   attempt_status           TEXT        NOT NULL,
   error_details            TEXT,
+  sending_report           TEXT,
   CONSTRAINT pk_outbound_sending_attempt_archive PRIMARY KEY (id)
 );
 

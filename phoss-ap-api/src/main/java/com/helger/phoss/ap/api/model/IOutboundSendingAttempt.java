@@ -89,4 +89,11 @@ public interface IOutboundSendingAttempt extends IHasID <String>
    */
   @Nullable
   String getErrorDetails ();
+
+  /**
+   * @return The Phase4 Peppol sending report as a JSON string, or <code>null</code> if not
+   *         available.
+   */
+  @Nullable
+  String getSendingReport ();
 }

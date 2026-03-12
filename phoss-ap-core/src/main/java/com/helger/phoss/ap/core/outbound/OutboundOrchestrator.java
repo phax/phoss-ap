@@ -402,7 +402,7 @@ public final class OutboundOrchestrator
 
       // Callback on recoverable error
       final Consumer <String> onFailed = sErrMsg -> {
-        aAttemptMgr.create (sTxID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.FAILED, sErrMsg);
+        aAttemptMgr.create (sTxID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.FAILED, sErrMsg, aSendingReport.getAsJsonString ());
         final OffsetDateTime aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
                                                                                 APCoreConfig.getRetrySendingInitialBackoffMs (),
                                                                                 APCoreConfig.getRetrySendingBackoffMultiplier (),
@@ -412,7 +412,7 @@ public final class OutboundOrchestrator
 
       // Callback on permanent failure
       final Consumer <String> onPermanentFailure = sErrMsg -> {
-        aAttemptMgr.create (sTxID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.FAILED, sErrMsg);
+        aAttemptMgr.create (sTxID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.FAILED, sErrMsg, aSendingReport.getAsJsonString ());
         aTxMgr.updateStatusAndRetry (sTxID, EOutboundStatus.PERMANENTLY_FAILED, nNewAttemptCount, null, sErrMsg);
 
         // Notify
@@ -741,7 +741,7 @@ public final class OutboundOrchestrator
 
             // Store successful attempt
             final String sAS4ReceiptID = aSendingReport.getAS4ReceivedSignalMsg ().getMessageInfo ().getMessageId ();
-            aAttemptMgr.createSuccess (sTxID, sAS4MessageID, aAS4Timestamp, sAS4ReceiptID);
+            aAttemptMgr.createSuccess (sTxID, sAS4MessageID, aAS4Timestamp, sAS4ReceiptID, aSendingReport.getAsJsonString ());
 
             // Update in DB
             aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);

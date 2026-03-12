@@ -844,6 +844,7 @@ public final class JdbcManagerIntegrationTest
                                            "receipt-msg-001",
                                            Integer.valueOf (200),
                                            EAttemptStatus.SUCCESS,
+                                           null,
                                            null);
     assertNotNull (sAttemptID);
 
@@ -872,7 +873,8 @@ public final class JdbcManagerIntegrationTest
                                            null,
                                            null,
                                            EAttemptStatus.FAILED,
-                                           "Connection refused");
+                                           "Connection refused",
+                                           null);
     assertNotNull (sAttemptID);
 
     final IOutboundSendingAttempt aAttempt = aMgr.getByTransactionID (sTxID).getFirstOrNull ();
@@ -889,20 +891,22 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (sTxID);
 
     final OffsetDateTime aNow = _now ();
-    aMgr.create (sTxID, _uniqueID (), aNow, null, null, EAttemptStatus.FAILED, "Timeout");
+    aMgr.create (sTxID, _uniqueID (), aNow, null, null, EAttemptStatus.FAILED, "Timeout", null);
     aMgr.create (sTxID,
                  _uniqueID (),
                  aNow.plusMinutes (5),
                  null,
                  Integer.valueOf (503),
                  EAttemptStatus.FAILED,
-                 "Service unavailable");
+                 "Service unavailable",
+                 null);
     aMgr.create (sTxID,
                  _uniqueID (),
                  aNow.plusMinutes (10),
                  "receipt-002",
                  Integer.valueOf (200),
                  EAttemptStatus.SUCCESS,
+                 null,
                  null);
 
     final ICommonsList <IOutboundSendingAttempt> aAttempts = aMgr.getByTransactionID (sTxID);
@@ -1008,6 +1012,7 @@ public final class JdbcManagerIntegrationTest
                         "receipt-archive",
                         Integer.valueOf (200),
                         EAttemptStatus.SUCCESS,
+                        null,
                         null);
     aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
 

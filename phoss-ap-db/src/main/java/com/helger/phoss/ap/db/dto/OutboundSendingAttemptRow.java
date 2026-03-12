@@ -43,6 +43,7 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
   private final OffsetDateTime m_aAttemptDT;
   private final EAttemptStatus m_eAttemptStatus;
   private final String m_sErrorDetails;
+  private final String m_sSendingReport;
 
   public OutboundSendingAttemptRow (@NonNull final DBResultRow aRow)
   {
@@ -55,6 +56,7 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
     m_aAttemptDT = aRow.getAsOffsetDateTime (6);
     m_eAttemptStatus = EAttemptStatus.getFromIDOrNull (aRow.getAsString (7));
     m_sErrorDetails = aRow.getAsString (8);
+    m_sSendingReport = aRow.getAsString (9);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notEmpty (m_sOutboundTransactionID, "OutboundTransactionID");
     ValueEnforcer.notEmpty (m_sAS4MessageID, "AS4MessageID");
@@ -118,5 +120,11 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
   public String getErrorDetails ()
   {
     return m_sErrorDetails;
+  }
+
+  @Nullable
+  public String getSendingReport ()
+  {
+    return m_sSendingReport;
   }
 }

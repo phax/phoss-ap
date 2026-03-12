@@ -39,13 +39,15 @@ public interface IOutboundSendingAttemptManager
                  @Nullable String sReceiptMessageID,
                  @Nullable Integer aHttpStatusCode,
                  @NonNull EAttemptStatus eAttemptStatus,
-                 @Nullable String sErrorDetails);
+                 @Nullable String sErrorDetails,
+                 @Nullable String sSendingReport);
 
   @Nullable
   String createSuccess (@NonNull String sOutboundTransactionID,
                         @NonNull String sAS4MessageID,
                         @NonNull OffsetDateTime aAS4Timestamp,
-                        @NonNull String sReceiptMessageID);
+                        @NonNull String sReceiptMessageID,
+                        @Nullable String sSendingReport);
 
   @NonNull
   ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull String sOutboundTransactionID);

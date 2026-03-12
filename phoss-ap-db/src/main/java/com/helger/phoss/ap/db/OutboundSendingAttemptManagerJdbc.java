@@ -34,7 +34,8 @@ import com.helger.phoss.ap.db.dto.OutboundSendingAttemptRow;
 public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager implements IOutboundSendingAttemptManager
 {
   private static final String COLS = "id, outbound_transaction_id, as4_message_id, as4_timestamp," +
-                                     " receipt_message_id, http_status_code, attempt_dt, attempt_status, error_details";
+                                     " receipt_message_id, http_status_code, attempt_dt, attempt_status, error_details," +
+                                     " sending_report";
 
   private final String m_sTableNameName;
 
@@ -52,7 +53,8 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                         @Nullable final String sReceiptMessageID,
                         @Nullable final Integer aHttpStatusCode,
                         @NonNull final EAttemptStatus eAttemptStatus,
-                        @Nullable final String sErrorDetails)
+                        @Nullable final String sErrorDetails,
+                        @Nullable final String sSendingReport)
   {
     final String sID = createUniqueRowID ();
     final OffsetDateTime aNow = now ();
@@ -62,7 +64,7 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                                                                       " (" +
                                                                       COLS +
                                                                       ")" +
-                                                                      " VALUES (?,?,?,?,?,?,?,?,?)",
+                                                                      " VALUES (?,?,?,?,?,?,?,?,?,?)",
                                                                       new ConstantPreparedStatementDataProvider (sID,
                                                                                                                  sOutboundTransactionID,
                                                                                                                  sAS4MessageID,
@@ -71,7 +73,8 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                                                                                                                  aHttpStatusCode,
                                                                                                                  aNow,
                                                                                                                  eAttemptStatus.getID (),
-                                                                                                                 sErrorDetails));
+                                                                                                                 sErrorDetails,
+                                                                                                                 sSendingReport));
     return nRowsAffected == 0 ? null : sID;
   }
 
@@ -79,9 +82,10 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
   public String createSuccess (@NonNull final String sOutboundTransactionID,
                                @NonNull final String sAS4MessageID,
                                @NonNull final OffsetDateTime aAS4Timestamp,
-                               @NonNull final String sReceiptMessageID)
+                               @NonNull final String sReceiptMessageID,
+                               @Nullable final String sSendingReport)
   {
-    return create (sOutboundTransactionID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.SUCCESS, null);
+    return create (sOutboundTransactionID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.SUCCESS, null, sSendingReport);
   }
 
   @NonNull

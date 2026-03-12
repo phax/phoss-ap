@@ -140,14 +140,14 @@ public final class DocumentStorageHelper
                                                  @NonNull final OffsetDateTime aReferenceDT,
                                                  @NonNull @DevelopersNote final String sFilename,
                                                  @NonNull final String sFileExt,
-                                                 @NonNull final Consumer <File> aFileConsumer)
+                                                 @NonNull final Consumer <String> aPathConsumer)
   {
     ValueEnforcer.notNull (aBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
     ValueEnforcer.notEmpty (sFilename, "Filename");
     ValueEnforcer.notEmpty (sFileExt, "FileExt");
     ValueEnforcer.isTrue ( () -> sFileExt.startsWith ("."), "FileExt must start with a dot");
-    ValueEnforcer.notNull (aFileConsumer, "FileConsumer");
+    ValueEnforcer.notNull (aPathConsumer, "PathConsumer");
 
     final File aEffectiveBaseDir = _getStorageDir (aBaseDir, aReferenceDT);
     try
@@ -158,7 +158,7 @@ public final class DocumentStorageHelper
       // Get the absolute path
       final File aFilePath = _ensureUniqueFile (aEffectiveBaseDir, sFilename, sFileExt);
 
-      aFileConsumer.accept (aFilePath);
+      aPathConsumer.accept (aFilePath.getAbsolutePath ());
       return FileHelper.getBufferedOutputStream (aFilePath);
     }
     catch (final Exception ex)
@@ -175,10 +175,10 @@ public final class DocumentStorageHelper
   @NonNull
   public static OutputStream openTemporaryDocumentStream (@NonNull final File aBaseDir,
                                                           @NonNull final OffsetDateTime aReferenceDT,
-                                                          @NonNull final Consumer <File> aFileConsumer)
+                                                          @NonNull final Consumer <String> aPathConsumer)
   {
     // Should be always unique
-    return openDocumentStream (aBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aFileConsumer);
+    return openDocumentStream (aBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
   }
 
   @NonNull

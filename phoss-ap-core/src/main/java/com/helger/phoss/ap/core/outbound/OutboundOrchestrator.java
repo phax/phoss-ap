@@ -100,18 +100,16 @@ public final class OutboundOrchestrator
   {}
 
   /**
-   * Submit a raw (payload-only) document for outbound sending. The document is
-   * stored to disk, optionally verified, and a new outbound transaction is
-   * created in {@link EOutboundStatus#PENDING} state.
+   * Submit a raw (payload-only) document for outbound sending. The document is stored to disk,
+   * optionally verified, and a new outbound transaction is created in
+   * {@link EOutboundStatus#PENDING} state.
    *
    * @param sLogPrefix
    *        Log message prefix for traceability. May not be <code>null</code>.
    * @param aSenderID
-   *        The Peppol sender participant identifier. May not be
-   *        <code>null</code>.
+   *        The Peppol sender participant identifier. May not be <code>null</code>.
    * @param aReceiverID
-   *        The Peppol receiver participant identifier. May not be
-   *        <code>null</code>.
+   *        The Peppol receiver participant identifier. May not be <code>null</code>.
    * @param aDocTypeID
    *        The Peppol document type identifier. May not be <code>null</code>.
    * @param aProcessID
@@ -121,8 +119,8 @@ public final class OutboundOrchestrator
    * @param sC1CountryCode
    *        The C1 country code of the sender. May not be <code>null</code>.
    * @param aDocumentIS
-   *        The input stream of the raw document payload. Will not be closed by
-   *        this method. May not be <code>null</code>.
+   *        The input stream of the raw document payload. Will not be closed by this method. May not
+   *        be <code>null</code>.
    * @param sMlsTo
    *        Optional MLS "To" address. May be <code>null</code>.
    * @param sSbdhStandard
@@ -132,10 +130,10 @@ public final class OutboundOrchestrator
    * @param sSbdhType
    *        Optional SBDH type. May be <code>null</code>.
    * @param sPayloadMimeType
-   *        Optional payload MIME type (e.g. "application/pdf"). May be
-   *        <code>null</code> for XML payloads.
-   * @return The created {@link IOutboundTransaction} or <code>null</code> if
-   *         the document could not be stored or verification failed.
+   *        Optional payload MIME type (e.g. "application/pdf"). May be <code>null</code> for XML
+   *        payloads.
+   * @return The created {@link IOutboundTransaction} or <code>null</code> if the document could not
+   *         be stored or verification failed.
    */
   @Nullable
   public static IOutboundTransaction submitRawDocument (@NonNull final String sLogPrefix,
@@ -158,7 +156,7 @@ public final class OutboundOrchestrator
 
     final File aStorageBasePath = new File (APBasicConfig.getStorageOutboundPath ());
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
-    final Wrapper <File> aTempFileHolder = Wrapper.empty ();
+    final Wrapper <String> aTempPathHolder = Wrapper.empty ();
 
     long nDocumentBytes = -1;
     final MessageDigest aMD = HashHelper.createMessageDigest ();
@@ -172,7 +170,7 @@ public final class OutboundOrchestrator
                                                                                 aCreationDT,
                                                                                 sSbdhInstanceID,
                                                                                 ".out",
-                                                                                aTempFileHolder::set))
+                                                                                aTempPathHolder::set))
     {
       if (StreamHelper.copyByteStream ()
                       .from (aDigestIS)
@@ -186,8 +184,8 @@ public final class OutboundOrchestrator
 
         // No need to keep the temporary file
         StreamHelper.close (aFileOS);
-        if (aTempFileHolder.isSet ())
-          DocumentStorageHelper.deleteDocument (aTempFileHolder.get ().getAbsolutePath ());
+        if (aTempPathHolder.isSet ())
+          DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
         return null;
       }
       nDocumentBytes = aCountingIS.getBytesRead ();
@@ -197,20 +195,19 @@ public final class OutboundOrchestrator
       LOGGER.error (sLogPrefix + "Failed to process document to submit", ex);
 
       // No need to keep the temporary file
-      if (aTempFileHolder.isSet ())
-        DocumentStorageHelper.deleteDocument (aTempFileHolder.get ().getAbsolutePath ());
+      if (aTempPathHolder.isSet ())
+        DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
       return null;
     }
 
     final String sDocumentHash = HashHelper.getDigestHex (aMD);
-    final File aDocumentFile = aTempFileHolder.get ().getAbsoluteFile ();
-    final String sDocumentPath = aDocumentFile.toString ();
+    final String sDocumentPath = aTempPathHolder.get ();
 
     // Optional verification
     if (APCoreConfig.isVerificationOutboundEnabled ())
     {
       for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-        if (aVerifier.verifyDocument (aDocumentFile, aDocTypeID, aProcessID).isFailure ())
+        if (aVerifier.verifyDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
         {
           LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH '" + sSbdhInstanceID + "'");
           return null;
@@ -242,19 +239,18 @@ public final class OutboundOrchestrator
   }
 
   /**
-   * Submit a pre-built Standard Business Document (SBD) for outbound sending.
-   * The SBD is parsed to extract Peppol metadata, stored to disk, and a new
-   * outbound transaction is created in {@link EOutboundStatus#PENDING} state.
+   * Submit a pre-built Standard Business Document (SBD) for outbound sending. The SBD is parsed to
+   * extract Peppol metadata, stored to disk, and a new outbound transaction is created in
+   * {@link EOutboundStatus#PENDING} state.
    *
    * @param sLogPrefix
    *        Log message prefix for traceability. May not be <code>null</code>.
    * @param aSbdIS
-   *        The input stream containing the complete pre-built SBD. May not be
-   *        <code>null</code>.
+   *        The input stream containing the complete pre-built SBD. May not be <code>null</code>.
    * @param sMlsTo
    *        Optional MLS "To" address. May be <code>null</code>.
-   * @return The created {@link IOutboundTransaction} or <code>null</code> if
-   *         the SBD could not be parsed.
+   * @return The created {@link IOutboundTransaction} or <code>null</code> if the SBD could not be
+   *         parsed.
    */
   @Nullable
   public static IOutboundTransaction submitPrebuiltSBD (@NonNull final String sLogPrefix,
@@ -268,7 +264,7 @@ public final class OutboundOrchestrator
 
     final File aStorageBasePath = new File (APBasicConfig.getStorageOutboundPath ());
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
-    final Wrapper <File> aTempFileHolder = Wrapper.empty ();
+    final Wrapper <String> aTempPathHolder = Wrapper.empty ();
 
     final PeppolSBDHData aSbdData;
     long nSbdByteCount = -1;
@@ -283,7 +279,7 @@ public final class OutboundOrchestrator
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
          final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStream (aStorageBasePath,
                                                                                          aCreationDT,
-                                                                                         aTempFileHolder::set);
+                                                                                         aTempPathHolder::set);
          final CopyingInputStream aCopyIS = new CopyingInputStream (aDigestIS, aFileOS))
     {
       aSbdData = new PeppolSBDHDataReader (aIF).extractData (aCopyIS);
@@ -293,8 +289,8 @@ public final class OutboundOrchestrator
     {
       LOGGER.error (sLogPrefix + "Failed to parse provided SBDH", ex);
       // No need to keep the temporary file
-      if (aTempFileHolder.isSet ())
-        DocumentStorageHelper.deleteDocument (aTempFileHolder.get ().getAbsolutePath ());
+      if (aTempPathHolder.isSet ())
+        DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
       return null;
     }
 
@@ -307,7 +303,7 @@ public final class OutboundOrchestrator
     final String sDocumentPath;
     {
       // Rename temp file to final name
-      final File aTempFile = aTempFileHolder.get ();
+      final File aTempFile = new File (aTempPathHolder.get ());
       final File aDstFile = DocumentStorageHelper.renameFile (aTempFile,
                                                               aTempFile.getParentFile (),
                                                               sSbdhInstanceID,
@@ -340,23 +336,21 @@ public final class OutboundOrchestrator
   }
 
   /**
-   * Process a pending outbound transaction by performing SMP lookup and sending
-   * the document via AS4/Peppol. This method handles dynamic discovery (NAPTR +
-   * SMP), certificate validation, circuit breaker checks, and the actual AS4
-   * transmission. On success, the transaction status is updated to
-   * {@link EOutboundStatus#SENT}. On failure, the transaction is either marked
-   * as {@link EOutboundStatus#FAILED} (with retry scheduling) or
-   * {@link EOutboundStatus#PERMANENTLY_FAILED} depending on the error type and
-   * attempt count.
+   * Process a pending outbound transaction by performing SMP lookup and sending the document via
+   * AS4/Peppol. This method handles dynamic discovery (NAPTR + SMP), certificate validation,
+   * circuit breaker checks, and the actual AS4 transmission. On success, the transaction status is
+   * updated to {@link EOutboundStatus#SENT}. On failure, the transaction is either marked as
+   * {@link EOutboundStatus#FAILED} (with retry scheduling) or
+   * {@link EOutboundStatus#PERMANENTLY_FAILED} depending on the error type and attempt count.
    *
    * @param sLogPrefix
    *        Log message prefix for traceability. May not be <code>null</code>.
    * @param aTx
-   *        The outbound transaction to process. Must be in pending state. May
-   *        not be <code>null</code>.
-   * @return The {@link Phase4PeppolSendingReport} containing the full details
-   *         of the sending attempt including lookup results, AS4 message IDs,
-   *         and timing information. Never <code>null</code>.
+   *        The outbound transaction to process. Must be in pending state. May not be
+   *        <code>null</code>.
+   * @return The {@link Phase4PeppolSendingReport} containing the full details of the sending
+   *         attempt including lookup results, AS4 message IDs, and timing information. Never
+   *         <code>null</code>.
    */
   @NonNull
   public static Phase4PeppolSendingReport processPendingOutbound (@NonNull final String sLogPrefix,
@@ -737,7 +731,7 @@ public final class OutboundOrchestrator
             if (aReportingItem != null)
             {
               bReportingItemStored = APPeppolReportingHelper.createOutboundPeppolReportingItem (sTxID, aReportingItem)
-                                                              .isSuccess ();
+                                                            .isSuccess ();
               if (bReportingItemStored)
                 LOGGER.info (sRealLogPrefix + "Successfully stored for Peppol Reporting");
               else

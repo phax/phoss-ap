@@ -16,10 +16,9 @@
  */
 package com.helger.phoss.ap.api.spi;
 
-import java.io.File;
-
 import org.jspecify.annotations.NonNull;
 
+import com.helger.annotation.Nonempty;
 import com.helger.annotation.style.IsSPIInterface;
 import com.helger.base.state.ESuccess;
 import com.helger.peppolid.IDocumentTypeIdentifier;
@@ -38,7 +37,7 @@ public interface IOutboundDocumentVerifierSPI
   /**
    * Verify a document's content against the given document type and process identifiers.
    *
-   * @param aDocument
+   * @param sDocumentPath
    *        The path where the document resides. Must only be opened for reading. Never
    *        <code>null</code>.
    * @param aDocTypeID
@@ -49,7 +48,7 @@ public interface IOutboundDocumentVerifierSPI
    *         verification failed.
    */
   @NonNull
-  ESuccess verifyDocument (@NonNull File aDocument,
+  ESuccess verifyDocument (@NonNull @Nonempty String sDocumentPath,
                            @NonNull IDocumentTypeIdentifier aDocTypeID,
                            @NonNull IProcessIdentifier aProcessID);
 }

@@ -25,6 +25,7 @@ import com.helger.annotation.concurrent.Immutable;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
+import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
@@ -53,6 +54,13 @@ public final class APCoreConfig
   public static String getPeppolSeatID ()
   {
     return _getConfig ().getAsString (APConfigurationProperties.PEPPOL_SEATID);
+  }
+
+  @Nullable
+  public static String getPeppolSPID ()
+  {
+    final String sSeatID = getPeppolSeatID ();
+    return CPhossAP.isPeppolSeatID (sSeatID) ? sSeatID.substring (3) : null;
   }
 
   @NonNull

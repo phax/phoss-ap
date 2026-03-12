@@ -32,7 +32,9 @@ public enum EInboundStatus implements IHasID <String>
 {
   /** Received via AS4 and stored in DB, awaiting processing. */
   RECEIVED ("received"),
-  /** Failed optional verification &mdash; no forwarding attempt will be made. */
+  /**
+   * Failed optional verification &mdash; no forwarding attempt will be made.
+   */
   REJECTED ("rejected"),
   /** Forwarding to Receiver Backend (C3) is currently in progress. */
   FORWARDING ("forwarding"),
@@ -59,7 +61,7 @@ public enum EInboundStatus implements IHasID <String>
 
   public boolean isFinalState ()
   {
-    return this == FORWARDED || this == PERMANENTLY_FAILED;
+    return this == FORWARDED || this == REJECTED || this == PERMANENTLY_FAILED;
   }
 
   /**

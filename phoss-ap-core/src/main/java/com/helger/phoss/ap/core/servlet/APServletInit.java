@@ -30,7 +30,6 @@ import com.helger.base.exception.InitializationException;
 import com.helger.base.state.ETriState;
 import com.helger.base.string.StringHelper;
 import com.helger.base.url.URLHelper;
-import com.helger.cache.regex.RegExHelper;
 import com.helger.httpclient.HttpDebugger;
 import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingHelper;
@@ -38,7 +37,6 @@ import com.helger.peppol.reporting.api.backend.IPeppolReportingBackendSPI;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
 import com.helger.peppol.security.PeppolTrustedCA;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
-import com.helger.peppolid.peppol.PeppolIdentifierHelper;
 import com.helger.phase4.config.AS4Configuration;
 import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
 import com.helger.phase4.crypto.AS4CryptoFactoryInMemoryKeyStore;
@@ -52,6 +50,7 @@ import com.helger.phase4.peppol.servlet.Phase4PeppolDefaultReceiverConfiguration
 import com.helger.phase4.profile.peppol.AS4PeppolProfileRegistarSPI;
 import com.helger.phase4.profile.peppol.PeppolCRLDownloader;
 import com.helger.phase4.profile.peppol.Phase4PeppolHttpClientSettings;
+import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -99,8 +98,8 @@ public class APServletInit
     HttpDebugger.setEnabled (false);
 
     // Sanity check
-    if (CommandMap.getDefaultCommandMap ()
-                  .createDataContentHandler (CMimeType.MULTIPART_RELATED.getAsString ()) == null)
+    if (CommandMap.getDefaultCommandMap ().createDataContentHandler (CMimeType.MULTIPART_RELATED.getAsString ()) ==
+        null)
     {
       throw new IllegalStateException ("No DataContentHandler for MIME Type '" +
                                        CMimeType.MULTIPART_RELATED.getAsString () +
@@ -197,7 +196,7 @@ public class APServletInit
 
     // Check Seat ID configuration
     final String sSeatID = APCoreConfig.getPeppolSeatID ();
-    if (!RegExHelper.stringMatchesPattern (PeppolIdentifierHelper.REGEX_SEAT_ID, sSeatID))
+    if (!CPhossAP.isPeppolSeatID (sSeatID))
     {
       throw new InitializationException ("The configured Peppol Seat ID '" +
                                          sSeatID +
@@ -254,7 +253,8 @@ public class APServletInit
     APJdbcMetaManager.getInstance ();
     APCoreMetaManager.init ();
 
-    // This is e.g. the Identifier Factory that is used in the Peppol Receiving processing
+    // This is e.g. the Identifier Factory that is used in the Peppol Receiving
+    // processing
     Phase4PeppolDefaultReceiverConfiguration.setSBDHIdentifierFactory (APBasicMetaManager.getIdentifierFactory ());
 
     // Recover transactions that were in-flight during unclean shutdown

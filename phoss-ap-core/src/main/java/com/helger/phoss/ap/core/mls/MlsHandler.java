@@ -16,7 +16,6 @@
  */
 package com.helger.phoss.ap.core.mls;
 
-import java.io.File;
 import java.time.OffsetDateTime;
 
 import org.jspecify.annotations.NonNull;
@@ -25,12 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.base.state.ESuccess;
+import com.helger.base.string.StringHelper;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
+import com.helger.peppol.mls.PeppolMLSMarshaller;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
 import com.helger.peppolid.peppol.process.EPredefinedProcessIdentifier;
+import com.helger.peppolid.peppol.spis.SPIDHelper;
+import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
@@ -45,6 +48,7 @@ import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.helper.HashHelper;
+import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 public final class MlsHandler
@@ -55,18 +59,19 @@ public final class MlsHandler
   {}
 
   /**
-   * Handle the outcome of an inbound document by creating an outbound MLS response transaction if
-   * required by the MLS strategy.
+   * Handle the outcome of an inbound document by creating an outbound MLS
+   * response transaction if required by the MLS strategy.
    *
-   * @param aTx
+   * @param aInboundTx
    *        The inbound transaction. Never <code>null</code>.
    * @param aOutcome
-   *        The MLS outcome carrying the response code, optional response text, and optional issues
-   *        for rejection responses. Never <code>null</code>.
+   *        The MLS outcome carrying the response code, optional response text,
+   *        and optional issues for rejection responses. Never
+   *        <code>null</code>.
    * @return {@link ESuccess}
    */
   @NonNull
-  public static ESuccess triggerSendingInboundResultMls (@NonNull final IInboundTransaction aTx,
+  public static ESuccess triggerSendingInboundResultMls (@NonNull final IInboundTransaction aInboundTx,
                                                          @NonNull final MlsOutcome aOutcome)
   {
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
@@ -74,46 +79,78 @@ public final class MlsHandler
     final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
 
     final EPeppolMLSResponseCode eResponseCode = aOutcome.getResponseCode ();
-    final EPeppolMLSType eMlsType = aTx.getMlsType ();
+    final EPeppolMLSType eMlsType = aInboundTx.getMlsType ();
 
     // Determine if we should send MLS
     if (eMlsType == EPeppolMLSType.FAILURE_ONLY && eResponseCode.isSuccess ())
     {
       LOGGER.info ("MLS not required for transaction " +
-                   aTx.getID () +
+                   aInboundTx.getID () +
                    " (FAILURE_ONLY, outcome=" +
                    eResponseCode.getID () +
                    ")");
-      return aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, null);
+      return aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, null);
     }
 
     LOGGER.info ("Creating MLS response (" +
                  eResponseCode.getID () +
                  ") for inbound transaction '" +
-                 aTx.getID () +
+                 aInboundTx.getID () +
                  "'");
 
-    // Create an outbound transaction for the MLS response
-
-    // TODO MLS response bytes would be created from peppol-mls library using
-    // aOutcome
+    // Create MLS data structure from MlsOutcome
+    final String sEffectiveMlsTo = StringHelper.isNotEmpty (aInboundTx.getMlsTo ()) ? aInboundTx.getMlsTo ()
+                                                                                    : SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME +
+                                                                                      ":" +
+                                                                                      aInboundTx.getC2SeatID ()
+                                                                                                .substring (3);
     final PeppolMLSBuilder aBuilder = aOutcome.getAsMLSBuilder ();
-    aBuilder.randomID ().issueDateTimeNow ();
+    aBuilder.randomID ()
+            .issueDateTimeNow ()
+            .senderParticipantID (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":" + APCoreConfig.getPeppolSPID ())
+            .receiverParticipantID (sEffectiveMlsTo)
+            .referenceId (aInboundTx.getSbdhInstanceID ());
+    final var aMls = aBuilder.build ();
+    if (aMls == null)
+    {
+      // Failed to build MLS
+      LOGGER.error ("Failed to build MLS data structure - see log for details");
+      return ESuccess.FAILURE;
+    }
 
-    final byte [] aMlsBytes = {};
+    // Serialize ApplicationResponse to XML
+    final byte [] aMlsBytes = new PeppolMLSMarshaller ().getAsBytes (aMls);
+    if (aMlsBytes == null)
+    {
+      // Failed to serialize MLS
+      LOGGER.error ("Failed to serialize MLS to bytes - see log for details");
+      return ESuccess.FAILURE;
+    }
+
     final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
 
+    // Create an outbound transaction for the MLS response
+
     // Store MLS document to disk
-    final String sDocumentPath = DocumentStorageHelper.storeDocument (new File (APBasicConfig.getStorageOutboundPath ()),
+    final String sDocumentPath = DocumentStorageHelper.storeDocument (APBasicConfig.getStorageOutboundPath (),
                                                                       aCreationDT,
                                                                       sMlsSbdhInstanceID + ".mls",
                                                                       aMlsBytes);
 
-    // TODO send via Outbound Orchestrator
+    // MLS can never have an MLS_TO
+    final String sMlsTo = null;
+
+    // The SBDH parameters are not needed for SBDH
+    final String sSbdhStandard = null;
+    final String sSbdhTypeVersion = null;
+    final String sSbdhType = null;
+    final String sPayloadMimeType = null;
+
+    // Create outbound transaction
     final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
-                                                 aTx.getReceiverID (),
-                                                 aTx.getSenderID (),
+                                                 aInboundTx.getReceiverID (),
+                                                 aInboundTx.getSenderID (),
                                                  EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
                                                  EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded (),
                                                  sMlsSbdhInstanceID,
@@ -123,15 +160,28 @@ public final class MlsHandler
                                                  HashHelper.sha256Hex (aMlsBytes),
                                                  APCoreConfig.getPeppolOwnerCountryCode (),
                                                  aCreationDT,
-                                                 null,
-                                                 aTx.getID (),
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null);
+                                                 sMlsTo,
+                                                 aInboundTx.getID (),
+                                                 sSbdhStandard,
+                                                 sSbdhTypeVersion,
+                                                 sSbdhType,
+                                                 sPayloadMimeType);
+    final var aMlsTx = aOutboundMgr.getByID (sMlsTxID);
+    if (aMlsTx == null)
+    {
+      LOGGER.error ("Failed to submit outbound transaction");
+      return ESuccess.FAILURE;
+    }
 
     // Update inbound with MLS fields
-    return aInboundMgr.updateMlsFields (aTx.getID (), eResponseCode, sMlsTxID);
+    if (aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsTxID).isFailure ())
+      LOGGER.error ("Failed to update MLS fields for inbound transaction '" + aInboundTx.getID () + "'");
+
+    // Perform actual sending
+    final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitMLS] ",
+                                                                                                  aMlsTx);
+    // TODO store sending report
+    return ESuccess.valueOf (aSendingReport.isOverallSuccess ());
   }
 
   /**
@@ -144,7 +194,8 @@ public final class MlsHandler
    * @param eResponseCode
    *        The MLS response code received. May not be <code>null</code>.
    * @param aMlsAS4ReceivedDT
-   *        The MLS AS4 receiving date time for the SLR. May not be <code>null</code>.
+   *        The MLS AS4 receiving date time for the SLR. May not be
+   *        <code>null</code>.
    * @param sMlsID
    *        The MLS document ID received. May not be <code>null</code>.
    * @return {@link ESuccess}

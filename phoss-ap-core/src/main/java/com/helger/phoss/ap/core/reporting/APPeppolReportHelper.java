@@ -130,7 +130,8 @@ public final class APPeppolReportHelper
   }
 
   /**
-   * Create, validate, store, send and store sending reports for Peppol TSR and EUSR for one period.
+   * Create, validate, store, send and store sending reports for Peppol TSR and
+   * EUSR for one period.
    *
    * @param aYearMonth
    *        The reporting period to use. May not be <code>null</code>.
@@ -152,8 +153,7 @@ public final class APPeppolReportHelper
       // Sender: your company participant ID
       final IParticipantIdentifier aSenderID = aIF.createParticipantIdentifierWithDefaultScheme (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME +
                                                                                                  ":" +
-                                                                                                 APCoreConfig.getPeppolSeatID ()
-                                                                                                             .substring (3));
+                                                                                                 APCoreConfig.getPeppolSPID ());
 
       // Receiver: production OpenPeppol; test Helger
       // OpenPeppol doesn't offer this participant ID on test :-/
@@ -164,6 +164,11 @@ public final class APPeppolReportHelper
       // Validity of country code was checked on startup
 
       // Store in DB
+      final String sMlsTo = null;
+      final String sSbdhStandard = null;
+      final String sSbdhTypeVersion = null;
+      final String sSbdhType = null;
+      final String sPayloadMimeType = null;
       final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[PeppolReporting] ",
                                                                                aSenderID,
                                                                                aReceiverID,
@@ -172,11 +177,11 @@ public final class APPeppolReportHelper
                                                                                PeppolSBDHData.createRandomSBDHInstanceIdentifier (),
                                                                                sC1CountryCode,
                                                                                new NonBlockingByteArrayInputStream (sMessagePayload.getBytes (StandardCharsets.UTF_8)),
-                                                                               (String) null,
-                                                                               (String) null,
-                                                                               (String) null,
-                                                                               (String) null,
-                                                                               (String) null);
+                                                                               sMlsTo,
+                                                                               sSbdhStandard,
+                                                                               sSbdhTypeVersion,
+                                                                               sSbdhType,
+                                                                               sPayloadMimeType);
       if (aTx == null)
         throw new IllegalStateException ("Failed to submit Peppol Reporting document for transmission");
 

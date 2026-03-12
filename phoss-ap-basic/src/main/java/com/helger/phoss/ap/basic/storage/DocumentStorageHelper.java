@@ -37,8 +37,8 @@ import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
 
 /**
- * Utility class for reading and writing document files on disk. Documents are stored as flat files
- * rather than as BYTEA columns in the database.
+ * Utility class for reading and writing document files on disk. Documents are
+ * stored as flat files rather than as BYTEA columns in the database.
  *
  * @author Philip Helger
  */
@@ -62,11 +62,12 @@ public final class DocumentStorageHelper
   }
 
   /**
-   * Write bytes to a file under the given base directory, using the provided filename. Creates the
-   * directory if needed.
+   * Write bytes to a file under the given base directory, using the provided
+   * filename. Creates the directory if needed.
    *
-   * @param aBaseDir
-   *        The base directory to store the file in. May not be <code>null</code>.
+   * @param sBaseDir
+   *        The base directory to store the file in. May not be
+   *        <code>null</code>.
    * @param aReferenceDT
    *        The reference date time to which the message should be stored.
    * @param sFilename
@@ -76,17 +77,17 @@ public final class DocumentStorageHelper
    * @return The absolute path of the stored file.
    */
   @NonNull
-  public static String storeDocument (@NonNull final File aBaseDir,
+  public static String storeDocument (@NonNull final String sBaseDir,
                                       @NonNull final OffsetDateTime aReferenceDT,
                                       @NonNull final String sFilename,
                                       final byte @NonNull [] aBytes)
   {
-    ValueEnforcer.notNull (aBaseDir, "BaseDir");
+    ValueEnforcer.notNull (sBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
     ValueEnforcer.notNull (sFilename, "Filename");
     ValueEnforcer.notNull (aBytes, "Bytes");
 
-    final File aEffectiveBaseDir = _getStorageDir (aBaseDir, aReferenceDT);
+    final File aEffectiveBaseDir = _getStorageDir (new File (sBaseDir), aReferenceDT);
     try
     {
       Files.createDirectories (aEffectiveBaseDir.toPath ());
@@ -219,8 +220,8 @@ public final class DocumentStorageHelper
   }
 
   /**
-   * Open an {@link InputStream} for the file at the given absolute path. The caller is responsible
-   * for closing the stream.
+   * Open an {@link InputStream} for the file at the given absolute path. The
+   * caller is responsible for closing the stream.
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
@@ -246,7 +247,8 @@ public final class DocumentStorageHelper
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file was deleted, <code>false</code> if it did not exist.
+   * @return <code>true</code> if the file was deleted, <code>false</code> if it
+   *         did not exist.
    */
   public static boolean deleteDocument (@NonNull final String sAbsolutePath)
   {
@@ -267,7 +269,8 @@ public final class DocumentStorageHelper
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file exists, <code>false</code> if it does not exist.
+   * @return <code>true</code> if the file exists, <code>false</code> if it does
+   *         not exist.
    */
   public static boolean existsDocument (@NonNull final String sAbsolutePath)
   {

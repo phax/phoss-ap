@@ -18,7 +18,16 @@ package com.helger.phoss.ap.api;
 
 import java.util.Locale;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 import com.helger.annotation.concurrent.Immutable;
+import com.helger.cache.regex.RegExHelper;
+import com.helger.peppolid.IDocumentTypeIdentifier;
+import com.helger.peppolid.IProcessIdentifier;
+import com.helger.peppolid.peppol.PeppolIdentifierHelper;
+import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
+import com.helger.peppolid.peppol.process.EPredefinedProcessIdentifier;
 
 @Immutable
 public final class CPhossAP
@@ -27,4 +36,15 @@ public final class CPhossAP
 
   private CPhossAP ()
   {}
+
+  public static boolean isPeppolSeatID (@Nullable final String sSeatID)
+  {
+    return sSeatID != null && RegExHelper.stringMatchesPattern (PeppolIdentifierHelper.REGEX_SEAT_ID, sSeatID);
+  }
+
+  public static boolean isMLS (@NonNull final IDocumentTypeIdentifier aDocTypeID, @NonNull final IProcessIdentifier aProcessID)
+  {
+    return aDocTypeID.hasSameContent (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0) &&
+           aProcessID.hasSameContent (EPredefinedProcessIdentifier.urn_peppol_edec_mls);
+  }
 }

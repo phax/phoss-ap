@@ -56,6 +56,7 @@ public final class OutboundSendingAttemptRowTest
     // 6 attemptDT
     // 7 attemptStatus
     // 8 errorDetails (nullable)
+    // 9 sendingReport (nullable)
     final DBResultRow aRow = DBResultRowHelper.createRow ("att-001",
                                                           "tx-001",
                                                           "as4-msg@test",
@@ -64,7 +65,8 @@ public final class OutboundSendingAttemptRowTest
                                                           Integer.valueOf (200),
                                                           aNow,
                                                           "success",
-                                                          null);
+                                                          null,
+                                                          "{'a': 0}");
     final OutboundSendingAttemptRow aAttempt = new OutboundSendingAttemptRow (aRow);
 
     assertEquals ("att-001", aAttempt.getID ());
@@ -91,7 +93,8 @@ public final class OutboundSendingAttemptRowTest
                                                           null,
                                                           aNow,
                                                           "failed",
-                                                          "Connection timeout");
+                                                          "Connection timeout",
+                                                          "{'sendingReport'}");
     final OutboundSendingAttemptRow aAttempt = new OutboundSendingAttemptRow (aRow);
 
     assertNull (aAttempt.getReceiptMessageID ());

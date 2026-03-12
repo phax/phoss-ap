@@ -34,6 +34,7 @@ import com.helger.http.header.HttpHeaderMap;
 import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSMarshaller;
 import com.helger.peppol.reporting.api.CPeppolReporting;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.CIdentifier;
 import com.helger.peppolid.IDocumentTypeIdentifier;
@@ -252,7 +253,8 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                                bIsDuplicateSBDH,
                                                sMlsTo,
                                                APCoreConfig.getMlsType ());
-      if (sTxID == null)
+      final var aInboundTx = aInboundMgr.getByID (sTxID);
+      if (aInboundTx == null)
         throw new IllegalStateException ("Failed to store incoming transaction");
 
       // Optional verification
@@ -266,17 +268,13 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
             aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
 
             // Send negative MLS (RE) back to C2
-            final var aInboundTx = aInboundMgr.getByID (sTxID);
-            if (aInboundTx != null)
+            // Dop't send MLS as response to MLS
+            if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
             {
-              // Dop't send MLS as response to MLS
-              if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
-              {
-                final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
-                                                                  MlsOutcomeIssue.businessRuleViolation ("NA",
-                                                                                                         "Inbound document verification failed"));
-                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
-              }
+              final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
+                                                                MlsOutcomeIssue.businessRuleViolation ("NA",
+                                                                                                       "Inbound document verification failed"));
+              MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
             }
 
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
@@ -334,14 +332,24 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
 
       // Forward - Business Document and MLS
-      final var aTx = aInboundMgr.getByID (sTxID);
-      if (aTx == null)
-        throw new IllegalStateException ("Failed to resolve previously stored transaction with ID '" + sTxID + "'");
-
-      if (InboundOrchestrator.forwardDocument (sLogPrefix, aTx).isFailure ())
+      if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
       {
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onInboundForwardingError (sTxID, false);
+      }
+      else
+      {
+        if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
+        {
+          // Try to send back positive MLS
+
+          // Dop't send MLS as response to MLS
+          if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+          {
+            final MlsOutcome aOutcome = MlsOutcome.acceptance ();
+            MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+          }
+        }
       }
     }
     finally

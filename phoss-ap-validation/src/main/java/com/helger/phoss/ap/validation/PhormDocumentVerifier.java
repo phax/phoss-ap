@@ -60,37 +60,41 @@ import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
  * @author Philip Helger
  */
 @IsSPIImplementation
-public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifierSPI, IOutboundDocumentVerifierSPI
+public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutboundDocumentVerifierSPI
 {
-  private static final Logger LOGGER = LoggerFactory.getLogger (ValidationServiceDocumentVerifier.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger (PhormDocumentVerifier.class);
 
   @NonNull
-  private ESuccess _verifyDocument (@NonNull @Nonempty final String sDocumentPath)
+  private ESuccess _callPhorm (@NonNull @Nonempty final String sDocumentPath)
   {
     final IConfig aConfig = APConfigProvider.getConfig ();
-    final String sBaseURL = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_URL);
-    final String sToken = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_TOKEN);
+    final String sPhormBaseURL = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_URL);
+    final String sPhormToken = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_TOKEN);
 
-    if (StringHelper.isEmpty (sBaseURL))
+    if (StringHelper.isEmpty (sPhormBaseURL))
     {
       if (LOGGER.isDebugEnabled ())
-        LOGGER.debug ("Validation Service URL is not configured ('" +
-                      APConfigurationProperties.VERIFICATION_PHORM_URL +
-                      "')");
+        LOGGER.debug ("Phorm URL is not configured ('" + APConfigurationProperties.VERIFICATION_PHORM_URL + "')");
       // Don't break document processing
       return ESuccess.SUCCESS;
     }
 
-    if (URLHelper.getAsURL (sBaseURL) == null)
+    if (URLHelper.getAsURL (sPhormBaseURL) == null)
     {
-      LOGGER.error ("Validation Service URL '" + sBaseURL + "' is not a valid URL");
+      LOGGER.error ("Phorm URL '" + sPhormBaseURL + "' is not a valid URL");
       return ESuccess.FAILURE;
     }
 
-    final String sURL = StringHelper.trimEnd (sBaseURL, '/') + "/api/dd_and_validate/";
+    if (StringHelper.isEmpty (sPhormToken))
+    {
+      LOGGER.error ("Phorm URL '" + sPhormBaseURL + "' looks okay but the Token is not configured");
+      return ESuccess.FAILURE;
+    }
+
+    final String sURL = StringHelper.trimEnd (sPhormBaseURL, '/') + "/api/dd_and_validate/";
     if (!DocumentStorageHelper.existsDocument (sDocumentPath))
     {
-      LOGGER.error ("Document file does not exist: " + sDocumentPath);
+      LOGGER.error ("Document path '" + sDocumentPath + "' does not exist");
       return ESuccess.FAILURE;
     }
 
@@ -103,31 +107,28 @@ public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifi
       final HttpPost aPost = new HttpPost (sURL);
       aPost.setEntity (new InputStreamEntity (aDocumentIS, ContentType.APPLICATION_XML));
       aPost.setHeader (CHttpHeader.ACCEPT, ContentType.APPLICATION_JSON.getMimeType ());
-      if (StringHelper.isNotEmpty (sToken))
-        aPost.setHeader ("X-Token", sToken);
+      aPost.setHeader ("X-Token", sPhormToken);
 
-      LOGGER.info ("Calling Validation Service at '" + sURL + "' for document '" + sDocumentPath + "'");
+      LOGGER.info ("Calling Phorm at '" + sURL + "' for document '" + sDocumentPath + "'");
 
       final byte [] aResponseBytes = aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
       if (aResponseBytes == null)
       {
-        LOGGER.error ("Validation Service returned null response for '" + sDocumentPath + "'");
+        LOGGER.error ("Phorm returned null response for '" + sDocumentPath + "'");
         return ESuccess.FAILURE;
       }
 
       final IJsonObject aJson = JsonReader.builder ().source (aResponseBytes).readAsObject ();
       if (aJson == null)
       {
-        LOGGER.error ("Failed to parse Validation Service response as JSON for '" + sDocumentPath + "'");
+        LOGGER.error ("Failed to parse Phorm response as JSON for '" + sDocumentPath + "'");
         return ESuccess.FAILURE;
       }
 
       final ValidationResultList aResultList = PhiveJsonHelper.getAsValidationResultList (aJson);
       if (aResultList == null)
       {
-        LOGGER.error ("Failed to extract validation results from Validation Service response for '" +
-                      sDocumentPath +
-                      "'");
+        LOGGER.error ("Failed to extract validation results from Phorm response for '" + sDocumentPath + "'");
         return ESuccess.FAILURE;
       }
 
@@ -150,12 +151,12 @@ public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifi
     }
     catch (final ExtendedHttpResponseException ex)
     {
-      LOGGER.error ("Validation Service returned HTTP error for '" + sDocumentPath + "': " + ex.getMessage ());
+      LOGGER.error ("Phorm returned HTTP error for '" + sDocumentPath + "': " + ex.getMessage ());
       return ESuccess.FAILURE;
     }
     catch (final IOException ex)
     {
-      LOGGER.error ("Failed to call Validation Service for '" +
+      LOGGER.error ("Failed to call Phorm for '" +
                     sDocumentPath +
                     "': " +
                     ex.getMessage () +
@@ -166,7 +167,7 @@ public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifi
     }
     catch (final Exception ex)
     {
-      LOGGER.error ("Unexpected error calling Validation Service for '" + sDocumentPath + "'", ex);
+      LOGGER.error ("Unexpected error calling Phorm for '" + sDocumentPath + "'", ex);
       return ESuccess.FAILURE;
     }
   }
@@ -176,7 +177,7 @@ public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifi
                                          @NonNull final IDocumentTypeIdentifier aDocTypeID,
                                          @NonNull final IProcessIdentifier aProcessID)
   {
-    return _verifyDocument (sDocumentPath);
+    return _callPhorm (sDocumentPath);
   }
 
   @NonNull
@@ -184,6 +185,6 @@ public class ValidationServiceDocumentVerifier implements IInboundDocumentVerifi
                                           @NonNull final IDocumentTypeIdentifier aDocTypeID,
                                           @NonNull final IProcessIdentifier aProcessID)
   {
-    return _verifyDocument (sDocumentPath);
+    return _callPhorm (sDocumentPath);
   }
 }

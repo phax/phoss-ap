@@ -772,11 +772,6 @@ public final class OutboundOrchestrator
           // Unexpected exception - not a Phase4Exception
           LOGGER.error (sRealLogPrefix + "Outbound sending exception for transaction '" + sTxID + "'", ex);
 
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onUnexpectedException ("OutboundOrchestrator.processPendingOutbound",
-                                            "Outbound sending exception for transaction '" + sTxID + "'",
-                                            ex);
-
           aSendingSW.stop ();
           aSendingReport.setAS4SendingError ("Failed to transmit outbound AS4 message to '" + sReceiverAPURL + "'");
           aSendingReport.setAS4SendingException (ex);
@@ -788,6 +783,11 @@ public final class OutboundOrchestrator
             onPermanentFailure.accept (ex.getMessage ());
           else
             onFailed.accept (ex.getMessage ());
+
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onUnexpectedException ("OutboundOrchestrator.processPendingOutbound",
+                                            "Outbound sending exception for transaction '" + sTxID + "'",
+                                            ex);
         }
 
         // Update circuit breaker based on sending result only

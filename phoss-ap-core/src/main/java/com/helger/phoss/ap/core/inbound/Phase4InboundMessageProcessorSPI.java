@@ -88,6 +88,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
   {
     final String sLogPrefix = "[" + aMessageMetadata.getIncomingUniqueID () + "] ";
     Phase4LogCustomizer.setThreadLocalLogPrefix (sLogPrefix);
+
     try
     {
       final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
@@ -111,10 +112,15 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
       final String sC2ID = CertificateHelper.getSubjectCN (aIncomingState.getSigningCertificate ());
       if (!CPhossAP.isPeppolSeatID (sC2ID))
-        LOGGER.error ("C2 ID '" + sC2ID + "' does not seem to be a valid Peppol Seat ID");
+        LOGGER.error ("Received C2 ID '" + sC2ID + "' does not seem to be a valid Peppol Seat ID");
       final String sC3ID = APCoreConfig.getPeppolSeatID ();
 
-      LOGGER.info (sLogPrefix + "Received inbound SBD: SBDH=" + sSbdhInstanceID + " AS4=" + sAS4MessageID);
+      LOGGER.info (sLogPrefix +
+                   "Received inbound SBD - SBDH ID '" +
+                   sSbdhInstanceID +
+                   "'; AS4 ID '" +
+                   sAS4MessageID +
+                   "'");
 
       // Signing certificate CN
       String sSigningCertCN = "";
@@ -140,6 +146,9 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                                 .build ());
           return;
         }
+
+        final String sMsg = "Found duplicate AS4 message '" + sAS4MessageID + "' - processing it anyway";
+        LOGGER.error (sLogPrefix + sMsg);
       }
 
       if (aInboundMgr.containsBySbdhInstanceID (sSbdhInstanceID))
@@ -156,6 +165,9 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                                 .build ());
           return;
         }
+
+        final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
+        LOGGER.error (sLogPrefix + sMsg);
       }
 
       // Receiver check
@@ -172,12 +184,14 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
 
           for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
             aHandler.onInboundReceiverNotServiced (sSenderID, sReceiverID, sDocTypeID, sProcessID, sSbdhInstanceID);
-
           return;
         }
       }
 
+      // Create SBDH hash
       final String sSbdhHash = HashHelper.sha256Hex (aSBDBytes);
+
+      // Resilient way to get AS4 timestamp
       final OffsetDateTime aAS4Timestamp;
       if (aIncomingState.getMessageTimestamp () != null)
       {
@@ -201,6 +215,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                      "The incoming AS4 message has not AS4 message timestamp - using the current date time instead");
       }
 
+      // Find MLS receiver
       String sMlsTo = null;
       {
         final String sScheme = aPeppolSBD.getMLSToScheme ();
@@ -220,7 +235,8 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
 
         if (sMlsTo == null && (sScheme != null || sValue != null))
         {
-          LOGGER.warn ("Some MLS_TO parts were provided ('" +
+          LOGGER.warn (sLogPrefix +
+                       "Some MLS_TO parts were provided ('" +
                        sScheme +
                        "' and '" +
                        sValue +
@@ -280,6 +296,8 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                 MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
               });
             }
+
+            // No processing error - MLS
 
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
               aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");

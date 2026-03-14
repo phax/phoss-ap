@@ -43,6 +43,7 @@ public final class APCoreMetaManager
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APCoreMetaManager.class);
 
+  private static EForwardingMode s_eForwardingMode;
   private static IDocumentForwarder s_aForwarder;
   private static final ICommonsList <IInboundDocumentVerifierSPI> s_aInboundVerifiers = new CommonsArrayList <> ();
   private static final ICommonsList <IOutboundDocumentVerifierSPI> s_aOutboundVerifiers = new CommonsArrayList <> ();
@@ -70,6 +71,7 @@ public final class APCoreMetaManager
         case SFTP -> new SftpDocumentForwarder ();
       };
       aForwarder.initFromConfiguration (APConfigProvider.getConfig ());
+      s_eForwardingMode = eForwardingMode;
       s_aForwarder = aForwarder;
       LOGGER.info ("Loaded document forwarder: " + aForwarder.toString ());
     }
@@ -100,6 +102,12 @@ public final class APCoreMetaManager
   public static void shutdown ()
   {
     LOGGER.info ("Shutting down APMetaManager");
+  }
+
+  @NonNull
+  public static EForwardingMode getForwardingMode ()
+  {
+    return s_eForwardingMode;
   }
 
   @NonNull

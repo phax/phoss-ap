@@ -47,4 +47,10 @@ public final class CPhossAP
     return aDocTypeID.hasSameContent (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0) &&
            aProcessID.hasSameContent (EPredefinedProcessIdentifier.urn_peppol_edec_mls);
   }
+
+  public static boolean isMLS (@NonNull final String sDocTypeID, @NonNull final String sProcessID)
+  {
+    return EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded ().equals (sDocTypeID) &&
+           EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded ().equals (sProcessID);
+  }
 }

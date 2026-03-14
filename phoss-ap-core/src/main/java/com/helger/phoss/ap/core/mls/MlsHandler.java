@@ -127,6 +127,12 @@ public final class MlsHandler
       return ESuccess.FAILURE;
     }
 
+    LOGGER.info ("Sending MLS from '" +
+                 aBuilder.senderParticipantID ().getURIEncoded () +
+                 "' to '" +
+                 aBuilder.receiverParticipantID ().getURIEncoded () +
+                 "'");
+
     final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
 

@@ -22,14 +22,18 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.state.ESuccess;
+import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.MlsOutcome;
+import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
+import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.reporting.APPeppolReportingHelper;
@@ -131,6 +135,15 @@ public final class InboundOrchestrator
                                            nMaxRetryAttempts +
                                            ") exhausted: " +
                                            aResult.getErrorDetails ());
+
+        // Send negative MLS (RE) with FD reason back to C2
+        // Don't send MLS as response to MLS
+        if (!CPhossAP.isMLS (aTx.getDocTypeID (), aTx.getProcessID ()))
+        {
+          final MlsOutcome aOutcome = MlsOutcome.rejection ("Forwarding to C4 failed",
+                                                             MlsOutcomeIssue.failureOfDelivery ("Permanent inability to forward document to C4"));
+          MlsHandler.triggerSendingInboundResultMls (aTx, aOutcome);
+        }
 
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onInboundPermanentForwardingFailure (aTx.getID (),

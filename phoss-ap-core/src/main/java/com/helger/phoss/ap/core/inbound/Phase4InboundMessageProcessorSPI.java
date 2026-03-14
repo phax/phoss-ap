@@ -267,10 +267,10 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
             LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
             aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
 
-            // Send negative MLS (RE) back to C2
             // Dop't send MLS as response to MLS
             if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
             {
+              // Send negative MLS (RE) back to C2
               final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
                                                                 MlsOutcomeIssue.businessRuleViolation ("NA",
                                                                                                        "Inbound document verification failed"));
@@ -342,11 +342,14 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
         {
           // Try to send back positive MLS
-
-          // Dop't send MLS as response to MLS
+          // Don't send MLS as response to MLS
           if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
           {
-            final MlsOutcome aOutcome = MlsOutcome.acceptance ();
+            // AP for HTTP (delivery with confirmation), AB for SFTP/S3 (without
+            // confirmation)
+            final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
+                                                                                                             ? MlsOutcome.acceptance ()
+                                                                                                             : MlsOutcome.acknowledging ();
             MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
           }
         }

@@ -55,6 +55,15 @@ public enum EForwardingMode implements IHasID <String>
   }
 
   /**
+   * @return <code>true</code> if this forwarding mode provides delivery confirmation (HTTP modes),
+   *         <code>false</code> if it does not (SFTP, S3).
+   */
+  public boolean isWithDeliveryConfirmation ()
+  {
+    return this == HTTP_POST_SYNC || this == HTTP_POST_ASYNC;
+  }
+
+  /**
    * Find the enum constant matching the given ID.
    *
    * @param sID

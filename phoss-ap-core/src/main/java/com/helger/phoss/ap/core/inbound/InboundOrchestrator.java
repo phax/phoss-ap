@@ -33,11 +33,12 @@ import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
-import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
+import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.core.reporting.APPeppolReportingHelper;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
+import com.helger.photon.io.PhotonWorkerPool;
 
 /**
  * Internal orchestrator to handle messages received via the Peppol Network
@@ -136,13 +137,16 @@ public final class InboundOrchestrator
                                            ") exhausted: " +
                                            aResult.getErrorDetails ());
 
-        // Send negative MLS (RE) with FD reason back to C2
         // Don't send MLS as response to MLS
         if (!CPhossAP.isMLS (aTx.getDocTypeID (), aTx.getProcessID ()))
         {
-          final MlsOutcome aOutcome = MlsOutcome.rejection ("Forwarding to C4 failed",
-                                                             MlsOutcomeIssue.failureOfDelivery ("Permanent inability to forward document to C4"));
-          MlsHandler.triggerSendingInboundResultMls (aTx, aOutcome);
+          // Send asynchronously
+          PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+            // Send negative MLS (RE) with FD reason back to C2
+            final MlsOutcome aOutcome = MlsOutcome.rejection ("Forwarding to C4 failed",
+                                                              MlsOutcomeIssue.failureOfDelivery ("Permanent inability to forward document to C4"));
+            MlsHandler.triggerSendingInboundResultMls (aTx, aOutcome);
+          });
         }
 
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())

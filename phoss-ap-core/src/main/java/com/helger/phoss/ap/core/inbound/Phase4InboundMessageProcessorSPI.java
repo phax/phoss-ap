@@ -67,6 +67,7 @@ import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
+import com.helger.photon.io.PhotonWorkerPool;
 import com.helger.security.certificate.CertificateHelper;
 
 import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
@@ -270,11 +271,14 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
             // Dop't send MLS as response to MLS
             if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
             {
-              // Send negative MLS (RE) back to C2
-              final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
-                                                                MlsOutcomeIssue.businessRuleViolation ("NA",
-                                                                                                       "Inbound document verification failed"));
-              MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+              // Send asynchronously
+              PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                // Send negative MLS (RE) back to C2
+                final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
+                                                                  MlsOutcomeIssue.businessRuleViolation ("NA",
+                                                                                                         "Inbound document verification failed"));
+                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+              });
             }
 
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
@@ -339,18 +343,22 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
       else
       {
+        // Forwarding success
         if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
         {
           // Try to send back positive MLS
           // Don't send MLS as response to MLS
           if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
           {
-            // AP for HTTP (delivery with confirmation), AB for SFTP/S3 (without
-            // confirmation)
-            final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
-                                                                                                             ? MlsOutcome.acceptance ()
-                                                                                                             : MlsOutcome.acknowledging ();
-            MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+            // Send asynchronously
+            PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+              // AP for HTTP (delivery with confirmation), AB for SFTP/S3
+              // (without confirmation)
+              final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
+                                                                                                               ? MlsOutcome.acceptance ()
+                                                                                                               : MlsOutcome.acknowledging ();
+              MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+            });
           }
         }
       }

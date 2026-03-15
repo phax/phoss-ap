@@ -26,10 +26,10 @@ import com.helger.base.lang.clazz.ClassHelper;
 import com.helger.peppolid.factory.IIdentifierFactory;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.peppolid.factory.PeppolLaxIdentifierFactory;
-import com.helger.phoss.ap.api.datetime.APTimestampManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
-import com.helger.phoss.ap.basic.payload.DocumentPayloadManagerFileSystem;
+import com.helger.phoss.ap.basic.mgr.APTimestampManager;
+import com.helger.phoss.ap.basic.mgr.DocumentPayloadManagerFileSystem;
 import com.helger.scope.IScope;
 import com.helger.scope.singleton.AbstractGlobalSingleton;
 

@@ -85,7 +85,14 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                                @NonNull final String sReceiptMessageID,
                                @Nullable final String sSendingReport)
   {
-    return create (sOutboundTransactionID, sAS4MessageID, aAS4Timestamp, null, null, EAttemptStatus.SUCCESS, null, sSendingReport);
+    return create (sOutboundTransactionID,
+                   sAS4MessageID,
+                   aAS4Timestamp,
+                   null,
+                   null,
+                   EAttemptStatus.SUCCESS,
+                   null,
+                   sSendingReport);
   }
 
   @NonNull

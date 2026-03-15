@@ -26,9 +26,10 @@ import com.helger.base.lang.EnumHelper;
 /**
  * Indicates how the outbound document was submitted by the Sender Backend.
  * <ul>
- * <li>{@link #PAYLOAD_ONLY} &mdash; Raw business document; the AP creates the SBDH envelope.</li>
- * <li>{@link #PREBUILT_SBD} &mdash; Complete Standard Business Document with SBDH already
- * present.</li>
+ * <li>{@link #PAYLOAD_ONLY} &mdash; Raw business document; the AP creates the
+ * SBDH envelope.</li>
+ * <li>{@link #PREBUILT_SBD} &mdash; Complete Standard Business Document with
+ * SBDH already present.</li>
  * </ul>
  *
  * @author Philip Helger

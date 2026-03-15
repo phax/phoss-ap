@@ -28,7 +28,8 @@ import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.model.IOutboundSendingAttempt;
 
 /**
- * Simple implementation of {@link IOutboundSendingAttempt} created from JDBC result object.
+ * Simple implementation of {@link IOutboundSendingAttempt} created from JDBC
+ * result object.
  *
  * @author Philip Helger
  */

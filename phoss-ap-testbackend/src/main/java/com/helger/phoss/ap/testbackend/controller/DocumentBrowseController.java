@@ -35,7 +35,8 @@ import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 import com.helger.phoss.ap.testbackend.store.DocumentStore;
 
 /**
- * Browse, inspect and download received documents across all forwarding channels (HTTP, SFTP, S3).
+ * Browse, inspect and download received documents across all forwarding
+ * channels (HTTP, SFTP, S3).
  *
  * @author Philip Helger
  */

@@ -31,11 +31,12 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
 /**
- * Polls a local directory for files uploaded via S3 (e.g. a MinIO data directory or an S3-mounted
- * filesystem). New files are registered in the {@link DocumentStore} under the "s3" channel.
+ * Polls a local directory for files uploaded via S3 (e.g. a MinIO data
+ * directory or an S3-mounted filesystem). New files are registered in the
+ * {@link DocumentStore} under the "s3" channel.
  * <p>
- * Configure the directory via {@code testbackend.s3poll.directory} and the polling interval via
- * {@code testbackend.s3poll.interval-ms}.
+ * Configure the directory via {@code testbackend.s3poll.directory} and the
+ * polling interval via {@code testbackend.s3poll.interval-ms}.
  * </p>
  *
  * @author Philip Helger
@@ -73,7 +74,10 @@ public class S3DirectoryPoller
           if (aFile.isFile ())
             m_aKnownFiles.add (aFile.getAbsolutePath ());
       }
-      LOGGER.info ("S3 poller initialized with " + m_aKnownFiles.size () + " existing files in " + aDir.getAbsolutePath ());
+      LOGGER.info ("S3 poller initialized with " +
+                   m_aKnownFiles.size () +
+                   " existing files in " +
+                   aDir.getAbsolutePath ());
     }
   }
 
@@ -104,10 +108,7 @@ public class S3DirectoryPoller
         if (aFile.isFile () && m_aKnownFiles.add (aFile.getAbsolutePath ()))
         {
           LOGGER.info ("S3 poller detected new file: " + aFile.getName ());
-          m_aDocumentStore.registerExternalDocument ("s3",
-                                                     aFile.getName (),
-                                                     aFile.length (),
-                                                     aFile.getAbsolutePath ());
+          m_aDocumentStore.registerExternalDocument ("s3", aFile.getName (), aFile.length (), aFile.getAbsolutePath ());
         }
     }
   }

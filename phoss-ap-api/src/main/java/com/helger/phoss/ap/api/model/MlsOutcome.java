@@ -34,9 +34,10 @@ import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSLineResponseBuilder;
 
 /**
- * Immutable DTO that captures the outcome of inbound document processing, used to drive MLS
- * response creation. Carries the overall response code, an optional human-readable response text,
- * and for rejection cases a list of individual issues.
+ * Immutable DTO that captures the outcome of inbound document processing, used
+ * to drive MLS response creation. Carries the overall response code, an
+ * optional human-readable response text, and for rejection cases a list of
+ * individual issues.
  * <p>
  * JSON format:
  *
@@ -71,8 +72,9 @@ public final class MlsOutcome
    * @param sResponseText
    *        Optional human-readable response text. May be <code>null</code>.
    * @param aIssues
-   *        Optional list of issues. May be <code>null</code> or empty for non-rejection responses.
-   *        For rejection responses at least one issue is required.
+   *        Optional list of issues. May be <code>null</code> or empty for
+   *        non-rejection responses. For rejection responses at least one issue
+   *        is required.
    */
   public MlsOutcome (@NonNull final EPeppolMLSResponseCode eResponseCode,
                      @Nullable final String sResponseText,
@@ -97,7 +99,8 @@ public final class MlsOutcome
   }
 
   /**
-   * @return The response code ID string (e.g. "AP", "AB", "RE"). Never <code>null</code>.
+   * @return The response code ID string (e.g. "AP", "AB", "RE"). Never
+   *         <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -116,8 +119,8 @@ public final class MlsOutcome
   }
 
   /**
-   * @return The list of issues. Never <code>null</code> but may be empty for non-rejection
-   *         responses.
+   * @return The list of issues. Never <code>null</code> but may be empty for
+   *         non-rejection responses.
    */
   @NonNull
   public List <MlsOutcomeIssue> getIssues ()
@@ -134,9 +137,9 @@ public final class MlsOutcome
   }
 
   /**
-   * @return The data structures as a new {@link PeppolMLSBuilder} with the response code and the
-   *         response text as well as all potentially present line responses present. Never
-   *         <code>null</code>.
+   * @return The data structures as a new {@link PeppolMLSBuilder} with the
+   *         response code and the response text as well as all potentially
+   *         present line responses present. Never <code>null</code>.
    */
   @NonNull
   public PeppolMLSBuilder getAsMLSBuilder ()
@@ -163,10 +166,11 @@ public final class MlsOutcome
   }
 
   /**
-   * Create an acceptance outcome (response code AP). The document was successfully delivered to C4
-   * with confirmation.
+   * Create an acceptance outcome (response code AP). The document was
+   * successfully delivered to C4 with confirmation.
    *
-   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#ACCEPTANCE}.
+   * @return A new {@link MlsOutcome} with response code
+   *         {@link EPeppolMLSResponseCode#ACCEPTANCE}.
    */
   @NonNull
   public static MlsOutcome acceptance ()
@@ -175,8 +179,8 @@ public final class MlsOutcome
   }
 
   /**
-   * Create an acknowledging outcome (response code AB). The document was forwarded to C4 without
-   * confirmation of receipt.
+   * Create an acknowledging outcome (response code AB). The document was
+   * forwarded to C4 without confirmation of receipt.
    *
    * @return A new {@link MlsOutcome} with response code
    *         {@link EPeppolMLSResponseCode#ACKNOWLEDGING}.
@@ -194,13 +198,13 @@ public final class MlsOutcome
    *        Human-readable response text. May be <code>null</code>.
    * @param aIssue
    *        The rejection issue. May not be <code>null</code>.
-   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}.
+   * @return A new {@link MlsOutcome} with response code
+   *         {@link EPeppolMLSResponseCode#REJECTION}.
    */
   @NonNull
   public static MlsOutcome rejection (@Nullable final String sResponseText, @NonNull final MlsOutcomeIssue aIssue)
   {
-    ValueEnforcer.notNull (aIssue, "Issue");
-    return new MlsOutcome (EPeppolMLSResponseCode.REJECTION, sResponseText, new CommonsArrayList <> (aIssue));
+    return rejection (sResponseText, new CommonsArrayList <> (aIssue));
   }
 
   /**
@@ -210,7 +214,8 @@ public final class MlsOutcome
    *        Human-readable response text. May be <code>null</code>.
    * @param aIssues
    *        The rejection issues. May not be <code>null</code> or empty.
-   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}.
+   * @return A new {@link MlsOutcome} with response code
+   *         {@link EPeppolMLSResponseCode#REJECTION}.
    */
   @NonNull
   public static MlsOutcome rejection (@Nullable final String sResponseText,

@@ -56,31 +56,34 @@ public final class CPhossAP
   }
 
   /**
-   * Check if the provided document type and process identifiers represent a Peppol MLS message.
+   * Check if the provided document type and process identifiers represent a
+   * Peppol MLS message.
    *
    * @param aDocTypeID
    *        The document type identifier. May not be <code>null</code>.
    * @param aProcessID
    *        The process identifier. May not be <code>null</code>.
-   * @return <code>true</code> if both identifiers match the Peppol MLS 1.0 document type and
-   *         process.
+   * @return <code>true</code> if both identifiers match the Peppol MLS 1.0
+   *         document type and process.
    */
-  public static boolean isMLS (@NonNull final IDocumentTypeIdentifier aDocTypeID, @NonNull final IProcessIdentifier aProcessID)
+  public static boolean isMLS (@NonNull final IDocumentTypeIdentifier aDocTypeID,
+                               @NonNull final IProcessIdentifier aProcessID)
   {
     return aDocTypeID.hasSameContent (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0) &&
            aProcessID.hasSameContent (EPredefinedProcessIdentifier.urn_peppol_edec_mls);
   }
 
   /**
-   * Check if the provided URI-encoded document type and process identifier strings represent a
-   * Peppol MLS message.
+   * Check if the provided URI-encoded document type and process identifier
+   * strings represent a Peppol MLS message.
    *
    * @param sDocTypeID
-   *        The URI-encoded document type identifier. May not be <code>null</code>.
+   *        The URI-encoded document type identifier. May not be
+   *        <code>null</code>.
    * @param sProcessID
    *        The URI-encoded process identifier. May not be <code>null</code>.
-   * @return <code>true</code> if both identifiers match the Peppol MLS 1.0 document type and
-   *         process.
+   * @return <code>true</code> if both identifiers match the Peppol MLS 1.0
+   *         document type and process.
    */
   public static boolean isMLS (@NonNull final String sDocTypeID, @NonNull final String sProcessID)
   {

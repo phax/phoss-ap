@@ -52,7 +52,8 @@ public class AS4ServletRegistration
   }
 
   /**
-   * Special class that is only present to have a graceful shutdown. The the bean method below.
+   * Special class that is only present to have a graceful shutdown. The the
+   * bean method below.
    *
    * @author Philip Helger
    */

@@ -29,14 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Receives HTTP-forwarded documents from phoss-ap's {@code HttpDocumentForwarderSPI}. Handles both
- * sync and async modes:
+ * Receives HTTP-forwarded documents from phoss-ap's
+ * {@code HttpDocumentForwarderSPI}. Handles both sync and async modes:
  * <ul>
- * <li><b>Sync mode</b>: the AP expects a JSON response containing {@code countryCodeC4}</li>
- * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is triggered later via the
- * callback API</li>
+ * <li><b>Sync mode</b>: the AP expects a JSON response containing
+ * {@code countryCodeC4}</li>
+ * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is
+ * triggered later via the callback API</li>
  * </ul>
- * The endpoint URL matches the default in phoss-ap's {@code application.properties}:
+ * The endpoint URL matches the default in phoss-ap's
+ * {@code application.properties}:
  * {@code forwarding.http.endpoint=http://localhost:8888/forwarding/url}
  *
  * @author Philip Helger

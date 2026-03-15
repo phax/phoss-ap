@@ -24,8 +24,8 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Defines which Peppol identifier factory to use. The strict mode enforces all Peppol identifier
- * rules, while the lax mode is more lenient.
+ * Defines which Peppol identifier factory to use. The strict mode enforces all
+ * Peppol identifier rules, while the lax mode is more lenient.
  *
  * @author Philip Helger
  */

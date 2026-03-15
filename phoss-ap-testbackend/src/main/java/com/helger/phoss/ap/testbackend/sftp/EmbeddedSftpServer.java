@@ -46,7 +46,8 @@ import jakarta.annotation.PreDestroy;
 
 /**
  * Embedded SFTP server using Apache MINA SSHD. Accepts uploads from phoss-ap's
- * {@code SftpDocumentForwarderSPI} and registers received files in the {@link DocumentStore}.
+ * {@code SftpDocumentForwarderSPI} and registers received files in the
+ * {@link DocumentStore}.
  *
  * @author Philip Helger
  */
@@ -94,8 +95,8 @@ public class EmbeddedSftpServer
     m_aSshd.setKeyPairProvider (aKeyPairProvider);
 
     // Password authentication
-    final PasswordAuthenticator aAuthenticator = (sUsername, sPassword, aSession) ->
-      m_sUser.equals (sUsername) && m_sPassword.equals (sPassword);
+    final PasswordAuthenticator aAuthenticator = (sUsername, sPassword, aSession) -> m_sUser.equals (sUsername) &&
+                                                                                     m_sPassword.equals (sPassword);
     m_aSshd.setPasswordAuthenticator (aAuthenticator);
 
     // SFTP subsystem
@@ -115,7 +116,7 @@ public class EmbeddedSftpServer
 
     // Start a background watcher for new files
     m_bRunning = true;
-    m_aWatcherThread = new Thread (() -> _watchDirectory (aSftpRoot), "sftp-file-watcher");
+    m_aWatcherThread = new Thread ( () -> _watchDirectory (aSftpRoot), "sftp-file-watcher");
     m_aWatcherThread.setDaemon (true);
     m_aWatcherThread.start ();
   }

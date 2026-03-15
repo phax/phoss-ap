@@ -54,7 +54,8 @@ public final class DBResultRowHelper
   private static Object _convertValue (@Nullable final Object aVal)
   {
     // DBResultRow.getAsOffsetDateTime goes through getAsTimestamp, so we must
-    // store OffsetDateTime values as java.sql.Timestamp for the conversion chain
+    // store OffsetDateTime values as java.sql.Timestamp for the conversion
+    // chain
     // to work correctly.
     if (aVal instanceof final OffsetDateTime aODT)
       return Timestamp.from (aODT.toInstant ());
@@ -83,8 +84,9 @@ public final class DBResultRowHelper
   }
 
   /**
-   * Create a {@link DBResultRow} from the given values. Each value becomes a column named
-   * {@code "col0"}, {@code "col1"}, etc. The JDBC type is inferred from the Java type.
+   * Create a {@link DBResultRow} from the given values. Each value becomes a
+   * column named {@code "col0"}, {@code "col1"}, etc. The JDBC type is inferred
+   * from the Java type.
    *
    * @param aValues
    *        Values to add.

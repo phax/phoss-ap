@@ -38,7 +38,9 @@ public enum EMlsReceptionStatus implements IHasID <String>
   RECEIVED_AB ("received_ab"),
   /** MLS response received with code RE (Rejection). */
   RECEIVED_RE ("received_re"),
-  /** MLS is not expected for this transaction (e.g., MLS response transactions). */
+  /**
+   * MLS is not expected for this transaction (e.g., MLS response transactions).
+   */
   NOT_APPLICABLE ("not_applicable");
 
   private final String m_sID;

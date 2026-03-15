@@ -53,7 +53,8 @@ public final class APJdbcConfigurationTest
     assertEquals ("peppol", aJdbcConfig.getJdbcPassword ());
     assertEquals ("ap-test", aJdbcConfig.getJdbcSchema ());
 
-    // Boolean / numeric properties return their defined defaults (not set in test properties)
+    // Boolean / numeric properties return their defined defaults (not set in
+    // test properties)
     assertTrue (aJdbcConfig.isJdbcExecutionTimeWarningEnabled ());
     assertEquals (JdbcConfiguration.DEFAULT_EXECUTION_DURATION_WARN_MS,
                   aJdbcConfig.getJdbcExecutionTimeWarningMilliseconds ());

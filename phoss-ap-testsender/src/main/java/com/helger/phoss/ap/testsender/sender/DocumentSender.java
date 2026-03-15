@@ -127,7 +127,8 @@ public class DocumentSender
   }
 
   /*
-   * Send a PDF document via POST /api/outbound/submit/{ids} with PDF-specific parameters.
+   * Send a PDF document via POST /api/outbound/submit/{ids} with PDF-specific
+   * parameters.
    */
   @NonNull
   public SendResult sendPdf (@NonNull final Path aPdfFile, @NonNull final String sSbdhInstanceID) throws IOException

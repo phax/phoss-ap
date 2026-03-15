@@ -25,9 +25,10 @@ import com.helger.annotation.style.IsSPIInterface;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 
 /**
- * SPI interface for receiving notifications about permanent processing failures. Implementations
- * are loaded via {@link java.util.ServiceLoader}. Multiple handlers may be registered. Concrete
- * implementations are deployment-specific (e.g., email, Slack, monitoring system webhook).
+ * SPI interface for receiving notifications about permanent processing
+ * failures. Implementations are loaded via {@link java.util.ServiceLoader}.
+ * Multiple handlers may be registered. Concrete implementations are
+ * deployment-specific (e.g., email, Slack, monitoring system webhook).
  *
  * @author Philip Helger
  */
@@ -55,7 +56,8 @@ public interface IAPNotificationHandlerSPI
                                      @NonNull String sSbdhInstanceID);
 
   /**
-   * Called when an outbound or inbound document fails optional verification and is rejected.
+   * Called when an outbound or inbound document fails optional verification and
+   * is rejected.
    *
    * @param sTransactionID
    *        The transaction ID. Never <code>null</code>.
@@ -69,33 +71,36 @@ public interface IAPNotificationHandlerSPI
                                        @Nullable String sErrorDetails);
 
   /**
-   * Called when the inbound message is an MLS but could not be correlated with an outbound
-   * transaction.
+   * Called when the inbound message is an MLS but could not be correlated with
+   * an outbound transaction.
    *
    * @param sTransactionID
    *        The incoming transaction ID. May not be <code>null</code>.
    * @param sReferencedSbdhInstanceID
    *        The referenced SBDH ID from the MLS. May not be <code>null</code>.
    * @param eMlsResponseCode
-   *        The response code contained in the MLS. May not be <code>null</code>.
+   *        The response code contained in the MLS. May not be
+   *        <code>null</code>.
    */
   void onInboundMLSCorrelationError (@NonNull String sTransactionID,
                                      @NonNull String sReferencedSbdhInstanceID,
                                      @NonNull EPeppolMLSResponseCode eMlsResponseCode);
 
   /**
-   * Called if an inbound messages could not be forwarded properly. The database state has already
-   * been updated when this is called.
+   * Called if an inbound messages could not be forwarded properly. The database
+   * state has already been updated when this is called.
    *
    * @param sTransactionID
    *        The inbound transaction ID. May not be <code>null</code>.
    * @param bIsRetry
-   *        <code>true</code> if it is a retry, <code>false</code> if it is the original request.
+   *        <code>true</code> if it is a retry, <code>false</code> if it is the
+   *        original request.
    */
   void onInboundForwardingError (@NonNull String sTransactionID, boolean bIsRetry);
 
   /**
-   * Called when an inbound transaction permanently fails after exhausting all forwarding retries.
+   * Called when an inbound transaction permanently fails after exhausting all
+   * forwarding retries.
    *
    * @param sTransactionID
    *        The transaction ID. Never <code>null</code>.
@@ -109,7 +114,8 @@ public interface IAPNotificationHandlerSPI
                                             @Nullable String sErrorDetails);
 
   /**
-   * Called when an outbound transaction permanently fails after exhausting all sending retries.
+   * Called when an outbound transaction permanently fails after exhausting all
+   * sending retries.
    *
    * @param sTransactionID
    *        The transaction ID. Never <code>null</code>.
@@ -123,30 +129,35 @@ public interface IAPNotificationHandlerSPI
                                           @Nullable String sErrorDetails);
 
   /**
-   * Called when creating, validating or sending a Peppol Reporting TSR report failed.
+   * Called when creating, validating or sending a Peppol Reporting TSR report
+   * failed.
    *
    * @param aYearMonth
-   *        The year and month for which the reporting should be performed never <code>null</code>.
+   *        The year and month for which the reporting should be performed never
+   *        <code>null</code>.
    */
   void onPeppolReportingTSRFailure (@NonNull YearMonth aYearMonth);
 
   /**
-   * Called when creating, validating or sending a Peppol Reporting EUSR report failed.
+   * Called when creating, validating or sending a Peppol Reporting EUSR report
+   * failed.
    *
    * @param aYearMonth
-   *        The year and month for which the reporting should be performed never <code>null</code>.
+   *        The year and month for which the reporting should be performed never
+   *        <code>null</code>.
    */
   void onPeppolReportingEUSRFailure (@NonNull YearMonth aYearMonth);
 
   /**
-   * Called when an unexpected exception occurs during processing that is not covered by more
-   * specific notification methods.
+   * Called when an unexpected exception occurs during processing that is not
+   * covered by more specific notification methods.
    *
    * @param sContext
-   *        A short description of where the exception occurred (e.g. class and method name). Never
-   *        <code>null</code>.
+   *        A short description of where the exception occurred (e.g. class and
+   *        method name). Never <code>null</code>.
    * @param sMessage
-   *        A human-readable description of what went wrong. Never <code>null</code>.
+   *        A human-readable description of what went wrong. Never
+   *        <code>null</code>.
    * @param aException
    *        The caught exception. Never <code>null</code>.
    */

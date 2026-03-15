@@ -32,7 +32,8 @@ import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
- * Simple implementation of {@link IInboundTransaction} created from JDBC result object.
+ * Simple implementation of {@link IInboundTransaction} created from JDBC result
+ * object.
  *
  * @author Philip Helger
  */

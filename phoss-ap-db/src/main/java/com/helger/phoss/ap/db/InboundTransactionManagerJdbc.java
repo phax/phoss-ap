@@ -367,7 +367,8 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
   @NonNull
   public ICommonsList <IInboundTransaction> getAllWithoutMlsResponse ()
   {
-    // Inbound business documents (not MLS) where no MLS response code has been set yet
+    // Inbound business documents (not MLS) where no MLS response code has been
+    // set yet
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
                                                                       " FROM " +

@@ -42,16 +42,19 @@ public interface IOutboundSendingAttemptManager
    * @param aAS4Timestamp
    *        The AS4 MessageInfo/Timestamp (UTC). Never <code>null</code>.
    * @param sReceiptMessageID
-   *        The AS4 Message ID from the synchronous receipt. May be <code>null</code> on failure.
+   *        The AS4 Message ID from the synchronous receipt. May be
+   *        <code>null</code> on failure.
    * @param aHttpStatusCode
-   *        The HTTP status code from the AS4 response. May be <code>null</code> on failure.
+   *        The HTTP status code from the AS4 response. May be <code>null</code>
+   *        on failure.
    * @param eAttemptStatus
    *        The outcome of this attempt. Never <code>null</code>.
    * @param sErrorDetails
    *        Error description on failure. May be <code>null</code>.
    * @param sSendingReport
    *        The Phase4 Peppol sending report as JSON. May be <code>null</code>.
-   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
+   * @return The ID of the created attempt row, or <code>null</code> if
+   *         insertion fails.
    */
   @Nullable
   String create (@NonNull String sOutboundTransactionID,
@@ -73,10 +76,12 @@ public interface IOutboundSendingAttemptManager
    * @param aAS4Timestamp
    *        The AS4 MessageInfo/Timestamp (UTC). Never <code>null</code>.
    * @param sReceiptMessageID
-   *        The AS4 Message ID from the synchronous receipt. Never <code>null</code>.
+   *        The AS4 Message ID from the synchronous receipt. Never
+   *        <code>null</code>.
    * @param sSendingReport
    *        The Phase4 Peppol sending report as JSON. May be <code>null</code>.
-   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
+   * @return The ID of the created attempt row, or <code>null</code> if
+   *         insertion fails.
    */
   @Nullable
   String createSuccess (@NonNull String sOutboundTransactionID,
@@ -86,7 +91,8 @@ public interface IOutboundSendingAttemptManager
                         @Nullable String sSendingReport);
 
   /**
-   * Get all sending attempts for the given outbound transaction, ordered by attempt date.
+   * Get all sending attempts for the given outbound transaction, ordered by
+   * attempt date.
    *
    * @param sOutboundTransactionID
    *        The parent outbound transaction ID. Never <code>null</code>.

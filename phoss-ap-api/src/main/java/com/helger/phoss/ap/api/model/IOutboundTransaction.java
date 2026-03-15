@@ -31,8 +31,9 @@ import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 
 /**
- * Read-only view of an outbound transaction. Outbound transactions represent documents sent from
- * this AP (C2) to a remote AP (C3), including both regular business documents and MLS responses.
+ * Read-only view of an outbound transaction. Outbound transactions represent
+ * documents sent from this AP (C2) to a remote AP (C3), including both regular
+ * business documents and MLS responses.
  *
  * @author Philip Helger
  */
@@ -46,20 +47,23 @@ public interface IOutboundTransaction extends IHasID <String>
   String getID ();
 
   /**
-   * @return The transaction type (business document or MLS response). Never <code>null</code>.
+   * @return The transaction type (business document or MLS response). Never
+   *         <code>null</code>.
    */
   @NonNull
   ETransactionType getTransactionType ();
 
   /**
-   * @return The Peppol Participant ID of the sender (C1). Never <code>null</code>.
+   * @return The Peppol Participant ID of the sender (C1). Never
+   *         <code>null</code>.
    */
   @NonNull
   @Nonempty
   String getSenderID ();
 
   /**
-   * @return The Peppol Participant ID of the receiver (C4). Never <code>null</code>.
+   * @return The Peppol Participant ID of the receiver (C4). Never
+   *         <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -87,14 +91,15 @@ public interface IOutboundTransaction extends IHasID <String>
   String getSbdhInstanceID ();
 
   /**
-   * @return The source type indicating how the document was submitted (raw XML or pre-built SBD).
-   *         Never <code>null</code>.
+   * @return The source type indicating how the document was submitted (raw XML
+   *         or pre-built SBD). Never <code>null</code>.
    */
   @NonNull
   ESourceType getSourceType ();
 
   /**
-   * @return The absolute path to the document file on disk. Never <code>null</code>.
+   * @return The absolute path to the document file on disk. Never
+   *         <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -139,7 +144,8 @@ public interface IOutboundTransaction extends IHasID <String>
   OffsetDateTime getCreatedDT ();
 
   /**
-   * @return When the transaction was completed, or <code>null</code> if not yet completed.
+   * @return When the transaction was completed, or <code>null</code> if not yet
+   *         completed.
    */
   @Nullable
   OffsetDateTime getCompletedDT ();
@@ -151,31 +157,36 @@ public interface IOutboundTransaction extends IHasID <String>
   EReportingStatus getReportingStatus ();
 
   /**
-   * @return The planned date/time of the next sending retry, or <code>null</code> if not scheduled.
+   * @return The planned date/time of the next sending retry, or
+   *         <code>null</code> if not scheduled.
    */
   @Nullable
   OffsetDateTime getNextRetryDT ();
 
   /**
-   * @return The error details from the last failed attempt, or <code>null</code> on success.
+   * @return The error details from the last failed attempt, or
+   *         <code>null</code> on success.
    */
   @Nullable
   String getErrorDetails ();
 
   /**
-   * @return The MLS_TO override participant ID, or <code>null</code> if not set.
+   * @return The MLS_TO override participant ID, or <code>null</code> if not
+   *         set.
    */
   @Nullable
   String getMlsTo ();
 
   /**
-   * @return The MLS response reception status, or <code>null</code> if not applicable.
+   * @return The MLS response reception status, or <code>null</code> if not
+   *         applicable.
    */
   @Nullable
   EMlsReceptionStatus getMlsStatus ();
 
   /**
-   * @return When the MLS response was received, or <code>null</code> if not yet received.
+   * @return When the MLS response was received, or <code>null</code> if not yet
+   *         received.
    */
   @Nullable
   OffsetDateTime getMlsReceivedDT ();
@@ -187,36 +198,38 @@ public interface IOutboundTransaction extends IHasID <String>
   String getMlsID ();
 
   /**
-   * @return The ID of the inbound transaction that triggered this MLS response, or
-   *         <code>null</code> if this is a business document.
+   * @return The ID of the inbound transaction that triggered this MLS response,
+   *         or <code>null</code> if this is a business document.
    */
   @Nullable
   String getMlsInboundTransactionID ();
 
   /**
-   * @return The SBDH Standard override, or <code>null</code> if auto-derived from the document
-   *         type. Set to e.g. {@code urn:peppol:doctype:pdf+xml} for binary payloads.
+   * @return The SBDH Standard override, or <code>null</code> if auto-derived
+   *         from the document type. Set to e.g.
+   *         {@code urn:peppol:doctype:pdf+xml} for binary payloads.
    */
   @Nullable
   String getSbdhStandard ();
 
   /**
-   * @return The SBDH TypeVersion override, or <code>null</code> if auto-derived from the document
-   *         type.
+   * @return The SBDH TypeVersion override, or <code>null</code> if auto-derived
+   *         from the document type.
    */
   @Nullable
   String getSbdhTypeVersion ();
 
   /**
-   * @return The SBDH Type override, or <code>null</code> if auto-derived from the document type.
-   *         Set to e.g. {@code factur-x} for Factur-X PDF payloads.
+   * @return The SBDH Type override, or <code>null</code> if auto-derived from
+   *         the document type. Set to e.g. {@code factur-x} for Factur-X PDF
+   *         payloads.
    */
   @Nullable
   String getSbdhType ();
 
   /**
-   * @return The MIME type for binary payloads (e.g. {@code application/pdf}), or <code>null</code>
-   *         if the payload is XML.
+   * @return The MIME type for binary payloads (e.g. {@code application/pdf}),
+   *         or <code>null</code> if the payload is XML.
    */
   @Nullable
   String getPayloadMimeType ();

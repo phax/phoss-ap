@@ -27,7 +27,8 @@ import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.io.stream.WrappedInputStream;
 
 /**
- * A special input stream that copies all bytes to an output stream during reading.
+ * A special input stream that copies all bytes to an output stream during
+ * reading.
  *
  * @author Philip Helger
  */

@@ -35,7 +35,8 @@ import com.helger.phoss.ap.testsender.sender.DocumentSender;
 import com.helger.phoss.ap.testsender.sender.SendResult;
 
 /**
- * Runs multiple document scenarios concurrently to test throughput and discover race conditions.
+ * Runs multiple document scenarios concurrently to test throughput and discover
+ * race conditions.
  */
 @Component
 public class BulkRunner
@@ -59,7 +60,13 @@ public class BulkRunner
     final int nThreads = aBulkConfig.getThreads ();
     final long nRampUpMs = aBulkConfig.getRampUpMs ();
 
-    LOGGER.info ("Starting bulk send: " + nTotal + " documents, " + nThreads + " threads, " + nRampUpMs + " ms ramp-up");
+    LOGGER.info ("Starting bulk send: " +
+                 nTotal +
+                 " documents, " +
+                 nThreads +
+                 " threads, " +
+                 nRampUpMs +
+                 " ms ramp-up");
 
     final ExecutorService aExecutor = Executors.newFixedThreadPool (nThreads);
     final AtomicInteger aCompletedCount = new AtomicInteger (0);
@@ -137,8 +144,8 @@ public class BulkRunner
       if (aResult.isSuccess ())
       {
         final String sStatus = m_aSender.pollStatus (aResult.getSbdhInstanceID (),
-                                                      m_aConfig.getPoll ().getTimeoutMs (),
-                                                      m_aConfig.getPoll ().getIntervalMs ());
+                                                     m_aConfig.getPoll ().getTimeoutMs (),
+                                                     m_aConfig.getPoll ().getIntervalMs ());
         nPolled++;
         if (sStatus == null)
         {

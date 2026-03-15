@@ -83,8 +83,8 @@ public class OutboundController
       return ResponseEntity.notFound ().build ();
     }
 
-    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
-                                                                                      : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
+    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID : PeppolSBDHData
+                                                                                                                        .createRandomSBDHInstanceIdentifier ();
 
     // Parse the identifiers
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();

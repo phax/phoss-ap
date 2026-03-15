@@ -31,11 +31,19 @@ import com.helger.base.lang.EnumHelper;
  */
 public enum EForwardingMode implements IHasID <String>
 {
-  /** SBD is POSTed to the Receiver Backend; reporting is triggered asynchronously later. */
+  /**
+   * SBD is POSTed to the Receiver Backend; reporting is triggered
+   * asynchronously later.
+   */
   HTTP_POST_ASYNC ("http_post_async"),
-  /** SBD is POSTed to the Receiver Backend; C4 country code is returned synchronously. */
+  /**
+   * SBD is POSTed to the Receiver Backend; C4 country code is returned
+   * synchronously.
+   */
   HTTP_POST_SYNC ("http_post_sync"),
-  /** SBD is stored in S3; a link/reference is forwarded to the Receiver Backend. */
+  /**
+   * SBD is stored in S3; a link/reference is forwarded to the Receiver Backend.
+   */
   S3_LINK ("s3_link"),
   /** SBD is uploaded to the Receiver Backend via SFTP. */
   SFTP ("sftp");
@@ -55,8 +63,9 @@ public enum EForwardingMode implements IHasID <String>
   }
 
   /**
-   * @return <code>true</code> if this forwarding mode provides delivery confirmation (HTTP modes),
-   *         <code>false</code> if it does not (SFTP, S3).
+   * @return <code>true</code> if this forwarding mode provides delivery
+   *         confirmation (HTTP modes), <code>false</code> if it does not (SFTP,
+   *         S3).
    */
   public boolean isWithDeliveryConfirmation ()
   {

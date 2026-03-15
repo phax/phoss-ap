@@ -19,9 +19,9 @@ package com.helger.phoss.ap.api.config;
 import com.helger.annotation.concurrent.Immutable;
 
 /**
- * Constants for all configuration property keys used throughout phoss-ap. These keys are resolved
- * from the ph-config configuration sources (properties files, environment variables, system
- * properties).
+ * Constants for all configuration property keys used throughout phoss-ap. These
+ * keys are resolved from the ph-config configuration sources (properties files,
+ * environment variables, system properties).
  *
  * @author Philip Helger
  */

@@ -70,9 +70,10 @@ public final class APBasicConfig
   private static HttpClientSettingsConfig.HttpClientConfig s_aHCC = null;
 
   /**
-   * Apply the configured outbound HTTP proxy settings to the provided {@link HttpClientSettings}.
-   * This reads the <code>http.proxy.*</code> configuration properties and applies them to the
-   * general proxy of the provided settings object.
+   * Apply the configured outbound HTTP proxy settings to the provided
+   * {@link HttpClientSettings}. This reads the <code>http.proxy.*</code>
+   * configuration properties and applies them to the general proxy of the
+   * provided settings object.
    *
    * @param aHCS
    *        The HTTP client settings to configure. May not be <code>null</code>.

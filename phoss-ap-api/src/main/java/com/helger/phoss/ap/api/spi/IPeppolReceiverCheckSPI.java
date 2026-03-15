@@ -44,7 +44,5 @@ public interface IPeppolReceiverCheckSPI
    * @return <code>true</code> if the receiver is serviced, <code>false</code>
    *         otherwise.
    */
-  boolean isReceiverServiced (@NonNull String sReceiverID,
-                              @NonNull String sDocTypeID,
-                              @NonNull String sProcessID);
+  boolean isReceiverServiced (@NonNull String sReceiverID, @NonNull String sDocTypeID, @NonNull String sProcessID);
 }

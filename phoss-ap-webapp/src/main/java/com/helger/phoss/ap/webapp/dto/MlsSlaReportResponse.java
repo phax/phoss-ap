@@ -44,10 +44,10 @@ public class MlsSlaReportResponse
     aResp.meetingSla = aReport.isMeetingSla ();
     aResp.entries = aReport.entries ()
                            .getAllMapped (e -> new MlsSlaEntryResponse (e.sbdhInstanceID (),
-                                                                       e.m1 ().toString (),
-                                                                       e.m2OrM3 ().toString (),
-                                                                       e.durationSeconds (),
-                                                                       e.withinSla ()));
+                                                                        e.m1 ().toString (),
+                                                                        e.m2OrM3 ().toString (),
+                                                                        e.durationSeconds (),
+                                                                        e.withinSla ()));
     return aResp;
   }
 
@@ -133,10 +133,10 @@ public class MlsSlaReportResponse
     {}
 
     public MlsSlaEntryResponse (final String sSbdhInstanceID,
-                                 final String sM1,
-                                 final String sM2OrM3,
-                                 final long nDurationSeconds,
-                                 final boolean bWithinSla)
+                                final String sM1,
+                                final String sM2OrM3,
+                                final long nDurationSeconds,
+                                final boolean bWithinSla)
     {
       sbdhInstanceID = sSbdhInstanceID;
       m1 = sM1;

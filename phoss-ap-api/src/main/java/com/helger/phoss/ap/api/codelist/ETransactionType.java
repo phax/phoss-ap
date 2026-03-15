@@ -36,7 +36,9 @@ import com.helger.base.lang.EnumHelper;
  */
 public enum ETransactionType implements IHasID <String>
 {
-  /** A regular Peppol business document sent from Sender Backend to a remote AP. */
+  /**
+   * A regular Peppol business document sent from Sender Backend to a remote AP.
+   */
   BUSINESS_DOCUMENT ("business_document"),
   /** A Message Level Status response sent back to the original sending AP. */
   MLS_RESPONSE ("mls_response");

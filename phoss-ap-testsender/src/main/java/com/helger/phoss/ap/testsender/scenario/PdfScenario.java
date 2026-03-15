@@ -25,8 +25,8 @@ import com.helger.phoss.ap.testsender.sender.DocumentSender;
 import com.helger.phoss.ap.testsender.sender.SendResult;
 
 /**
- * Scenario that sends a PDF document via the raw submission endpoint with PDF-specific SBDH
- * overrides.
+ * Scenario that sends a PDF document via the raw submission endpoint with
+ * PDF-specific SBDH overrides.
  */
 public class PdfScenario implements ITestScenario
 {

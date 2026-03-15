@@ -44,7 +44,8 @@ public final class NotificationHandlerManager
   {}
 
   /**
-   * Initialization of all SPI handlers. May only be called once upon initialization.
+   * Initialization of all SPI handlers. May only be called once upon
+   * initialization.
    */
   public static void initSPI ()
   {
@@ -71,7 +72,8 @@ public final class NotificationHandlerManager
   }
 
   /**
-   * @return A copy of all registered handlers. Never <code>null</code> but maybe empty.
+   * @return A copy of all registered handlers. Never <code>null</code> but
+   *         maybe empty.
    */
   @NonNull
   @ReturnsMutableCopy

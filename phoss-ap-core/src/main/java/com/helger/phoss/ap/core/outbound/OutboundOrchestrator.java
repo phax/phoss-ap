@@ -72,7 +72,6 @@ import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
@@ -170,7 +169,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aDocumentIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openDocumentStreamForWrite (sStorageBasePath,
+         final OutputStream aFileOS = APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForWrite (sStorageBasePath,
                                                                                 aCreationDT,
                                                                                 sSbdhInstanceID,
                                                                                 ".out",
@@ -189,7 +188,7 @@ public final class OutboundOrchestrator
         // No need to keep the temporary file
         StreamHelper.close (aFileOS);
         if (aTempPathHolder.isSet ())
-          DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
+          APBasicMetaManager.getDocStorageProvider ().deleteDocument (aTempPathHolder.get ());
         return null;
       }
       nDocumentBytes = aCountingIS.getBytesRead ();
@@ -205,7 +204,7 @@ public final class OutboundOrchestrator
 
       // No need to keep the temporary file
       if (aTempPathHolder.isSet ())
-        DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
+        APBasicMetaManager.getDocStorageProvider ().deleteDocument (aTempPathHolder.get ());
       return null;
     }
 
@@ -285,7 +284,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aSbdIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStreamForWrite (sStorageBasePath,
+         final OutputStream aFileOS = APBasicMetaManager.getDocStorageProvider ().openTemporaryDocumentStreamForWrite (sStorageBasePath,
                                                                                          aCreationDT,
                                                                                          aTempPathHolder::set);
          final CopyingInputStream aCopyIS = new CopyingInputStream (aDigestIS, aFileOS))
@@ -302,7 +301,7 @@ public final class OutboundOrchestrator
 
       // No need to keep the temporary file
       if (aTempPathHolder.isSet ())
-        DocumentStorageHelper.deleteDocument (aTempPathHolder.get ());
+        APBasicMetaManager.getDocStorageProvider ().deleteDocument (aTempPathHolder.get ());
       return null;
     }
 
@@ -317,7 +316,7 @@ public final class OutboundOrchestrator
       // Rename temp file to final name
       final String sTempFile = aTempPathHolder.get ();
       final String sTargetDir = FilenameHelper.getPath (sTempFile);
-      final File aDstFile = DocumentStorageHelper.renameFile (sTempFile, sTargetDir, sSbdhInstanceID, ".sbd");
+      final File aDstFile = APBasicMetaManager.getDocStorageProvider ().renameFile (sTempFile, sTargetDir, sSbdhInstanceID, ".sbd");
       sDocumentPath = aDstFile.getAbsolutePath ().toString ();
     }
 
@@ -622,7 +621,7 @@ public final class OutboundOrchestrator
               if (CMimeType.APPLICATION_PDF.getAsStringWithoutParameters ().equals (sPayloadMimeType))
               {
                 // Send PDF - must fit into a byte array due to XML constraints
-                final byte [] aPDFBytes = DocumentStorageHelper.readDocument (aTx.getDocumentPath ());
+                final byte [] aPDFBytes = APBasicMetaManager.getDocStorageProvider ().readDocument (aTx.getDocumentPath ());
                 aBuilder.payloadBinaryContent (aPDFBytes, CMimeType.APPLICATION_PDF, null);
               }
               else
@@ -640,7 +639,7 @@ public final class OutboundOrchestrator
                                "'");
 
                 // Provide as InputStream to be able to handle larger payloads
-                aBuilder.payload (HasInputStream.multiple ( () -> DocumentStorageHelper.openDocumentStreamForRead (aTx.getDocumentPath ())));
+                aBuilder.payload (HasInputStream.multiple ( () -> APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTx.getDocumentPath ())));
               }
 
               eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
@@ -653,7 +652,7 @@ public final class OutboundOrchestrator
             {
               final PeppolSBDHData aSbdData;
               final MessageDigest aMD = HashHelper.createMessageDigest ();
-              try (final InputStream aFileIS = DocumentStorageHelper.openDocumentStreamForRead (aTx.getDocumentPath ());
+              try (final InputStream aFileIS = APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTx.getDocumentPath ());
                    final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
                    final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
               {

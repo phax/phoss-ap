@@ -29,7 +29,7 @@ import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
-import com.helger.phoss.ap.api.spi.IDocumentForwarder;
+import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;

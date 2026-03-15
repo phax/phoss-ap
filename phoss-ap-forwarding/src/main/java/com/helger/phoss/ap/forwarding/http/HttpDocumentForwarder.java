@@ -40,10 +40,10 @@ import com.helger.json.IJsonObject;
 import com.helger.json.serialize.JsonReader;
 import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.IDocumentForwarder;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 /**
  * Implementation of {@link IDocumentForwarder} for using HTTP.
@@ -85,7 +85,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     try (final HttpClientManager aHttpClientMgr = new HttpClientManager ())
     {
       final HttpPost aPost = new HttpPost (m_sEndpointURL);
-      aPost.setEntity (new InputStreamEntity (DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+      aPost.setEntity (new InputStreamEntity (APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                               ContentType.APPLICATION_XML));
 
       LOGGER.info ("Forwarding inbound transaction '" +

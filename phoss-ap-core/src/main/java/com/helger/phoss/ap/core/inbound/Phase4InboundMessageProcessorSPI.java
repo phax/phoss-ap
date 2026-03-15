@@ -61,7 +61,6 @@ import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.helper.HashHelper;
@@ -245,10 +244,11 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
 
       // Store document to disk
-      final String sDocumentPath = DocumentStorageHelper.storeDocument (APBasicConfig.getStorageInboundPath (),
-                                                                        aAS4Timestamp,
-                                                                        sSbdhInstanceID + ".sbd",
-                                                                        aSBDBytes);
+      final String sDocumentPath = APBasicMetaManager.getDocStorageProvider ()
+                                                      .storeDocument (APBasicConfig.getStorageInboundPath (),
+                                                                      aAS4Timestamp,
+                                                                      sSbdhInstanceID + ".sbd",
+                                                                      aSBDBytes);
 
       // Store in DB
       final String sTxID = aInboundMgr.create (sIncomingID,

@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.Nonempty;
-import com.helger.annotation.concurrent.Immutable;
 import com.helger.annotation.misc.DevelopersNote;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.exception.InitializationException;
@@ -37,21 +36,22 @@ import com.helger.base.string.StringHelper;
 import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.IFileOperationManager;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.basic.APBasicConfig;
 
 /**
- * Utility class for reading and writing document files on disk. Documents are
- * stored as flat files rather than as BYTEA columns in the database.
+ * Default implementation of {@link IDocumentStorageProvider} that stores
+ * documents as flat files on the local filesystem, organized by date/hour
+ * directories.
  *
  * @author Philip Helger
  */
-@Immutable
-public final class DocumentStorageHelper
+public class DocumentStorageProviderFileSystem implements IDocumentStorageProvider
 {
-  private DocumentStorageHelper ()
+  public DocumentStorageProviderFileSystem ()
   {}
 
-  public static void verifyConfiguration ()
+  public void verifyConfiguration ()
   {
     final IFileOperationManager aFOM = FileOperationManager.INSTANCE;
 
@@ -95,26 +95,11 @@ public final class DocumentStorageHelper
                                StringHelper.getLeadingZero (aReferenceDT.getHour (), 2));
   }
 
-  /**
-   * Write bytes to a file under the given base directory, using the provided
-   * filename. Creates the directory if needed.
-   *
-   * @param sBaseDir
-   *        The base directory to store the file in. May not be
-   *        <code>null</code>.
-   * @param aReferenceDT
-   *        The reference date time to which the message should be stored.
-   * @param sFilename
-   *        The filename to use. May not be <code>null</code>.
-   * @param aBytes
-   *        The bytes to write. May not be <code>null</code>.
-   * @return The absolute path of the stored file.
-   */
   @NonNull
-  public static String storeDocument (@NonNull final String sBaseDir,
-                                      @NonNull final OffsetDateTime aReferenceDT,
-                                      @NonNull final String sFilename,
-                                      final byte @NonNull [] aBytes)
+  public String storeDocument (@NonNull final String sBaseDir,
+                               @NonNull final OffsetDateTime aReferenceDT,
+                               @NonNull final String sFilename,
+                               final byte @NonNull [] aBytes)
   {
     ValueEnforcer.notNull (sBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
@@ -171,11 +156,11 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openDocumentStreamForWrite (@NonNull final String sBaseDir,
-                                                         @NonNull final OffsetDateTime aReferenceDT,
-                                                         @NonNull @DevelopersNote final String sFilename,
-                                                         @NonNull final String sFileExt,
-                                                         @NonNull final Consumer <String> aPathConsumer)
+  public OutputStream openDocumentStreamForWrite (@NonNull final String sBaseDir,
+                                                  @NonNull final OffsetDateTime aReferenceDT,
+                                                  @NonNull @DevelopersNote final String sFilename,
+                                                  @NonNull final String sFileExt,
+                                                  @NonNull final Consumer <String> aPathConsumer)
   {
     ValueEnforcer.notNull (sBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
@@ -208,19 +193,19 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openTemporaryDocumentStreamForWrite (@NonNull final String sBaseDir,
-                                                                  @NonNull final OffsetDateTime aReferenceDT,
-                                                                  @NonNull final Consumer <String> aPathConsumer)
+  public OutputStream openTemporaryDocumentStreamForWrite (@NonNull final String sBaseDir,
+                                                           @NonNull final OffsetDateTime aReferenceDT,
+                                                           @NonNull final Consumer <String> aPathConsumer)
   {
     // Should be always unique
     return openDocumentStreamForWrite (sBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
   }
 
   @NonNull
-  public static File renameFile (@NonNull final String sSrcFile,
-                                 @NonNull final String sTargetDir,
-                                 @NonNull @Nonempty final String sBaseName,
-                                 @NonNull @Nonempty final String sFileExt)
+  public File renameFile (@NonNull final String sSrcFile,
+                          @NonNull final String sTargetDir,
+                          @NonNull @Nonempty final String sBaseName,
+                          @NonNull @Nonempty final String sFileExt)
   {
     final File aSrcFile = new File (sSrcFile);
     final File aDstFile = _ensureUniqueFile (new File (sTargetDir), sBaseName, sFileExt);
@@ -234,14 +219,7 @@ public final class DocumentStorageHelper
     return aDstFile;
   }
 
-  /**
-   * Read all bytes from the file at the given absolute path.
-   *
-   * @param sAbsolutePath
-   *        The absolute path of the file. May not be <code>null</code>.
-   * @return The file contents as a byte array.
-   */
-  public static byte @NonNull [] readDocument (@NonNull final String sAbsolutePath)
+  public byte @NonNull [] readDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
 
@@ -255,16 +233,8 @@ public final class DocumentStorageHelper
     }
   }
 
-  /**
-   * Open an {@link InputStream} for the file at the given absolute path. The
-   * caller is responsible for closing the stream.
-   *
-   * @param sAbsolutePath
-   *        The absolute path of the file. May not be <code>null</code>.
-   * @return An open input stream.
-   */
   @NonNull
-  public static InputStream openDocumentStreamForRead (@NonNull final String sAbsolutePath)
+  public InputStream openDocumentStreamForRead (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
 
@@ -278,15 +248,7 @@ public final class DocumentStorageHelper
     }
   }
 
-  /**
-   * Delete the document file at the given path.
-   *
-   * @param sAbsolutePath
-   *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file was deleted, <code>false</code> if it
-   *         did not exist.
-   */
-  public static boolean deleteDocument (@NonNull final String sAbsolutePath)
+  public boolean deleteDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
 
@@ -300,15 +262,7 @@ public final class DocumentStorageHelper
     }
   }
 
-  /**
-   * Check if the document file at the given path exists or not.
-   *
-   * @param sAbsolutePath
-   *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file exists, <code>false</code> if it does
-   *         not exist.
-   */
-  public static boolean existsDocument (@NonNull final String sAbsolutePath)
+  public boolean existsDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
 

@@ -50,7 +50,7 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 /**
  * Document verifier implementation that calls the phorm Validation Service to validate documents.
@@ -92,7 +92,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
 
     final String sURL = StringHelper.trimEnd (sPhormBaseURL, '/') + "/api/dd_and_validate/";
-    if (!DocumentStorageHelper.existsDocument (sDocumentPath))
+    if (!APBasicMetaManager.getDocStorageProvider ().existsDocument (sDocumentPath))
     {
       LOGGER.error ("Document path '" + sDocumentPath + "' does not exist");
       return ESuccess.FAILURE;
@@ -102,7 +102,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     APBasicConfig.applyHttpProxySettings (aHCS);
 
     try (final HttpClientManager aHttpClientMgr = HttpClientManager.create (aHCS);
-         final InputStream aDocumentIS = DocumentStorageHelper.openDocumentStreamForRead (sDocumentPath))
+         final InputStream aDocumentIS = APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (sDocumentPath))
     {
       final HttpPost aPost = new HttpPost (sURL);
       aPost.setEntity (new InputStreamEntity (aDocumentIS, ContentType.APPLICATION_XML));

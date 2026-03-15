@@ -25,10 +25,10 @@ import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.mime.CMimeType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.IDocumentForwarder;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -93,7 +93,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .build ();
 
         aS3Client.putObject (aPutReq,
-                             RequestBody.fromInputStream (DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                             RequestBody.fromInputStream (APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                                           aTransaction.getDocumentSize ()));
 
         LOGGER.info ("Uploaded transaction '" +

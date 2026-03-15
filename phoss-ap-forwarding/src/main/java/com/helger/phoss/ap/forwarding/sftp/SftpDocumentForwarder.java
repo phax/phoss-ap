@@ -34,10 +34,10 @@ import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.io.file.FilenameHelper;
 import com.helger.jsch.sftp.ChannelSftpHelper;
 import com.helger.network.WebExceptionHelper;
+import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
-import com.helger.phoss.ap.api.spi.IDocumentForwarder;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.photon.connect.sftp.AbstractChannelSftpRunnable;
 import com.helger.photon.connect.sftp.ISftpSettings;
 import com.helger.photon.connect.sftp.SftpMaxParallelRunner;
@@ -196,7 +196,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
       return writeUploadedFile (m_aSftpSettings,
                                 "",
                                 sTargetFilename,
-                                HasInputStream.multiple ( () -> DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ())));
+                                HasInputStream.multiple ( () -> APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTransaction.getDocumentPath ())));
     }
     catch (final Exception ex)
     {

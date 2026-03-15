@@ -45,7 +45,6 @@ import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
-import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
@@ -139,10 +138,11 @@ public final class MlsHandler
     // Create an outbound transaction for the MLS response
 
     // Store MLS document to disk
-    final String sDocumentPath = DocumentStorageHelper.storeDocument (APBasicConfig.getStorageOutboundPath (),
-                                                                      aCreationDT,
-                                                                      sMlsSbdhInstanceID + ".mls",
-                                                                      aMlsBytes);
+    final String sDocumentPath = APBasicMetaManager.getDocStorageProvider ()
+                                                    .storeDocument (APBasicConfig.getStorageOutboundPath (),
+                                                                    aCreationDT,
+                                                                    sMlsSbdhInstanceID + ".mls",
+                                                                    aMlsBytes);
 
     // MLS can never have an MLS_TO
     final String sMlsTo = null;

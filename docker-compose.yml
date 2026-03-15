@@ -1,0 +1,46 @@
+#
+# Docker Compose for running phoss AP with PostgreSQL.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose down
+#
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: phoss-ap
+      POSTGRES_USER: peppol
+      POSTGRES_PASSWORD: peppol
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peppol -d phoss-ap"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  phoss-ap:
+    image: phelger/phoss-ap
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      PHOSSAP_JDBC_URL: jdbc:postgresql://postgres:5432/phoss-ap
+      PHOSSAP_JDBC_USER: peppol
+      PHOSSAP_JDBC_PASSWORD: peppol
+      PEPPOL_STAGE: test
+      FORWARDING_MODE: http_post_async
+      FORWARDING_HTTP_ENDPOINT: http://host.docker.internal:8888/forwarding
+    volumes:
+      - ap-data:/var/phoss-ap/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  ap-data:

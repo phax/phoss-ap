@@ -16,6 +16,12 @@
  */
 package com.helger.phoss.ap.webapp.dto;
 
+/**
+ * JSON response DTO for reporting API operations, carrying a transaction ID,
+ * status, and a human-readable message.
+ *
+ * @author Philip Helger
+ */
 public class ReportResponse
 {
   private String transactionID;

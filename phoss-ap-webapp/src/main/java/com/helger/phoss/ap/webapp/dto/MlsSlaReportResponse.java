@@ -20,6 +20,12 @@ import java.util.List;
 
 import com.helger.phoss.ap.db.MlsMetricsManagerJdbc;
 
+/**
+ * JSON response DTO representing an MLS SLA compliance report with individual
+ * measurement entries and aggregated statistics.
+ *
+ * @author Philip Helger
+ */
 public class MlsSlaReportResponse
 {
   private int totalCount;
@@ -33,6 +39,13 @@ public class MlsSlaReportResponse
   public MlsSlaReportResponse ()
   {}
 
+  /**
+   * Create a response DTO from a domain model MLS SLA report.
+   *
+   * @param aReport
+   *        The MLS SLA report. May not be <code>null</code>.
+   * @return A new response DTO. Never <code>null</code>.
+   */
   public static MlsSlaReportResponse fromDomain (final MlsMetricsManagerJdbc.MlsSlaReport aReport)
   {
     final MlsSlaReportResponse aResp = new MlsSlaReportResponse ();
@@ -121,6 +134,11 @@ public class MlsSlaReportResponse
     entries = aEntries;
   }
 
+  /**
+   * JSON response DTO for an individual MLS SLA measurement data point.
+   *
+   * @author Philip Helger
+   */
   public static class MlsSlaEntryResponse
   {
     private String sbdhInstanceID;

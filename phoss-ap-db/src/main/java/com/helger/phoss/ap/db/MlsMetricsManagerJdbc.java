@@ -109,6 +109,10 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
                               @Nonnegative double targetPercent,
                               @Nonnegative long thresholdSeconds)
   {
+    /**
+     * @return {@code true} if the compliance percentage meets or exceeds the
+     *         target percentage.
+     */
     public boolean isMeetingSla ()
     {
       return compliancePercent >= targetPercent;

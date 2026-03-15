@@ -20,6 +20,12 @@ import org.jspecify.annotations.NonNull;
 
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 
+/**
+ * JSON response DTO representing an outbound transaction with all relevant
+ * fields for the REST API.
+ *
+ * @author Philip Helger
+ */
 public class OutboundTransactionResponse
 {
   private String id;
@@ -41,6 +47,13 @@ public class OutboundTransactionResponse
   public OutboundTransactionResponse ()
   {}
 
+  /**
+   * Create a response DTO from a domain model outbound transaction.
+   *
+   * @param aTx
+   *        The outbound transaction. May not be <code>null</code>.
+   * @return A new response DTO. Never <code>null</code>.
+   */
   @NonNull
   public static OutboundTransactionResponse fromDomain (@NonNull final IOutboundTransaction aTx)
   {

@@ -302,12 +302,13 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
-                                                                      " WHERE status IN (?,?) AND reporting_status=?" +
+                                                                      " WHERE status IN (?,?,?) AND reporting_status=?" +
                                                                       " ORDER BY completed_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize +
                                                                       " FOR UPDATE SKIP LOCKED",
-                                                                      new ConstantPreparedStatementDataProvider (EOutboundStatus.SENT.getID (),
+                                                                      new ConstantPreparedStatementDataProvider (EOutboundStatus.REJECTED.getID (),
+                                                                                                                 EOutboundStatus.SENT.getID (),
                                                                                                                  EOutboundStatus.PERMANENTLY_FAILED.getID (),
                                                                                                                  EReportingStatus.REPORTED.getID ()));
     final ICommonsList <IOutboundTransaction> ret = new CommonsArrayList <> ();

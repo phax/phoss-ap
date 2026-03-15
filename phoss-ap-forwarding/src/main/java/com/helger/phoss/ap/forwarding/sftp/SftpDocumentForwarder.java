@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.base.enforce.ValueEnforcer;
-import com.helger.base.exception.InitializationException;
 import com.helger.base.io.iface.IHasInputStream;
 import com.helger.base.io.stream.HasInputStream;
 import com.helger.base.state.ESuccess;
@@ -56,11 +55,16 @@ public class SftpDocumentForwarder implements IDocumentForwarder
 
   private ISftpSettings m_aSftpSettings;
 
-  public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
+  @NonNull
+  public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
     m_aSftpSettings = SftpSettings.createFromConfig (aConfig, "forwarding.sftp");
     if (m_aSftpSettings == null)
-      throw new InitializationException ("Failed to initialize SFTP settings from configuration");
+    {
+      LOGGER.error ("Failed to initialize SFTP settings from configuration 'forwarding.sftp.*'");
+      return ESuccess.FAILURE;
+    }
+    return ESuccess.SUCCESS;
   }
 
   /**

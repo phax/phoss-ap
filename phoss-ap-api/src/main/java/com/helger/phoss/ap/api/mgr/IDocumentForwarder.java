@@ -18,6 +18,7 @@ package com.helger.phoss.ap.api.mgr;
 
 import org.jspecify.annotations.NonNull;
 
+import com.helger.base.state.ESuccess;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
@@ -36,8 +37,10 @@ public interface IDocumentForwarder
    *
    * @param aConfig
    *        The configuration object to init from. Never <code>null</code>.
+   * @return {@link ESuccess}
    */
-  void initFromConfiguration (@NonNull IConfigWithFallback aConfig);
+  @NonNull
+  ESuccess initFromConfiguration (@NonNull IConfigWithFallback aConfig);
 
   /**
    * Forward the given inbound transaction's document to the Receiver Backend.

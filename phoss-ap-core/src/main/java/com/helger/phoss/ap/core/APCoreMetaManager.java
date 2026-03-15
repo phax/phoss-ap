@@ -30,8 +30,8 @@ import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
-import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
+import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.core.notification.NotificationHandlerManager;
@@ -56,10 +56,11 @@ public final class APCoreMetaManager
   {
     LOGGER.info ("Initializing APMetaManager");
 
+    final var aConfig = APConfigProvider.getConfig ();
+
     // Create forwarder based on configuration
     {
-      final String sForwardingMode = APConfigProvider.getConfig ()
-                                                     .getAsString (APConfigurationProperties.FORWARDING_MODE);
+      final String sForwardingMode = aConfig.getAsString (APConfigurationProperties.FORWARDING_MODE);
       final EForwardingMode eForwardingMode = EForwardingMode.getFromIDOrNull (sForwardingMode);
       if (eForwardingMode == null)
         throw new InitializationException ("The configured Forwarding Mode '" + sForwardingMode + "' is invalid");
@@ -70,7 +71,9 @@ public final class APCoreMetaManager
         case S3_LINK -> new S3DocumentForwarder ();
         case SFTP -> new SftpDocumentForwarder ();
       };
-      aForwarder.initFromConfiguration (APConfigProvider.getConfig ());
+      if (aForwarder.initFromConfiguration (aConfig).isFailure ())
+        throw new InitializationException ("Failed to init forwarder configuration - see logs for details");
+
       s_eForwardingMode = eForwardingMode;
       s_aForwarder = aForwarder;
       LOGGER.info ("Loaded document forwarder: " + aForwarder.toString ());

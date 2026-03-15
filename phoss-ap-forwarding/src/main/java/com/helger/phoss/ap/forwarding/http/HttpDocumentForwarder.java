@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.base.enforce.ValueEnforcer;
-import com.helger.base.exception.InitializationException;
+import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.base.url.URLHelper;
@@ -67,17 +67,23 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     m_eMode = eMode;
   }
 
-  public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
+  @NonNull
+  public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
     m_sEndpointURL = aConfig.getAsString (APConfigurationProperties.FORWARDING_HTTP_ENDPOINT);
     if (StringHelper.isEmpty (m_sEndpointURL))
-      throw new InitializationException ("The forwarding HTTP endpoint is missing");
+    {
+      LOGGER.error ("The forwarding HTTP endpoint is missing");
+      return ESuccess.FAILURE;
+    }
     if (URLHelper.getAsURL (m_sEndpointURL) == null)
-      throw new InitializationException ("The provided forwarding HTTP endpoint '" +
-                                         m_sEndpointURL +
-                                         "' is not a valid URL");
+    {
+      LOGGER.error ("The provided forwarding HTTP endpoint '" + m_sEndpointURL + "' is not a valid URL");
+      return ESuccess.FAILURE;
+    }
 
     HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, "forwarding.");
+    return ESuccess.SUCCESS;
   }
 
   @NonNull

@@ -20,6 +20,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
@@ -49,31 +50,42 @@ public class S3DocumentForwarder implements IDocumentForwarder
   private String m_sSecretAccessKey;
   private String m_sKeyPrefix;
 
-  public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
+  @NonNull
+  public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
-    // TODO check mandatory
-    m_aRegion = Region.of (aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_REGION));
+    final String sRegion = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_REGION);
+    m_aRegion = Region.of (sRegion);
+    if (m_aRegion == null)
+    {
+      LOGGER.error ("Configured S3 region '" + sRegion + "' is invalid");
+      return ESuccess.FAILURE;
+    }
+
     m_sBucket = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_BUCKET);
+    if (StringHelper.isEmpty (m_sBucket))
+    {
+      LOGGER.error ("S3 bucket is not configured");
+      return ESuccess.FAILURE;
+    }
+
     m_sAccessKeyId = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_ACCESS_KEY_ID);
     m_sSecretAccessKey = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_SECRET_ACCESS_KEY);
+
     m_sKeyPrefix = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_KEY_PREFIX);
+    if (StringHelper.isNotEmpty (m_sKeyPrefix))
+    {
+      if (!m_sKeyPrefix.endsWith ("/"))
+        m_sKeyPrefix += '/';
+    }
+    else
+      m_sKeyPrefix = "";
+    return ESuccess.SUCCESS;
   }
 
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-
-    if (m_aRegion == null)
-    {
-      LOGGER.error ("S3 region not configured");
-      return ForwardingResult.failure ("s3_configuration_error", "S3 region not configured");
-    }
-    if (StringHelper.isEmpty (m_sBucket))
-    {
-      LOGGER.error ("S3 rbucket not configured");
-      return ForwardingResult.failure ("s3_configuration_error", "S3 bucket not configured");
-    }
 
     try
     {
@@ -86,9 +98,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
       try (final S3Client aS3Client = aBuilder.build ())
       {
-        final String sKey = (StringHelper.isNotEmpty (m_sKeyPrefix) ? m_sKeyPrefix + "/" : "") +
-                            aTransaction.getSbdhInstanceID () +
-                            ".xml";
+        final String sKey = m_sKeyPrefix + aTransaction.getSbdhInstanceID () + ".xml";
 
         final PutObjectRequest aPutReq = PutObjectRequest.builder ()
                                                          .bucket (m_sBucket)
@@ -96,9 +106,20 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .contentType (CMimeType.APPLICATION_XML.getAsString ())
                                                          .build ();
 
-        aS3Client.putObject (aPutReq,
-                             RequestBody.fromInputStream (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
-                                                          aTransaction.getDocumentSize ()));
+        final var aResult = aS3Client.putObject (aPutReq,
+                                                 RequestBody.fromInputStream (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                                                                              aTransaction.getDocumentSize ()));
+        if (!aResult.sdkHttpResponse ().isSuccessful ())
+        {
+          LOGGER.error ("Failed to uploaded transaction '" +
+                        aTransaction.getID () +
+                        "' to S3 bucket '" +
+                        m_sBucket +
+                        "' and key '" +
+                        sKey +
+                        "'");
+          return ForwardingResult.failure ("s3-error", "SDK Http response error: " + aResult.sdkHttpResponse ());
+        }
 
         LOGGER.info ("Uploaded transaction '" +
                      aTransaction.getID () +
@@ -107,13 +128,17 @@ public class S3DocumentForwarder implements IDocumentForwarder
                      "' and key '" +
                      sKey +
                      "'");
-
         return ForwardingResult.success ();
       }
     }
     catch (final Exception ex)
     {
-      LOGGER.error ("S3 forwarding failed for transaction '" + aTransaction.getID () + "'", ex);
+      LOGGER.error ("S3 forwarding failed for transaction '" +
+                    aTransaction.getID () +
+                    "' to bucket '" +
+                    m_sBucket +
+                    "'",
+                    ex);
       return ForwardingResult.failure ("s3_error", ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
   }

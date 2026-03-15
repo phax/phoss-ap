@@ -93,7 +93,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .build ();
 
         aS3Client.putObject (aPutReq,
-                             RequestBody.fromInputStream (DocumentStorageHelper.openDocumentStream (aTransaction.getDocumentPath ()),
+                             RequestBody.fromInputStream (DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                                           aTransaction.getDocumentSize ()));
 
         LOGGER.info ("Uploaded transaction '" +

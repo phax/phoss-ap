@@ -63,8 +63,9 @@ public class SftpDocumentForwarder implements IDocumentForwarder
   }
 
   /**
-   * Upload a file to the server by first writing the content to a file with the extension ".tmp".
-   * Once all data is transfer, the file is renamed to the original destination filename.
+   * Upload a file to the server by first writing the content to a file with the
+   * extension ".tmp". Once all data is transfer, the file is renamed to the
+   * original destination filename.
    *
    * @param aUploadSettings
    *        The connection settings to use. May not be <code>null</code>.
@@ -73,8 +74,9 @@ public class SftpDocumentForwarder implements IDocumentForwarder
    * @param sTargetFilename
    *        The name of the uploaded file. May not be <code>null</code>.
    * @param aISP
-   *        The input stream to read from. The stream is automatically closed within this method -
-   *        no matter whether the upload was successful or not. May not be <code>null</code>.
+   *        The input stream to read from. The stream is automatically closed
+   *        within this method - no matter whether the upload was successful or
+   *        not. May not be <code>null</code>.
    * @return The {@link ForwardingResult} to return. Never <code>null</code>.
    */
   @NonNull
@@ -115,8 +117,9 @@ public class SftpDocumentForwarder implements IDocumentForwarder
           aChannel.cd (sRealTargetDirectory);
 
           /*
-           * First write to the server with a temporary filename, to avoid that unfinished documents
-           * are retrieved.The total length is unknown that's why we need to count.
+           * First write to the server with a temporary filename, to avoid that
+           * unfinished documents are retrieved.The total length is unknown
+           * that's why we need to count.
            */
           final String sTargetTempFilename = sTargetFilename + ".tmp";
 
@@ -193,7 +196,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
       return writeUploadedFile (m_aSftpSettings,
                                 "",
                                 sTargetFilename,
-                                HasInputStream.create (DocumentStorageHelper.readDocument (aTransaction.getDocumentPath ())));
+                                HasInputStream.multiple ( () -> DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ())));
     }
     catch (final Exception ex)
     {

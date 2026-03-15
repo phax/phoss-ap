@@ -102,7 +102,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     APBasicConfig.applyHttpProxySettings (aHCS);
 
     try (final HttpClientManager aHttpClientMgr = HttpClientManager.create (aHCS);
-         final InputStream aDocumentIS = DocumentStorageHelper.openDocumentStream (sDocumentPath))
+         final InputStream aDocumentIS = DocumentStorageHelper.openDocumentStreamForRead (sDocumentPath))
     {
       final HttpPost aPost = new HttpPost (sURL);
       aPost.setEntity (new InputStreamEntity (aDocumentIS, ContentType.APPLICATION_XML));

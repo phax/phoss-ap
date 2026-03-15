@@ -171,11 +171,11 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openDocumentStream (@NonNull final String sBaseDir,
-                                                 @NonNull final OffsetDateTime aReferenceDT,
-                                                 @NonNull @DevelopersNote final String sFilename,
-                                                 @NonNull final String sFileExt,
-                                                 @NonNull final Consumer <String> aPathConsumer)
+  public static OutputStream openDocumentStreamForWrite (@NonNull final String sBaseDir,
+                                                         @NonNull final OffsetDateTime aReferenceDT,
+                                                         @NonNull @DevelopersNote final String sFilename,
+                                                         @NonNull final String sFileExt,
+                                                         @NonNull final Consumer <String> aPathConsumer)
   {
     ValueEnforcer.notNull (sBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
@@ -208,12 +208,12 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openTemporaryDocumentStream (@NonNull final String sBaseDir,
-                                                          @NonNull final OffsetDateTime aReferenceDT,
-                                                          @NonNull final Consumer <String> aPathConsumer)
+  public static OutputStream openTemporaryDocumentStreamForWrite (@NonNull final String sBaseDir,
+                                                                  @NonNull final OffsetDateTime aReferenceDT,
+                                                                  @NonNull final Consumer <String> aPathConsumer)
   {
     // Should be always unique
-    return openDocumentStream (sBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
+    return openDocumentStreamForWrite (sBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
   }
 
   @NonNull
@@ -264,7 +264,7 @@ public final class DocumentStorageHelper
    * @return An open input stream.
    */
   @NonNull
-  public static InputStream openDocumentStream (@NonNull final String sAbsolutePath)
+  public static InputStream openDocumentStreamForRead (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
 

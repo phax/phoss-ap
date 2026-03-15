@@ -85,7 +85,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     try (final HttpClientManager aHttpClientMgr = new HttpClientManager ())
     {
       final HttpPost aPost = new HttpPost (m_sEndpointURL);
-      aPost.setEntity (new InputStreamEntity (DocumentStorageHelper.openDocumentStream (aTransaction.getDocumentPath ()),
+      aPost.setEntity (new InputStreamEntity (DocumentStorageHelper.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                               ContentType.APPLICATION_XML));
 
       LOGGER.info ("Forwarding inbound transaction '" +

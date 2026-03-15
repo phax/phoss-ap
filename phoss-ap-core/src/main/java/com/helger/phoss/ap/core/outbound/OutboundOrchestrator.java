@@ -170,7 +170,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aDocumentIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openDocumentStream (sStorageBasePath,
+         final OutputStream aFileOS = DocumentStorageHelper.openDocumentStreamForWrite (sStorageBasePath,
                                                                                 aCreationDT,
                                                                                 sSbdhInstanceID,
                                                                                 ".out",
@@ -285,7 +285,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aSbdIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStream (sStorageBasePath,
+         final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStreamForWrite (sStorageBasePath,
                                                                                          aCreationDT,
                                                                                          aTempPathHolder::set);
          final CopyingInputStream aCopyIS = new CopyingInputStream (aDigestIS, aFileOS))
@@ -640,7 +640,7 @@ public final class OutboundOrchestrator
                                "'");
 
                 // Provide as InputStream to be able to handle larger payloads
-                aBuilder.payload (HasInputStream.multiple ( () -> DocumentStorageHelper.openDocumentStream (aTx.getDocumentPath ())));
+                aBuilder.payload (HasInputStream.multiple ( () -> DocumentStorageHelper.openDocumentStreamForRead (aTx.getDocumentPath ())));
               }
 
               eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
@@ -653,7 +653,7 @@ public final class OutboundOrchestrator
             {
               final PeppolSBDHData aSbdData;
               final MessageDigest aMD = HashHelper.createMessageDigest ();
-              try (final InputStream aFileIS = DocumentStorageHelper.openDocumentStream (aTx.getDocumentPath ());
+              try (final InputStream aFileIS = DocumentStorageHelper.openDocumentStreamForRead (aTx.getDocumentPath ());
                    final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
                    final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
               {

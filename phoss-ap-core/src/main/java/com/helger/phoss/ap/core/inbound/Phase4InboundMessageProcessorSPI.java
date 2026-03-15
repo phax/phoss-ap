@@ -55,6 +55,7 @@ import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
@@ -92,6 +93,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     {
       final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
       final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+      final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
       final Locale aDisplayLocale = CPhossAP.DEFAULT_LOCALE;
 
       final String sIncomingID = aMessageMetadata.getIncomingUniqueID ();
@@ -244,11 +246,10 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       }
 
       // Store document to disk
-      final String sDocumentPath = APBasicMetaManager.getDocStorageProvider ()
-                                                      .storeDocument (APBasicConfig.getStorageInboundPath (),
-                                                                      aAS4Timestamp,
-                                                                      sSbdhInstanceID + ".sbd",
-                                                                      aSBDBytes);
+      final String sDocumentPath = aDocStorageMgr.storeDocument (APBasicConfig.getStorageInboundPath (),
+                                                                 aAS4Timestamp,
+                                                                 sSbdhInstanceID + ".sbd",
+                                                                 aSBDBytes);
 
       // Store in DB
       final String sTxID = aInboundMgr.create (sIncomingID,

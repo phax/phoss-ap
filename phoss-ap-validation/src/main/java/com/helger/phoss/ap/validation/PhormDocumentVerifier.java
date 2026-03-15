@@ -47,15 +47,17 @@ import com.helger.phive.result.json.PhiveJsonHelper;
 import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 /**
- * Document verifier implementation that calls the phorm Validation Service to validate documents.
- * The validation service automatically detects the document type and validates it against the
- * appropriate rules. This class implements both inbound and outbound verification SPIs.
+ * Document verifier implementation that calls the phorm Validation Service to
+ * validate documents. The validation service automatically detects the document
+ * type and validates it against the appropriate rules. This class implements
+ * both inbound and outbound verification SPIs.
  *
  * @author Philip Helger
  */
@@ -67,6 +69,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
   @NonNull
   private ESuccess _callPhorm (@NonNull @Nonempty final String sDocumentPath)
   {
+    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
     final IConfig aConfig = APConfigProvider.getConfig ();
     final String sPhormBaseURL = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_URL);
     final String sPhormToken = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_TOKEN);
@@ -75,7 +78,8 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     {
       if (LOGGER.isDebugEnabled ())
         LOGGER.debug ("Phorm URL is not configured ('" + APConfigurationProperties.VERIFICATION_PHORM_URL + "')");
-      // Don't break document processing
+
+      // Don't break document processing if Phorm is not used
       return ESuccess.SUCCESS;
     }
 
@@ -92,7 +96,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
 
     final String sURL = StringHelper.trimEnd (sPhormBaseURL, '/') + "/api/dd_and_validate/";
-    if (!APBasicMetaManager.getDocStorageProvider ().existsDocument (sDocumentPath))
+    if (!aDocStorageMgr.existsDocument (sDocumentPath))
     {
       LOGGER.error ("Document path '" + sDocumentPath + "' does not exist");
       return ESuccess.FAILURE;
@@ -102,7 +106,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     APBasicConfig.applyHttpProxySettings (aHCS);
 
     try (final HttpClientManager aHttpClientMgr = HttpClientManager.create (aHCS);
-         final InputStream aDocumentIS = APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (sDocumentPath))
+         final InputStream aDocumentIS = aDocStorageMgr.openDocumentStreamForRead (sDocumentPath))
     {
       final HttpPost aPost = new HttpPost (sURL);
       aPost.setEntity (new InputStreamEntity (aDocumentIS, ContentType.APPLICATION_XML));

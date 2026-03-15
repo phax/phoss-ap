@@ -40,6 +40,7 @@ import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
@@ -76,6 +77,7 @@ public final class MlsHandler
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
 
     final EPeppolMLSResponseCode eResponseCode = aOutcome.getResponseCode ();
     final EPeppolMLSType eMlsType = aInboundTx.getMlsType ();
@@ -138,11 +140,10 @@ public final class MlsHandler
     // Create an outbound transaction for the MLS response
 
     // Store MLS document to disk
-    final String sDocumentPath = APBasicMetaManager.getDocStorageProvider ()
-                                                    .storeDocument (APBasicConfig.getStorageOutboundPath (),
-                                                                    aCreationDT,
-                                                                    sMlsSbdhInstanceID + ".mls",
-                                                                    aMlsBytes);
+    final String sDocumentPath = aDocStorageMgr.storeDocument (APBasicConfig.getStorageOutboundPath (),
+                                                               aCreationDT,
+                                                               sMlsSbdhInstanceID + ".mls",
+                                                               aMlsBytes);
 
     // MLS can never have an MLS_TO
     final String sMlsTo = null;

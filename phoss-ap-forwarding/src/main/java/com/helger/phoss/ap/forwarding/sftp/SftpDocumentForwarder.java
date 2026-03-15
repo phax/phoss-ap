@@ -35,6 +35,7 @@ import com.helger.io.file.FilenameHelper;
 import com.helger.jsch.sftp.ChannelSftpHelper;
 import com.helger.network.WebExceptionHelper;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -186,6 +187,8 @@ public class SftpDocumentForwarder implements IDocumentForwarder
   {
     try
     {
+      final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
+
       // Layout: yyyyMMddHHmmss_(random value).xml
       final String sTargetFilename = DateTimeFormatter.ofPattern (SFTP_DATETIME_PATTERN)
                                                       .format (aTransaction.getReceivedDT ()) +
@@ -196,7 +199,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
       return writeUploadedFile (m_aSftpSettings,
                                 "",
                                 sTargetFilename,
-                                HasInputStream.multiple ( () -> APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTransaction.getDocumentPath ())));
+                                HasInputStream.multiple ( () -> aDocStorageMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ())));
     }
     catch (final Exception ex)
     {

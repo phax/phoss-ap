@@ -26,6 +26,7 @@ import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.mime.CMimeType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
+import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -50,6 +51,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
   public void initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
+    // TODO check mandatory
     m_aRegion = Region.of (aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_REGION));
     m_sBucket = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_BUCKET);
     m_sAccessKeyId = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_ACCESS_KEY_ID);
@@ -60,6 +62,8 @@ public class S3DocumentForwarder implements IDocumentForwarder
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
+    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
+
     if (m_aRegion == null)
     {
       LOGGER.error ("S3 region not configured");
@@ -93,7 +97,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .build ();
 
         aS3Client.putObject (aPutReq,
-                             RequestBody.fromInputStream (APBasicMetaManager.getDocStorageProvider ().openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                             RequestBody.fromInputStream (aDocStorageMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                                           aTransaction.getDocumentSize ()));
 
         LOGGER.info ("Uploaded transaction '" +

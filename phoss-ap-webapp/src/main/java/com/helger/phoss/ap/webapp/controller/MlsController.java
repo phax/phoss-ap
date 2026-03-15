@@ -30,6 +30,13 @@ import com.helger.phoss.ap.db.MlsMetricsManagerJdbc;
 import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.MlsSlaReportResponse;
 
+/**
+ * REST controller for MLS (Message Level Status) related operations including
+ * querying transactions with missing MLS responses and retrieving MLS SLA
+ * compliance reports per Peppol Network Policy.
+ *
+ * @author Philip Helger
+ */
 @RestController
 @RequestMapping ("/api/mls")
 public class MlsController

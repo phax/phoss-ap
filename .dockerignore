@@ -1,0 +1,15 @@
+.git/
+.github/
+.idea/
+.settings/
+.claude/
+target/
+generated/
+*.p12
+*.md
+!README.md
+.gitignore
+.dockerignore
+.classpath
+.project
+application-private.properties

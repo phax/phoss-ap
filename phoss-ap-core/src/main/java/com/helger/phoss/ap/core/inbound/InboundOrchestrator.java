@@ -53,6 +53,18 @@ public final class InboundOrchestrator
   private InboundOrchestrator ()
   {}
 
+  /**
+   * Forward a received inbound document to the configured C4 endpoint. Handles
+   * retry scheduling with exponential backoff and triggers MLS rejection
+   * responses when maximum retries are exhausted.
+   *
+   * @param sLogPrefix
+   *        Log message prefix for traceability. May not be <code>null</code>.
+   * @param aTx
+   *        The inbound transaction to forward. May not be <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if forwarding succeeded,
+   *         {@link ESuccess#FAILURE} otherwise.
+   */
   @NonNull
   public static ESuccess forwardDocument (@NonNull final String sLogPrefix, @NonNull final IInboundTransaction aTx)
   {

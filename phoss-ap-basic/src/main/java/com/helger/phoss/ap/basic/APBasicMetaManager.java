@@ -54,6 +54,10 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   public APBasicMetaManager ()
   {}
 
+  /**
+   * @return The global singleton instance of this manager. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public static APBasicMetaManager getInstance ()
   {
@@ -92,18 +96,30 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
     }
   }
 
+  /**
+   * @return The document payload manager for storing and retrieving documents on
+   *         the filesystem. Never <code>null</code>.
+   */
   @NonNull
   public static IDocumentPayloadManager getDocPayloadMgr ()
   {
     return getInstance ().m_aDocPayloadMgr;
   }
 
+  /**
+   * @return The timestamp manager used for generating UTC timestamps. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public static IAPTimestampManager getTimestampMgr ()
   {
     return getInstance ().m_aTimestampMgr;
   }
 
+  /**
+   * @return The Peppol identifier factory (strict or lax) as configured. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public static IIdentifierFactory getIdentifierFactory ()
   {

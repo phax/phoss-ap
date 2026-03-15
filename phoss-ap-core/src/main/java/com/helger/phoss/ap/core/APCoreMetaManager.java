@@ -39,6 +39,14 @@ import com.helger.phoss.ap.forwarding.http.HttpDocumentForwarder;
 import com.helger.phoss.ap.forwarding.s3.S3DocumentForwarder;
 import com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder;
 
+/**
+ * Central manager for core AP components including the document forwarder,
+ * inbound/outbound document verifiers, receiver checks, and notification
+ * handlers. Components are initialized from configuration and via
+ * {@link ServiceLoader} SPI.
+ *
+ * @author Philip Helger
+ */
 public final class APCoreMetaManager
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APCoreMetaManager.class);
@@ -52,6 +60,11 @@ public final class APCoreMetaManager
   private APCoreMetaManager ()
   {}
 
+  /**
+   * Initialize the core meta manager by creating the document forwarder from
+   * configuration and loading all SPI-based verifiers, receiver checks, and
+   * notification handlers.
+   */
   public static void init ()
   {
     LOGGER.info ("Initializing APMetaManager");
@@ -102,23 +115,37 @@ public final class APCoreMetaManager
     LOGGER.info ("APMetaManager initialized successfully");
   }
 
+  /**
+   * Shutdown the core meta manager and release all resources.
+   */
   public static void shutdown ()
   {
     LOGGER.info ("Shutting down APMetaManager");
   }
 
+  /**
+   * @return The configured forwarding mode. Never <code>null</code>.
+   */
   @NonNull
   public static EForwardingMode getForwardingMode ()
   {
     return s_eForwardingMode;
   }
 
+  /**
+   * @return The configured document forwarder instance. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public static IDocumentForwarder getForwarder ()
   {
     return s_aForwarder;
   }
 
+  /**
+   * @return A mutable copy of all registered inbound document verifiers. Never
+   *         <code>null</code>.
+   */
   @NonNull
   @ReturnsMutableCopy
   public static ICommonsList <IInboundDocumentVerifierSPI> getAllInboundVerifiers ()
@@ -126,6 +153,10 @@ public final class APCoreMetaManager
     return s_aInboundVerifiers.getClone ();
   }
 
+  /**
+   * @return A mutable copy of all registered outbound document verifiers. Never
+   *         <code>null</code>.
+   */
   @NonNull
   @ReturnsMutableCopy
   public static ICommonsList <IOutboundDocumentVerifierSPI> getAllOutboundVerifiers ()
@@ -133,6 +164,10 @@ public final class APCoreMetaManager
     return s_aOutboundVerifiers.getClone ();
   }
 
+  /**
+   * @return A mutable copy of all registered Peppol receiver checks. Never
+   *         <code>null</code>.
+   */
   @NonNull
   @ReturnsMutableCopy
   public static ICommonsList <IPeppolReceiverCheckSPI> getAllPeppolReceiverChecks ()
@@ -140,6 +175,10 @@ public final class APCoreMetaManager
     return s_aReceiverChecks.getClone ();
   }
 
+  /**
+   * @return A mutable copy of all registered notification handlers. Never
+   *         <code>null</code>.
+   */
   @NonNull
   @ReturnsMutableCopy
   public static ICommonsList <IAPNotificationHandlerSPI> getAllNotificationHandlers ()

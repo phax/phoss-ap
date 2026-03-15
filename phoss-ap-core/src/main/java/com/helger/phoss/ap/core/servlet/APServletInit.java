@@ -72,6 +72,14 @@ import com.helger.xservlet.requesttrack.RequestTrackerSettings;
 import jakarta.activation.CommandMap;
 import jakarta.servlet.ServletContext;
 
+/**
+ * Central servlet initialization and shutdown handler for the phoss AP
+ * application. Configures global settings, AS4 and Peppol AS4, initializes all
+ * managers, and starts background schedulers on startup. Performs orderly
+ * shutdown of all components on application stop.
+ *
+ * @author Philip Helger
+ */
 public class APServletInit
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APServletInit.class);
@@ -129,11 +137,12 @@ public class APServletInit
 
     AS4ServerInitializer.initAS4Server ();
 
-    if (false)
+    final String sDumpPath = APCoreConfig.getPhase4DumpPath ();
+    if (StringHelper.isNotEmpty (sDumpPath))
     {
-      // dump all messages to a file
       AS4DumpManager.setIncomingDumper (new AS4IncomingDumperFileBased ());
       AS4DumpManager.setOutgoingDumper (new AS4OutgoingDumperFileBased ());
+      LOGGER.info ("AS4 message dumping enabled to '" + sDumpPath + "'");
     }
   }
 
@@ -214,7 +223,7 @@ public class APServletInit
 
     // Eventually enable the receiver check, so that for each incoming request
     // the validity is crosscheck against the owning SMP
-    final String sSMPURL = null; // TODO APCoreConfig.getMySmpUrl ();
+    final String sSMPURL = APCoreConfig.getPeppolSmpUrl ();
     final String sAPURL = AS4Configuration.getThisEndpointAddress ();
     if (StringHelper.isNotEmpty (sSMPURL) && StringHelper.isNotEmpty (sAPURL))
     {
@@ -239,6 +248,14 @@ public class APServletInit
       throw new InitializationException ("Failed to init Peppol Reporting Backend Service");
   }
 
+  /**
+   * Initialize the entire phoss AP application including global settings, AS4,
+   * Peppol configuration, all managers, startup recovery, and background
+   * schedulers.
+   *
+   * @param aSC
+   *        The servlet context. May not be <code>null</code>.
+   */
   public static void init (@NonNull final ServletContext aSC)
   {
     LOGGER.info ("Initializing phoss AP");
@@ -267,6 +284,11 @@ public class APServletInit
     LOGGER.info ("phoss AP initialized successfully");
   }
 
+  /**
+   * Shut down the phoss AP application by stopping schedulers, closing
+   * managers, shutting down the Peppol Reporting backend, and releasing all
+   * resources.
+   */
   public static void shutdown ()
   {
     LOGGER.info ("Shutting down phoss AP");

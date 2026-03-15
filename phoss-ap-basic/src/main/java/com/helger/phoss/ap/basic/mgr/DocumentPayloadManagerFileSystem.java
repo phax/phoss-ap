@@ -51,6 +51,11 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   public DocumentPayloadManagerFileSystem ()
   {}
 
+  /**
+   * Verify that the configured inbound and outbound storage paths exist, are
+   * writable, and can be created if missing. Throws an
+   * {@link InitializationException} if any check fails.
+   */
   public void verifyConfiguration ()
   {
     final IFileOperationManager aFOM = FileOperationManager.INSTANCE;
@@ -95,6 +100,21 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
                                StringHelper.getLeadingZero (aReferenceDT.getHour (), 2));
   }
 
+  /**
+   * Store a document as a file on the filesystem under a date/hour organized
+   * directory structure.
+   *
+   * @param sBaseDir
+   *        The base directory for storage. May not be <code>null</code>.
+   * @param aReferenceDT
+   *        The reference date/time used to derive the subdirectory path. May
+   *        not be <code>null</code>.
+   * @param sFilename
+   *        The filename to use. May not be <code>null</code>.
+   * @param aBytes
+   *        The document content as byte array. May not be <code>null</code>.
+   * @return The absolute path of the stored file. Never <code>null</code>.
+   */
   @NonNull
   public String storeDocument (@NonNull final String sBaseDir,
                                @NonNull final OffsetDateTime aReferenceDT,
@@ -155,6 +175,27 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     return aFilePath;
   }
 
+  /**
+   * Open an {@link OutputStream} for writing a document to the filesystem. The
+   * file is placed under a date/hour organized directory structure with a
+   * unique filename.
+   *
+   * @param sBaseDir
+   *        The base directory for storage. May not be <code>null</code>.
+   * @param aReferenceDT
+   *        The reference date/time used to derive the subdirectory path. May
+   *        not be <code>null</code>.
+   * @param sFilename
+   *        The base filename (without extension). May not be empty.
+   * @param sFileExt
+   *        The file extension including the leading dot (e.g.
+   *        {@code ".xml"}). May not be empty.
+   * @param aPathConsumer
+   *        A consumer that receives the absolute path of the created file.
+   *        May not be <code>null</code>.
+   * @return A buffered {@link OutputStream} for writing. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public OutputStream openDocumentStreamForWrite (@NonNull final String sBaseDir,
                                                   @NonNull final OffsetDateTime aReferenceDT,
@@ -192,6 +233,21 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     }
   }
 
+  /**
+   * Open an {@link OutputStream} for writing a temporary document with a random
+   * UUID-based filename and {@code .tmp} extension.
+   *
+   * @param sBaseDir
+   *        The base directory for storage. May not be <code>null</code>.
+   * @param aReferenceDT
+   *        The reference date/time used to derive the subdirectory path. May
+   *        not be <code>null</code>.
+   * @param aPathConsumer
+   *        A consumer that receives the absolute path of the created
+   *        temporary file. May not be <code>null</code>.
+   * @return A buffered {@link OutputStream} for writing. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public OutputStream openTemporaryDocumentStreamForWrite (@NonNull final String sBaseDir,
                                                            @NonNull final OffsetDateTime aReferenceDT,
@@ -201,6 +257,21 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     return openDocumentStreamForWrite (sBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
   }
 
+  /**
+   * Rename a file to a new unique name in the target directory.
+   *
+   * @param sSrcFile
+   *        The absolute path of the source file. May not be
+   *        <code>null</code>.
+   * @param sTargetDir
+   *        The target directory. May not be <code>null</code>.
+   * @param sBaseName
+   *        The desired base filename (without extension). May not be empty.
+   * @param sFileExt
+   *        The file extension including the leading dot. May not be empty.
+   * @return The destination {@link File} after renaming. Never
+   *         <code>null</code>.
+   */
   @NonNull
   public File renameFile (@NonNull final String sSrcFile,
                           @NonNull final String sTargetDir,
@@ -219,6 +290,14 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     return aDstFile;
   }
 
+  /**
+   * Read an entire document from the filesystem into a byte array.
+   *
+   * @param sAbsolutePath
+   *        The absolute path of the file to read. May not be
+   *        <code>null</code>.
+   * @return The file contents as byte array. Never <code>null</code>.
+   */
   public byte @NonNull [] readDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
@@ -233,6 +312,15 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     }
   }
 
+  /**
+   * Open a buffered {@link InputStream} for reading a document from the
+   * filesystem.
+   *
+   * @param sAbsolutePath
+   *        The absolute path of the file to read. May not be
+   *        <code>null</code>.
+   * @return A buffered {@link InputStream}. Never <code>null</code>.
+   */
   @NonNull
   public InputStream openDocumentStreamForRead (@NonNull final String sAbsolutePath)
   {
@@ -248,6 +336,15 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     }
   }
 
+  /**
+   * Delete a document from the filesystem if it exists.
+   *
+   * @param sAbsolutePath
+   *        The absolute path of the file to delete. May not be
+   *        <code>null</code>.
+   * @return {@code true} if the file existed and was deleted, {@code false} if
+   *         it did not exist.
+   */
   public boolean deleteDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");
@@ -262,6 +359,13 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     }
   }
 
+  /**
+   * Check whether a document exists at the specified path.
+   *
+   * @param sAbsolutePath
+   *        The absolute path to check. May not be <code>null</code>.
+   * @return {@code true} if the file exists, {@code false} otherwise.
+   */
   public boolean existsDocument (@NonNull final String sAbsolutePath)
   {
     ValueEnforcer.notNull (sAbsolutePath, "AbsolutePath");

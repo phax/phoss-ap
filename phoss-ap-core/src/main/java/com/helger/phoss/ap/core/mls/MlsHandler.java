@@ -51,6 +51,13 @@ import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
+/**
+ * Handler for Peppol Message Level Status (MLS) responses. Responsible for
+ * creating outbound MLS response transactions for inbound documents and for
+ * correlating incoming MLS responses to previously sent outbound transactions.
+ *
+ * @author Philip Helger
+ */
 public final class MlsHandler
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (MlsHandler.class);
@@ -187,7 +194,6 @@ public final class MlsHandler
     // Perform actual sending
     final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitMLS] ",
                                                                                                   aMlsTx);
-    // TODO store sending report
     return ESuccess.valueOf (aSendingReport.isOverallSuccess ());
   }
 

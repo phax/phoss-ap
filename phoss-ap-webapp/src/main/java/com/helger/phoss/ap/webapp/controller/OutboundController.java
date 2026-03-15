@@ -50,12 +50,54 @@ import com.helger.phoss.ap.webapp.dto.OutboundTransactionResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+/**
+ * REST controller for outbound transaction operations including submitting raw
+ * documents and pre-built SBDs for Peppol AS4 sending, querying transaction
+ * status, and listing all transactions currently in transmission.
+ *
+ * @author Philip Helger
+ */
 @RestController
 @RequestMapping ("/api/outbound")
 public class OutboundController
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (OutboundController.class);
 
+  /**
+   * Submit a raw (payload-only) document for outbound sending via the Peppol
+   * network. The document payload is read from the HTTP request body. Peppol
+   * identifiers are parsed from the URL path variables.
+   *
+   * @param sSenderID
+   *        The sender participant identifier.
+   * @param sReceiverID
+   *        The receiver participant identifier.
+   * @param sDocTypeID
+   *        The document type identifier.
+   * @param sProcessID
+   *        The process identifier.
+   * @param sC1CountryCode
+   *        The C1 country code.
+   * @param aServletRequest
+   *        The HTTP servlet request containing the document payload.
+   * @param sSbdhInstanceID
+   *        Optional SBDH Instance ID. A random one is generated if not
+   *        provided.
+   * @param sMlsTo
+   *        Optional MLS "To" address.
+   * @param sSbdhStandard
+   *        Optional SBDH standard identifier.
+   * @param sSbdhTypeVersion
+   *        Optional SBDH type version.
+   * @param sSbdhType
+   *        Optional SBDH type.
+   * @param sPayloadMimeType
+   *        Optional payload MIME type.
+   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an
+   *         error response.
+   * @throws Exception
+   *         On unexpected errors.
+   */
   @PostMapping (value = "/submit/{senderID}/{receiverID}/{docTypeID}/{processID}/{c1CountryCode}",
                 produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity <String> submitRawDocument (@PathVariable ("senderID") final String sSenderID,
@@ -179,6 +221,20 @@ public class OutboundController
     }
   }
 
+  /**
+   * Submit a pre-built Standard Business Document (SBD) for outbound sending
+   * via the Peppol network. The complete SBD is read from the HTTP request
+   * body.
+   *
+   * @param aServletRequest
+   *        The HTTP servlet request containing the SBD payload.
+   * @param sMlsTo
+   *        Optional MLS "To" address.
+   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an
+   *         error response.
+   * @throws Exception
+   *         On unexpected errors.
+   */
   @PostMapping (value = "/submit-sbd", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity <String> submitPrebuiltSBD (@NonNull final HttpServletRequest aServletRequest,
                                                     @RequestParam (value = "mlsTo",
@@ -214,6 +270,13 @@ public class OutboundController
     }
   }
 
+  /**
+   * Get the current status of an outbound transaction by its SBDH Instance ID.
+   *
+   * @param sSbdhInstanceID
+   *        The SBDH Instance ID to look up.
+   * @return The transaction details, or 404 if not found.
+   */
   @GetMapping ("/status/{sbdhInstanceID}")
   public ResponseEntity <OutboundTransactionResponse> getStatus (@PathVariable ("sbdhInstanceID") final String sSbdhInstanceID)
   {
@@ -230,6 +293,12 @@ public class OutboundController
     return ResponseEntity.ok (OutboundTransactionResponse.fromDomain (aTx));
   }
 
+  /**
+   * Get all outbound transactions that are currently in transmission (not yet
+   * completed or permanently failed).
+   *
+   * @return A list of in-transmission outbound transactions.
+   */
   @GetMapping ("/in-transmission")
   public ResponseEntity <List <OutboundTransactionResponse>> getInTransmission ()
   {

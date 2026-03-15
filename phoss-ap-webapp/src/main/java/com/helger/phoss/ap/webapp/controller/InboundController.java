@@ -37,12 +37,31 @@ import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.ReportResponse;
 
+/**
+ * REST controller for inbound transaction operations including reporting the C4
+ * country code, querying transaction status by SBDH Instance ID, and listing
+ * all transactions currently in processing.
+ *
+ * @author Philip Helger
+ */
 @RestController
 @RequestMapping ("/api/inbound")
 public class InboundController
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (InboundController.class);
 
+  /**
+   * Store the C4 country code for a received inbound transaction and create the
+   * corresponding Peppol Reporting entry.
+   *
+   * @param sSbdhInstanceID
+   *        The SBDH Instance ID of the transaction. May not be
+   *        <code>null</code>.
+   * @param sC4CountryCode
+   *        The C4 country code to store. May not be <code>null</code>.
+   * @return A {@link ReportResponse} on success, 404 if the transaction does
+   *         not exist, or 400 if the C4 country code was already set.
+   */
   @PostMapping ("/report")
   public ResponseEntity <ReportResponse> reportInbound (@RequestParam ("sbdhInstanceID") final String sSbdhInstanceID,
                                                         @RequestParam ("c4CountryCode") final String sC4CountryCode)
@@ -75,6 +94,13 @@ public class InboundController
                                                   "C4 country code set to '" + sC4CountryCode + "'"));
   }
 
+  /**
+   * Get the current status of an inbound transaction by its SBDH Instance ID.
+   *
+   * @param sbdhInstanceID
+   *        The SBDH Instance ID to look up.
+   * @return The transaction details, or 404 if not found.
+   */
   @GetMapping ("/status/{sbdhInstanceID}")
   public ResponseEntity <InboundTransactionResponse> getStatus (@PathVariable final String sbdhInstanceID)
   {
@@ -86,6 +112,12 @@ public class InboundController
     return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aTx));
   }
 
+  /**
+   * Get all inbound transactions that are currently being processed (not yet
+   * completed or permanently failed).
+   *
+   * @return A list of in-processing inbound transactions.
+   */
   @GetMapping ("/in-processing")
   public ResponseEntity <List <InboundTransactionResponse>> getInProcessing ()
   {

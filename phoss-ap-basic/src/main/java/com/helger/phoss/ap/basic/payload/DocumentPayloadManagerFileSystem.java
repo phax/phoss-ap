@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.basic.storage;
+package com.helger.phoss.ap.basic.payload;
 
 import java.io.File;
 import java.io.InputStream;
@@ -36,19 +36,19 @@ import com.helger.base.string.StringHelper;
 import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.IFileOperationManager;
-import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
+import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.basic.APBasicConfig;
 
 /**
- * Default implementation of {@link IDocumentStorageProvider} that stores
+ * Default implementation of {@link IDocumentPayloadManager} that stores
  * documents as flat files on the local filesystem, organized by date/hour
  * directories.
  *
  * @author Philip Helger
  */
-public class DocumentStorageProviderFileSystem implements IDocumentStorageProvider
+public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
 {
-  public DocumentStorageProviderFileSystem ()
+  public DocumentPayloadManagerFileSystem ()
   {}
 
   public void verifyConfiguration ()

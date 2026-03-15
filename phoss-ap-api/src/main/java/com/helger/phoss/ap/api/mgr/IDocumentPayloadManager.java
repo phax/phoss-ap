@@ -33,7 +33,7 @@ import com.helger.annotation.Nonempty;
  *
  * @author Philip Helger
  */
-public interface IDocumentStorageProvider
+public interface IDocumentPayloadManager
 {
   /**
    * Verify that the storage configuration is valid and the storage directories are accessible.

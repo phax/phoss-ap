@@ -41,7 +41,7 @@ import com.helger.json.serialize.JsonReader;
 import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
-import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
+import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -83,12 +83,12 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
-    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
+    final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
 
     try (final HttpClientManager aHttpClientMgr = new HttpClientManager ())
     {
       final HttpPost aPost = new HttpPost (m_sEndpointURL);
-      aPost.setEntity (new InputStreamEntity (aDocStorageMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+      aPost.setEntity (new InputStreamEntity (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                               ContentType.APPLICATION_XML));
 
       LOGGER.info ("Forwarding inbound transaction '" +

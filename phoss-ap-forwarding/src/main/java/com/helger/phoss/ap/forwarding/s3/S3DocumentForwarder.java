@@ -26,7 +26,7 @@ import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.mime.CMimeType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
-import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
+import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -62,7 +62,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
-    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
+    final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
 
     if (m_aRegion == null)
     {
@@ -97,7 +97,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .build ();
 
         aS3Client.putObject (aPutReq,
-                             RequestBody.fromInputStream (aDocStorageMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                             RequestBody.fromInputStream (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
                                                           aTransaction.getDocumentSize ()));
 
         LOGGER.info ("Uploaded transaction '" +

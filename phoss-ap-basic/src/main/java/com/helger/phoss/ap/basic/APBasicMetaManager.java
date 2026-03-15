@@ -28,8 +28,8 @@ import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.peppolid.factory.PeppolLaxIdentifierFactory;
 import com.helger.phoss.ap.api.datetime.APTimestampManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
-import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
-import com.helger.phoss.ap.basic.storage.DocumentStorageProviderFileSystem;
+import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
+import com.helger.phoss.ap.basic.payload.DocumentPayloadManagerFileSystem;
 import com.helger.scope.IScope;
 import com.helger.scope.singleton.AbstractGlobalSingleton;
 
@@ -42,7 +42,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APBasicMetaManager.class);
 
-  private IDocumentStorageProvider m_aDocStorageProvider;
+  private IDocumentPayloadManager m_aDocPayloadMgr;
   private IIdentifierFactory m_aIdentifierFactory;
   private IAPTimestampManager m_aTimestampMgr;
 
@@ -66,8 +66,8 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
     LOGGER.info ("Initializing " + ClassHelper.getClassLocalName (this));
     try
     {
-      m_aDocStorageProvider = new DocumentStorageProviderFileSystem ();
-      m_aDocStorageProvider.verifyConfiguration ();
+      m_aDocPayloadMgr = new DocumentPayloadManagerFileSystem ();
+      m_aDocPayloadMgr.verifyConfiguration ();
 
       // Determine identifier factory from configuration
       m_aIdentifierFactory = switch (APBasicConfig.getPeppolIdentifierMode ())
@@ -93,9 +93,9 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   }
 
   @NonNull
-  public static IDocumentStorageProvider getDocStorageProvider ()
+  public static IDocumentPayloadManager getDocPayloadMgr ()
   {
-    return getInstance ().m_aDocStorageProvider;
+    return getInstance ().m_aDocPayloadMgr;
   }
 
   @NonNull

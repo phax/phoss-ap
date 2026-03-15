@@ -47,7 +47,7 @@ import com.helger.phive.result.json.PhiveJsonHelper;
 import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
-import com.helger.phoss.ap.api.mgr.IDocumentStorageProvider;
+import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
@@ -69,7 +69,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
   @NonNull
   private ESuccess _callPhorm (@NonNull @Nonempty final String sDocumentPath)
   {
-    final IDocumentStorageProvider aDocStorageMgr = APBasicMetaManager.getDocStorageProvider ();
+    final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
     final IConfig aConfig = APConfigProvider.getConfig ();
     final String sPhormBaseURL = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_URL);
     final String sPhormToken = aConfig.getAsString (APConfigurationProperties.VERIFICATION_PHORM_TOKEN);
@@ -96,7 +96,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
 
     final String sURL = StringHelper.trimEnd (sPhormBaseURL, '/') + "/api/dd_and_validate/";
-    if (!aDocStorageMgr.existsDocument (sDocumentPath))
+    if (!aDocPayloadMgr.existsDocument (sDocumentPath))
     {
       LOGGER.error ("Document path '" + sDocumentPath + "' does not exist");
       return ESuccess.FAILURE;
@@ -106,7 +106,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     APBasicConfig.applyHttpProxySettings (aHCS);
 
     try (final HttpClientManager aHttpClientMgr = HttpClientManager.create (aHCS);
-         final InputStream aDocumentIS = aDocStorageMgr.openDocumentStreamForRead (sDocumentPath))
+         final InputStream aDocumentIS = aDocPayloadMgr.openDocumentStreamForRead (sDocumentPath))
     {
       final HttpPost aPost = new HttpPost (sURL);
       aPost.setEntity (new InputStreamEntity (aDocumentIS, ContentType.APPLICATION_XML));

@@ -29,14 +29,39 @@ import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
  */
 public interface IInboundForwardingAttemptManager
 {
+  /**
+   * Record a successful forwarding attempt for the given inbound transaction.
+   *
+   * @param sInboundTransactionID
+   *        The parent inbound transaction ID. Never <code>null</code>.
+   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
+   */
   @Nullable
   String createSuccess (@NonNull String sInboundTransactionID);
 
+  /**
+   * Record a failed forwarding attempt for the given inbound transaction.
+   *
+   * @param sInboundTransactionID
+   *        The parent inbound transaction ID. Never <code>null</code>.
+   * @param sErrorCode
+   *        Machine-readable error code classifying the failure. May be <code>null</code>.
+   * @param sErrorDetails
+   *        Human-readable error description. May be <code>null</code>.
+   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
+   */
   @Nullable
   String createFailure (@NonNull String sInboundTransactionID,
                         @Nullable String sErrorCode,
                         @Nullable String sErrorDetails);
 
+  /**
+   * Get all forwarding attempts for the given inbound transaction, ordered by attempt date.
+   *
+   * @param sInboundTransactionID
+   *        The parent inbound transaction ID. Never <code>null</code>.
+   * @return A list of attempts. Never <code>null</code> but may be empty.
+   */
   @NonNull
   ICommonsList <IInboundForwardingAttempt> getByTransactionID (@NonNull String sInboundTransactionID);
 }

@@ -59,9 +59,13 @@ public enum EInboundStatus implements IHasID <String>
     return m_sID;
   }
 
+  /**
+   * @return <code>true</code> if this status represents a terminal state where
+   *         no further processing will occur.
+   */
   public boolean isFinalState ()
   {
-    return this == FORWARDED || this == REJECTED || this == PERMANENTLY_FAILED;
+    return this == REJECTED || this == FORWARDED || this == PERMANENTLY_FAILED;
   }
 
   /**

@@ -24,6 +24,7 @@ import com.helger.annotation.concurrent.GuardedBy;
 import com.helger.annotation.concurrent.ThreadSafe;
 import com.helger.base.concurrent.SimpleReadWriteLock;
 import com.helger.base.enforce.ValueEnforcer;
+import com.helger.base.equals.EqualsHelper;
 import com.helger.config.ConfigFactory;
 import com.helger.config.fallback.ConfigWithFallback;
 import com.helger.config.fallback.IConfigWithFallback;
@@ -54,6 +55,9 @@ public final class APConfigProvider
   private APConfigProvider ()
   {}
 
+  /**
+   * @return The current configuration. Never <code>null</code>.
+   */
   @NonNull
   public static IConfigWithFallback getConfig ()
   {
@@ -69,6 +73,13 @@ public final class APConfigProvider
     }
   }
 
+  /**
+   * Replace the current configuration with a new one.
+   *
+   * @param aNewConfig
+   *        The new configuration. Never <code>null</code>.
+   * @return The previous configuration. Never <code>null</code>.
+   */
   @NonNull
   public static IConfigWithFallback setConfig (@NonNull final IConfigWithFallback aNewConfig)
   {
@@ -79,7 +90,7 @@ public final class APConfigProvider
     try
     {
       aOld = s_aConfig;
-      if (aOld == aNewConfig)
+      if (EqualsHelper.identityEqual (aOld, aNewConfig))
       {
         // No change
         return aOld;

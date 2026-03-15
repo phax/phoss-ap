@@ -31,10 +31,13 @@ import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.annotation.misc.DevelopersNote;
 import com.helger.base.enforce.ValueEnforcer;
+import com.helger.base.exception.InitializationException;
 import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
+import com.helger.io.file.IFileOperationManager;
+import com.helger.phoss.ap.basic.APBasicConfig;
 
 /**
  * Utility class for reading and writing document files on disk. Documents are
@@ -47,6 +50,37 @@ public final class DocumentStorageHelper
 {
   private DocumentStorageHelper ()
   {}
+
+  public static void verifyConfiguration ()
+  {
+    final IFileOperationManager aFOM = FileOperationManager.INSTANCE;
+
+    {
+      final String sInboundPath = APBasicConfig.getStorageInboundPath ();
+      if (StringHelper.isEmpty (sInboundPath))
+        throw new InitializationException ("No Storage Inbound Path provided");
+      final File aInboundPath = new File (sInboundPath);
+      if (aFOM.createDirRecursiveIfNotExisting (aInboundPath).isFailure ())
+        throw new InitializationException ("Failed to create the Storage Inbound Path '" + sInboundPath + "'");
+      if (!aInboundPath.canWrite ())
+        throw new InitializationException ("The Storage Inbound Path '" +
+                                           sInboundPath +
+                                           "' is not writable by the application user");
+    }
+
+    {
+      final String sOutboundPath = APBasicConfig.getStorageOutboundPath ();
+      if (StringHelper.isEmpty (sOutboundPath))
+        throw new InitializationException ("No Storage Outbound Path provided");
+      final File aOutboundPath = new File (sOutboundPath);
+      if (aFOM.createDirRecursiveIfNotExisting (aOutboundPath).isFailure ())
+        throw new InitializationException ("Failed to create the Storage Outbound Path '" + sOutboundPath + "'");
+      if (!aOutboundPath.canWrite ())
+        throw new InitializationException ("The Storage Outbound Path '" +
+                                           sOutboundPath +
+                                           "' is not writable by the application user");
+    }
+  }
 
   @NonNull
   private static File _getStorageDir (@NonNull final File aBaseDir, @NonNull final OffsetDateTime aReferenceDT)
@@ -137,20 +171,20 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openDocumentStream (@NonNull final File aBaseDir,
+  public static OutputStream openDocumentStream (@NonNull final String sBaseDir,
                                                  @NonNull final OffsetDateTime aReferenceDT,
                                                  @NonNull @DevelopersNote final String sFilename,
                                                  @NonNull final String sFileExt,
                                                  @NonNull final Consumer <String> aPathConsumer)
   {
-    ValueEnforcer.notNull (aBaseDir, "BaseDir");
+    ValueEnforcer.notNull (sBaseDir, "BaseDir");
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
     ValueEnforcer.notEmpty (sFilename, "Filename");
     ValueEnforcer.notEmpty (sFileExt, "FileExt");
     ValueEnforcer.isTrue ( () -> sFileExt.startsWith ("."), "FileExt must start with a dot");
     ValueEnforcer.notNull (aPathConsumer, "PathConsumer");
 
-    final File aEffectiveBaseDir = _getStorageDir (aBaseDir, aReferenceDT);
+    final File aEffectiveBaseDir = _getStorageDir (new File (sBaseDir), aReferenceDT);
     try
     {
       // Create base directory structure if needed
@@ -174,21 +208,23 @@ public final class DocumentStorageHelper
   }
 
   @NonNull
-  public static OutputStream openTemporaryDocumentStream (@NonNull final File aBaseDir,
+  public static OutputStream openTemporaryDocumentStream (@NonNull final String sBaseDir,
                                                           @NonNull final OffsetDateTime aReferenceDT,
                                                           @NonNull final Consumer <String> aPathConsumer)
   {
     // Should be always unique
-    return openDocumentStream (aBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
+    return openDocumentStream (sBaseDir, aReferenceDT, UUID.randomUUID ().toString (), ".tmp", aPathConsumer);
   }
 
   @NonNull
-  public static File renameFile (@NonNull final File aSrcFile,
-                                 @NonNull final File aTargetDir,
+  public static File renameFile (@NonNull final String sSrcFile,
+                                 @NonNull final String sTargetDir,
                                  @NonNull @Nonempty final String sBaseName,
                                  @NonNull @Nonempty final String sFileExt)
   {
-    final File aDstFile = _ensureUniqueFile (aTargetDir, sBaseName, sFileExt);
+    final File aSrcFile = new File (sSrcFile);
+    final File aDstFile = _ensureUniqueFile (new File (sTargetDir), sBaseName, sFileExt);
+
     if (FileOperationManager.INSTANCE.renameFile (aSrcFile, aDstFile).isFailure ())
       throw new IllegalStateException ("Failed to rename file '" +
                                        aSrcFile.getAbsolutePath () +

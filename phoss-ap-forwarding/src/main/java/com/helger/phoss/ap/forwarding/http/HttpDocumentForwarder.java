@@ -16,12 +16,11 @@
  */
 package com.helger.phoss.ap.forwarding.http;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.io.entity.FileEntity;
+import org.apache.hc.core5.http.io.entity.InputStreamEntity;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +43,7 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
+import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 
 /**
  * Implementation of {@link IDocumentForwarder} for using HTTP.
@@ -85,7 +85,8 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     try (final HttpClientManager aHttpClientMgr = new HttpClientManager ())
     {
       final HttpPost aPost = new HttpPost (m_sEndpointURL);
-      aPost.setEntity (new FileEntity (new File (aTransaction.getDocumentPath ()), ContentType.APPLICATION_XML));
+      aPost.setEntity (new InputStreamEntity (DocumentStorageHelper.openDocumentStream (aTransaction.getDocumentPath ()),
+                                              ContentType.APPLICATION_XML));
 
       LOGGER.info ("Forwarding inbound transaction '" +
                    aTransaction.getID () +
@@ -98,8 +99,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
       final byte [] aResponse = aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
       return switch (m_eMode)
       {
-        case HTTP_POST_SYNC ->
-        {
+        case HTTP_POST_SYNC -> {
           final IJsonObject aJsonObject = JsonReader.builder ().source (aResponse).readAsObject ();
           if (aJsonObject == null)
             yield ForwardingResult.failure ("http_response_error", "Failed to parse response as JSON object");
@@ -108,13 +108,11 @@ public class HttpDocumentForwarder implements IDocumentForwarder
           LOGGER.info ("Received C4 Country Code is '" + sCountryCodeC4 + "'");
           yield ForwardingResult.success (sCountryCodeC4);
         }
-        case HTTP_POST_ASYNC ->
-        {
+        case HTTP_POST_ASYNC -> {
           LOGGER.info ("HTTP forwarding successful for transaction " + aTransaction.getID ());
           yield ForwardingResult.success ();
         }
-        default ->
-        {
+        default -> {
           LOGGER.error ("Unexpected forwarding mode " + m_eMode + " for HTTP forwarder");
           yield ForwardingResult.failure ("http_configuration_error", "Unexpected forwarding mode " + m_eMode);
         }

@@ -37,6 +37,7 @@ import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 import com.helger.base.timing.StopWatch;
 import com.helger.base.wrapper.Wrapper;
+import com.helger.io.file.FilenameHelper;
 import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.sbdh.PeppolSBDHData;
@@ -157,7 +158,7 @@ public final class OutboundOrchestrator
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
 
-    final File aStorageBasePath = new File (APBasicConfig.getStorageOutboundPath ());
+    final String sStorageBasePath = APBasicConfig.getStorageOutboundPath ();
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
     final Wrapper <String> aTempPathHolder = Wrapper.empty ();
 
@@ -169,7 +170,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aDocumentIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openDocumentStream (aStorageBasePath,
+         final OutputStream aFileOS = DocumentStorageHelper.openDocumentStream (sStorageBasePath,
                                                                                 aCreationDT,
                                                                                 sSbdhInstanceID,
                                                                                 ".out",
@@ -269,7 +270,7 @@ public final class OutboundOrchestrator
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
 
-    final File aStorageBasePath = new File (APBasicConfig.getStorageOutboundPath ());
+    final String sStorageBasePath = APBasicConfig.getStorageOutboundPath ();
     final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
     final Wrapper <String> aTempPathHolder = Wrapper.empty ();
 
@@ -284,7 +285,7 @@ public final class OutboundOrchestrator
     // 4. Parse the SBDH
     try (final CountingInputStream aCountingIS = new CountingInputStream (aSbdIS);
          final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD);
-         final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStream (aStorageBasePath,
+         final OutputStream aFileOS = DocumentStorageHelper.openTemporaryDocumentStream (sStorageBasePath,
                                                                                          aCreationDT,
                                                                                          aTempPathHolder::set);
          final CopyingInputStream aCopyIS = new CopyingInputStream (aDigestIS, aFileOS))
@@ -314,11 +315,9 @@ public final class OutboundOrchestrator
     final String sDocumentPath;
     {
       // Rename temp file to final name
-      final File aTempFile = new File (aTempPathHolder.get ());
-      final File aDstFile = DocumentStorageHelper.renameFile (aTempFile,
-                                                              aTempFile.getParentFile (),
-                                                              sSbdhInstanceID,
-                                                              ".sbd");
+      final String sTempFile = aTempPathHolder.get ();
+      final String sTargetDir = FilenameHelper.getPath (sTempFile);
+      final File aDstFile = DocumentStorageHelper.renameFile (sTempFile, sTargetDir, sSbdhInstanceID, ".sbd");
       sDocumentPath = aDstFile.getAbsolutePath ().toString ();
     }
 

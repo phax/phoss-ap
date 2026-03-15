@@ -16,8 +16,6 @@
  */
 package com.helger.phoss.ap.forwarding.s3;
 
-import java.nio.file.Path;
-
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +23,12 @@ import org.slf4j.LoggerFactory;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
+import com.helger.mime.CMimeType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.spi.IDocumentForwarder;
+import com.helger.phoss.ap.basic.storage.DocumentStorageHelper;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -89,10 +89,12 @@ public class S3DocumentForwarder implements IDocumentForwarder
         final PutObjectRequest aPutReq = PutObjectRequest.builder ()
                                                          .bucket (m_sBucket)
                                                          .key (sKey)
-                                                         .contentType ("application/xml")
+                                                         .contentType (CMimeType.APPLICATION_XML.getAsString ())
                                                          .build ();
 
-        aS3Client.putObject (aPutReq, RequestBody.fromFile (Path.of (aTransaction.getDocumentPath ())));
+        aS3Client.putObject (aPutReq,
+                             RequestBody.fromInputStream (DocumentStorageHelper.openDocumentStream (aTransaction.getDocumentPath ()),
+                                                          aTransaction.getDocumentSize ()));
 
         LOGGER.info ("Uploaded transaction '" +
                      aTransaction.getID () +

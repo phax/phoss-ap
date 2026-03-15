@@ -60,6 +60,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   private InboundTransactionManagerJdbc m_aInboundTxMgr;
   private IInboundForwardingAttemptManager m_aInboundAttemptMgr;
   private IArchivalManager m_aArchivalMgr;
+  private MlsMetricsManagerJdbc m_aMlsMetricsMgr;
 
   /**
    * @deprecated Only called via reflection
@@ -114,6 +115,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aMlsMetricsMgr = new MlsMetricsManagerJdbc (aTimestampMgr, sTableNamePrefix);
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }
@@ -174,5 +176,11 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   public static IArchivalManager getArchivalMgr ()
   {
     return getInstance ().m_aArchivalMgr;
+  }
+
+  @NonNull
+  public static MlsMetricsManagerJdbc getMlsMetricsMgr ()
+  {
+    return getInstance ().m_aMlsMetricsMgr;
   }
 }

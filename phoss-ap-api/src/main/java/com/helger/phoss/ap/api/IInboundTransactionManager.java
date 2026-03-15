@@ -275,4 +275,13 @@ public interface IInboundTransactionManager
    */
   @NonNull
   ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
+
+  /**
+   * Get all inbound business document transactions (excluding MLS messages) for which no MLS
+   * response has been sent yet (i.e. {@code mls_response_code IS NULL}).
+   *
+   * @return The list of transactions without an MLS response. Never <code>null</code>.
+   */
+  @NonNull
+  ICommonsList <IInboundTransaction> getAllWithoutMlsResponse ();
 }

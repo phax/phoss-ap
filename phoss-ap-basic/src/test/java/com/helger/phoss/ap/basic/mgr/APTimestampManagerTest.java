@@ -24,7 +24,6 @@ import java.time.OffsetDateTime;
 import org.junit.Test;
 
 import com.helger.base.concurrent.ThreadHelper;
-import com.helger.phoss.ap.basic.mgr.APTimestampManager;
 
 /**
  * Test class for class {@link APTimestampManager}.

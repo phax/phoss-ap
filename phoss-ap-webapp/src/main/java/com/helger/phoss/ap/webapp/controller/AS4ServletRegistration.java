@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.helger.phase4.peppol.servlet.Phase4PeppolAS4Servlet;
 import com.helger.phoss.ap.core.servlet.APServletInit;
+import com.helger.phoss.ap.webapp.config.SpringProfileConfigIntegration;
 import com.helger.web.scope.mgr.WebScopeManager;
 
 import jakarta.annotation.PreDestroy;
@@ -31,6 +32,20 @@ import jakarta.servlet.ServletContext;
 @Configuration
 public class AS4ServletRegistration
 {
+  /**
+   * Constructor. The injected {@link SpringProfileConfigIntegration} parameter
+   * ensures that Spring profile-specific properties are loaded into ph-config
+   * before {@link APServletInit#init(ServletContext)} runs.
+   *
+   * @param aProfileConfigIntegration
+   *        Injected solely for bean ordering. Not used directly.
+   */
+  @SuppressWarnings ("unused")
+  public AS4ServletRegistration (final SpringProfileConfigIntegration aProfileConfigIntegration)
+  {
+    // Dependency injection ensures profile config is loaded first
+  }
+
   private void _init (@NonNull final ServletContext aSC)
   {
     // Do it only once

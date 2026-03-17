@@ -24,6 +24,14 @@ import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
+/**
+ * Recovers in-flight transactions that were interrupted by an unclean shutdown. Outbound
+ * transactions in {@code SENDING} state are reset to {@code FAILED} and inbound transactions in
+ * {@code FORWARDING} state are reset to {@code FORWARD_FAILED}, both with immediate retry
+ * eligibility.
+ *
+ * @author Philip Helger
+ */
 public final class StartupRecovery
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (StartupRecovery.class);
@@ -31,6 +39,12 @@ public final class StartupRecovery
   private StartupRecovery ()
   {}
 
+  /**
+   * Run the startup recovery process. If startup recovery is disabled via configuration, this method
+   * returns immediately. Otherwise it resets all outbound transactions stuck in {@code SENDING}
+   * status and all inbound transactions stuck in {@code FORWARDING} status so they become eligible
+   * for retry.
+   */
   public static void run ()
   {
     if (!APCoreConfig.isStartupRecoveryEnabled ())

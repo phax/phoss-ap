@@ -130,6 +130,10 @@ public final class RetryScheduler
     }
   }
 
+  /**
+   * Start the retry scheduler. It periodically checks for outbound and inbound transactions that
+   * are eligible for retry and processes them.
+   */
   public static void start ()
   {
     final long nIntervalMs = APCoreConfig.getRetrySchedulerIntervalMs ();
@@ -147,6 +151,9 @@ public final class RetryScheduler
     }, nIntervalMs, nIntervalMs);
   }
 
+  /**
+   * Stop the retry scheduler. If it was not started, this method does nothing.
+   */
   public static void stop ()
   {
     if (s_aTimer != null)

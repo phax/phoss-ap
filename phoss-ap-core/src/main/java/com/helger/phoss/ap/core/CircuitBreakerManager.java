@@ -58,16 +58,37 @@ public final class CircuitBreakerManager
     });
   }
 
+  /**
+   * Try to acquire a permit from the circuit breaker identified by the given key. If the circuit
+   * breaker is open, no permit will be granted.
+   *
+   * @param sCircuitKey
+   *        The circuit breaker key to acquire a permit for. May not be <code>null</code>.
+   * @return {@code true} if the permit was acquired, {@code false} if the circuit is open.
+   */
   public static boolean tryAcquirePermit (@NonNull final String sCircuitKey)
   {
     return _getOrCreate (sCircuitKey).tryAcquirePermit ();
   }
 
+  /**
+   * Record a successful operation for the circuit breaker identified by the given key.
+   *
+   * @param sCircuitKey
+   *        The circuit breaker key to record the success for. May not be <code>null</code>.
+   */
   public static void recordSuccess (@NonNull final String sCircuitKey)
   {
     _getOrCreate (sCircuitKey).recordSuccess ();
   }
 
+  /**
+   * Record a failed operation for the circuit breaker identified by the given key. If the failure
+   * threshold is reached, the circuit breaker will open.
+   *
+   * @param sCircuitKey
+   *        The circuit breaker key to record the failure for. May not be <code>null</code>.
+   */
   public static void recordFailure (@NonNull final String sCircuitKey)
   {
     _getOrCreate (sCircuitKey).recordFailure ();

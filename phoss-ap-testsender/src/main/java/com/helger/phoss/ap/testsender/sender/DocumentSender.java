@@ -47,6 +47,12 @@ public class DocumentSender
   private final String m_sBaseUrl;
   private final TestSenderConfig m_aConfig;
 
+  /**
+   * Construct a new document sender using the provided configuration.
+   *
+   * @param aConfig
+   *        the test sender configuration. May not be {@code null}.
+   */
   public DocumentSender (@NonNull final TestSenderConfig aConfig)
   {
     m_aConfig = aConfig;
@@ -126,9 +132,17 @@ public class DocumentSender
     return doSend ("xml", sSbdhInstanceID, sUrl, aBody, "application/xml");
   }
 
-  /*
+  /**
    * Send a PDF document via POST /api/outbound/submit/{ids} with PDF-specific
    * parameters.
+   *
+   * @param aPdfFile
+   *        the PDF file to be sent. May not be {@code null}.
+   * @param sSbdhInstanceID
+   *        the SBDH Instance ID to be used. May not be {@code null}.
+   * @return Sending result. Never {@code null}.
+   * @throws IOException
+   *         in case of error
    */
   @NonNull
   public SendResult sendPdf (@NonNull final Path aPdfFile, @NonNull final String sSbdhInstanceID) throws IOException
@@ -150,8 +164,16 @@ public class DocumentSender
     return doSend ("pdf", sSbdhInstanceID, sUrl, aBody, "application/pdf");
   }
 
-  /*
+  /**
    * Send a prebuilt SBD via POST /api/outbound/submit-sbd.
+   *
+   * @param aSbdFile
+   *        the prebuilt SBD file to be sent. May not be {@code null}.
+   * @param sSbdhInstanceID
+   *        the SBDH Instance ID to be used. May not be {@code null}.
+   * @return Sending result. Never {@code null}.
+   * @throws IOException
+   *         in case of error
    */
   @NonNull
   public SendResult sendPrebuiltSbd (@NonNull final Path aSbdFile, @NonNull final String sSbdhInstanceID)
@@ -165,9 +187,16 @@ public class DocumentSender
     return doSend ("sbd", sSbdhInstanceID, sUrl, sBody.getBytes (StandardCharsets.UTF_8), "application/xml");
   }
 
-  /*
+  /**
    * Poll the transaction status until a terminal state is reached or timeout.
-   * @return The final status string, or {@code null} if not found or timed out.
+   *
+   * @param sSbdhInstanceID
+   *        the SBDH Instance ID to poll for. May not be {@code null}.
+   * @param nTimeoutMs
+   *        the maximum time to poll in milliseconds
+   * @param nIntervalMs
+   *        the interval between poll attempts in milliseconds
+   * @return the final status string, or {@code null} if not found or timed out.
    */
   @Nullable
   public String pollStatus (@NonNull final String sSbdhInstanceID, final long nTimeoutMs, final long nIntervalMs)

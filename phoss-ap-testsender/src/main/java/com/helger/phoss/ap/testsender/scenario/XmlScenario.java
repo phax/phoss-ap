@@ -31,11 +31,18 @@ public class XmlScenario implements ITestScenario
 {
   private final Path m_aXmlFile;
 
+  /**
+   * Construct a new XML scenario.
+   *
+   * @param aXmlFile
+   *        the path to the XML file to send. May not be {@code null}.
+   */
   public XmlScenario (@NonNull final Path aXmlFile)
   {
     m_aXmlFile = aXmlFile;
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public String getName ()
@@ -43,6 +50,7 @@ public class XmlScenario implements ITestScenario
     return "xml";
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public SendResult execute (@NonNull final DocumentSender aSender, final int nIteration)

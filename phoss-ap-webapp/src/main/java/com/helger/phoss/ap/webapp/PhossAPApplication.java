@@ -25,6 +25,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class PhossAPApplication
 {
+  /**
+   * Main entry point for the phoss AP Spring Boot application.
+   *
+   * @param args
+   *        Command line arguments.
+   */
   public static void main (final String [] args)
   {
     SpringApplication.run (PhossAPApplication.class, args);

@@ -37,6 +37,7 @@ public class SchedulerConfig implements SchedulingConfigurer
 {
   private static final Logger LOGGER = Phase4LoggerFactory.getLogger (SchedulerConfig.class);
 
+  /** {@inheritDoc} */
   @Override
   public void configureTasks (@NonNull final ScheduledTaskRegistrar aTaskRegistrar)
   {

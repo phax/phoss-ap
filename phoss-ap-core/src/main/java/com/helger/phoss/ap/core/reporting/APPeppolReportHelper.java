@@ -68,6 +68,19 @@ public final class APPeppolReportHelper
 {
   private static final Logger LOGGER = Phase4LoggerFactory.getLogger (APPeppolReportHelper.class);
 
+  /**
+   * Validate and normalize the given year and month values for use in the Peppol Reporting API. The
+   * year must be at least 2024, the month must be between 1 and 12, and the resulting date must not
+   * be in the future.
+   *
+   * @param nYear
+   *        The year value (clamped to a minimum of 2024).
+   * @param nMonth
+   *        The month value (clamped to 1..12).
+   * @return A valid {@link YearMonth} instance. Never <code>null</code>.
+   * @throws IllegalArgumentException
+   *         if the resulting year/month is in the future.
+   */
   @NonNull
   public static YearMonth getValidYearMonthInAPI (final int nYear, final int nMonth)
   {
@@ -83,6 +96,15 @@ public final class APPeppolReportHelper
     return YearMonth.of (nRealYear, nRealMonth);
   }
 
+  /**
+   * Create a Peppol Transaction Statistics Report (TSR) for the given reporting period.
+   *
+   * @param aYearMonth
+   *        The reporting period. May not be <code>null</code>.
+   * @return The created TSR or <code>null</code> if the reporting items could not be retrieved.
+   * @throws PeppolReportingBackendException
+   *         if an error occurs accessing the reporting backend.
+   */
   @Nullable
   public static TransactionStatisticsReportType createTSR (@NonNull final YearMonth aYearMonth) throws PeppolReportingBackendException
   {
@@ -106,6 +128,15 @@ public final class APPeppolReportHelper
     return null;
   }
 
+  /**
+   * Create a Peppol End User Statistics Report (EUSR) for the given reporting period.
+   *
+   * @param aYearMonth
+   *        The reporting period. May not be <code>null</code>.
+   * @return The created EUSR or <code>null</code> if the reporting items could not be retrieved.
+   * @throws PeppolReportingBackendException
+   *         if an error occurs accessing the reporting backend.
+   */
   @Nullable
   public static EndUserStatisticsReportType createEUSR (@NonNull final YearMonth aYearMonth) throws PeppolReportingBackendException
   {

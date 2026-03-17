@@ -79,6 +79,13 @@ public class EmbeddedSftpServer
   private Thread m_aWatcherThread;
   private volatile boolean m_bRunning;
 
+  /**
+   * Start the embedded SFTP server and begin watching the SFTP root directory
+   * for newly uploaded files.
+   *
+   * @throws IOException
+   *         If the SSH server fails to start.
+   */
   @PostConstruct
   public void start () throws IOException
   {
@@ -180,6 +187,12 @@ public class EmbeddedSftpServer
     }
   }
 
+  /**
+   * Stop the embedded SFTP server and the file watcher thread.
+   *
+   * @throws IOException
+   *         If the SSH server fails to stop cleanly.
+   */
   @PreDestroy
   public void stop () throws IOException
   {

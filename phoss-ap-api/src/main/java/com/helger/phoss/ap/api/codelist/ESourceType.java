@@ -48,6 +48,7 @@ public enum ESourceType implements IHasID <String>
     m_sID = sID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getID ()

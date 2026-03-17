@@ -49,6 +49,18 @@ public class AS4FakeResponder
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (AS4FakeResponder.class);
 
+  /**
+   * Return a plain text response with the given HTTP status code. This endpoint
+   * is used to simulate AS4 responses for testing purposes.
+   *
+   * @param aServletRequest
+   *        The raw servlet request.
+   * @param sContentType
+   *        The Content-Type request header.
+   * @param nStatus
+   *        The HTTP status code to return.
+   * @return A plain text response body with the requested status code.
+   */
   // Must use "HttpServletRequest" to avoid going through other filter layers
   @PostMapping (path = "/plaintext/{status}",
                 consumes = MediaType.MULTIPART_RELATED_VALUE,

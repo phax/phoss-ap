@@ -24,6 +24,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class TestBackendApplication
 {
+  /**
+   * Main entry point for the test backend application.
+   *
+   * @param args
+   *        Command line arguments.
+   */
   public static void main (final String [] args)
   {
     SpringApplication.run (TestBackendApplication.class, args);

@@ -48,6 +48,12 @@ public class CallbackController
 
   private final ReportingCompletedCallerService m_aSvc;
 
+  /**
+   * Constructor for {@link CallbackController}.
+   *
+   * @param aSvc
+   *        The reporting completed caller service. May not be {@code null}.
+   */
   public CallbackController (@NonNull final ReportingCompletedCallerService aSvc)
   {
     m_aSvc = aSvc;

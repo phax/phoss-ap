@@ -52,6 +52,7 @@ public final class ForwardingResult implements ISuccessIndicator
     m_sErrorDetails = sErrorDetails;
   }
 
+  /** {@inheritDoc} */
   public boolean isSuccess ()
   {
     return m_bSuccess;
@@ -96,6 +97,7 @@ public final class ForwardingResult implements ISuccessIndicator
     return m_sErrorDetails;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

@@ -72,11 +72,18 @@ import com.helger.security.certificate.CertificateHelper;
 
 import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
+/**
+ * SPI implementation for processing inbound Peppol AS4 messages. Handles duplicate detection,
+ * receiver checks, document verification, MLS processing, payload storage, and forwarding.
+ *
+ * @author Philip Helger
+ */
 @IsSPIImplementation
 public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSBDHandlerSPI
 {
   private static final Logger LOGGER = Phase4LoggerFactory.getLogger (Phase4InboundMessageProcessorSPI.class);
 
+  /** {@inheritDoc} */
   public void handleIncomingSBD (@NonNull final IAS4IncomingMessageMetadata aMessageMetadata,
                                  @NonNull final HttpHeaderMap aHeaders,
                                  @NonNull final Ebms3UserMessage aUserMessage,
@@ -388,6 +395,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     }
   }
 
+  /** {@inheritDoc} */
   public void processAS4ResponseMessage (@NonNull final IAS4IncomingMessageMetadata aIncomingMessageMetadata,
                                          @NonNull final IAS4IncomingMessageState aIncomingState,
                                          @NonNull final String sResponseMessageID,

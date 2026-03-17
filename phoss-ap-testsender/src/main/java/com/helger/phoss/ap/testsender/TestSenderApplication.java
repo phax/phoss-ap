@@ -52,6 +52,18 @@ public class TestSenderApplication implements CommandLineRunner
   private final BulkRunner m_aBulkRunner;
   private final ResultReporter m_aReporter;
 
+  /**
+   * Construct the test sender application with all required dependencies.
+   *
+   * @param aConfig
+   *        the test sender configuration
+   * @param aSingleRunner
+   *        the single document runner
+   * @param aBulkRunner
+   *        the bulk runner
+   * @param aReporter
+   *        the result reporter
+   */
   public TestSenderApplication (final TestSenderConfig aConfig,
                                 final SingleDocumentRunner aSingleRunner,
                                 final BulkRunner aBulkRunner,
@@ -63,11 +75,18 @@ public class TestSenderApplication implements CommandLineRunner
     m_aReporter = aReporter;
   }
 
+  /**
+   * Spring Boot application entry point.
+   *
+   * @param args
+   *        command-line arguments
+   */
   public static void main (final String [] args)
   {
     SpringApplication.run (TestSenderApplication.class, args);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void run (final String... args) throws Exception
   {

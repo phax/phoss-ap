@@ -24,12 +24,31 @@ import com.helger.annotation.Nonnegative;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 
+/**
+ * Utility class for computing exponential backoff retry timestamps.
+ *
+ * @author Philip Helger
+ */
 @Immutable
 public final class BackoffCalculator
 {
   private BackoffCalculator ()
   {}
 
+  /**
+   * Calculate the next retry timestamp using exponential backoff. The backoff duration is computed
+   * as {@code nInitialBackoffMs * dMultiplier^(nAttemptCount-1)}, capped at {@code nMaxBackoffMs}.
+   *
+   * @param nAttemptCount
+   *        The current attempt number (1-based). Must be &gt;= 0.
+   * @param nInitialBackoffMs
+   *        The initial backoff duration in milliseconds. Must be &gt;= 0.
+   * @param dMultiplier
+   *        The multiplier applied for each subsequent attempt. Must be &gt;= 0.
+   * @param nMaxBackoffMs
+   *        The maximum backoff duration in milliseconds. Must be &gt;= 0.
+   * @return The calculated next retry timestamp. Never <code>null</code>.
+   */
   @NonNull
   public static OffsetDateTime calculateNextRetry (@Nonnegative final int nAttemptCount,
                                                    @Nonnegative final long nInitialBackoffMs,

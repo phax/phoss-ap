@@ -139,6 +139,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
 
   // --- IAS4IncomingDumper ---
 
+  /** {@inheritDoc} */
   @Nullable
   public OutputStream onNewRequest (@NonNull final IAS4IncomingMessageMetadata aMessageMetadata,
                                     @NonNull final HttpHeaderMap aHttpHeaderMap) throws IOException
@@ -175,6 +176,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
     return _openAndWriteHeaders (new File (aDir, "signalmessage.as4in"), aHttpHeaderMap);
   }
 
+  /** {@inheritDoc} */
   public void onEndRequest (@NonNull final IAS4IncomingMessageMetadata aMessageMetadata,
                             @Nullable final Exception aCaughtException)
   {
@@ -191,6 +193,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
 
   // --- IAS4OutgoingDumper ---
 
+  /** {@inheritDoc} */
   @Nullable
   public OutputStream onBeginRequest (@NonNull final EAS4MessageMode eMsgMode,
                                       @Nullable final IAS4IncomingMessageMetadata aIncomingMessageMetadata,
@@ -229,6 +232,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
     return _openAndWriteHeaders (new File (aDir, "usermessage-" + nTry + ".as4out"), aCustomHeaders);
   }
 
+  /** {@inheritDoc} */
   public void onEndRequest (@NonNull final EAS4MessageMode eMsgMode,
                             @Nullable final IAS4IncomingMessageMetadata aIncomingMessageMetadata,
                             @Nullable final IAS4IncomingMessageState aIncomingState,

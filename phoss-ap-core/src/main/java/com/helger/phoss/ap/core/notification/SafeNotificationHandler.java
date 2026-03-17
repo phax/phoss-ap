@@ -41,12 +41,19 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
 
   private final IAPNotificationHandlerSPI m_aHdl;
 
+  /**
+   * Constructor wrapping an existing notification handler with exception safety.
+   *
+   * @param aHdl
+   *        The notification handler to wrap. May not be <code>null</code>.
+   */
   public SafeNotificationHandler (@NonNull final IAPNotificationHandlerSPI aHdl)
   {
     ValueEnforcer.notNull (aHdl, "Handler");
     m_aHdl = aHdl;
   }
 
+  /** {@inheritDoc} */
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
                                               @NonNull final String sSbdhInstanceID,
                                               @Nullable final String sErrorDetails)
@@ -61,6 +68,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                             @NonNull final String sReceiverID,
                                             @NonNull final String sDocTypeID,
@@ -77,6 +85,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onInboundMLSCorrelationError (@NonNull final String sTransactionID,
                                             @NonNull final String sReferencedSbdhInstanceID,
                                             @NonNull final EPeppolMLSResponseCode eMlsResponseCode)
@@ -91,6 +100,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onInboundForwardingError (@NonNull final String sTransactionID, final boolean bIsRetry)
   {
     try
@@ -103,6 +113,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onInboundPermanentForwardingFailure (@NonNull final String sTransactionID,
                                                    @NonNull final String sSbdhInstanceID,
                                                    @Nullable final String sErrorDetails)
@@ -117,6 +128,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
                                                  @NonNull final String sSbdhInstanceID,
                                                  @Nullable final String sErrorDetails)
@@ -131,6 +143,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onPeppolReportingTSRFailure (@NonNull final YearMonth aYearMonth)
   {
     try
@@ -143,6 +156,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onPeppolReportingEUSRFailure (@NonNull final YearMonth aYearMonth)
   {
     try
@@ -155,6 +169,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   public void onUnexpectedException (@NonNull final String sContext,
                                      @NonNull final String sMessage,
                                      @NonNull final Exception aException)
@@ -169,6 +184,7 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

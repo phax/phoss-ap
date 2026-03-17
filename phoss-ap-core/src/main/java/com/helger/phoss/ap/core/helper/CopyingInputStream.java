@@ -36,6 +36,15 @@ public final class CopyingInputStream extends WrappedInputStream
 {
   private final OutputStream m_aWrappedOS;
 
+  /**
+   * Constructor.
+   *
+   * @param aWrappedIS
+   *        The input stream to read from. May not be <code>null</code>.
+   * @param aWrappedOS
+   *        The output stream to copy all read bytes to. May not be <code>null</code>. Will be
+   *        closed when this stream is closed.
+   */
   public CopyingInputStream (@NonNull final InputStream aWrappedIS,
                              @NonNull @WillCloseWhenClosed final OutputStream aWrappedOS)
   {
@@ -43,6 +52,7 @@ public final class CopyingInputStream extends WrappedInputStream
     m_aWrappedOS = aWrappedOS;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int read () throws IOException
   {
@@ -52,6 +62,7 @@ public final class CopyingInputStream extends WrappedInputStream
     return ret;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int read (final byte [] b, final int off, final int len) throws IOException
   {
@@ -61,6 +72,7 @@ public final class CopyingInputStream extends WrappedInputStream
     return ret;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void close () throws IOException
   {

@@ -156,6 +156,7 @@ public final class MlsOutcome
     return ret;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

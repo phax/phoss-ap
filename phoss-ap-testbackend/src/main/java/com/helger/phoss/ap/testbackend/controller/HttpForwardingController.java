@@ -66,11 +66,27 @@ public class HttpForwardingController
   @Value ("${testbackend.http.default-country-code:AT}")
   private String m_sDefaultCountryCode;
 
+  /**
+   * Constructor for {@link HttpForwardingController}.
+   *
+   * @param aSvc
+   *        The reporting completed caller service used for async callbacks. May
+   *        not be {@code null}.
+   */
   public HttpForwardingController (@NonNull final ReportingCompletedCallerService aSvc)
   {
     m_aSvc = aSvc;
   }
 
+  /**
+   * Receive a document via synchronous HTTP forwarding. Parses the SBDH
+   * envelope, stores the document and returns the C4 country code in the JSON
+   * response body.
+   *
+   * @param aBody
+   *        The raw XML document bytes.
+   * @return A JSON map containing the C4 country code, document ID and status.
+   */
   @PostMapping (path = "/forwarding/url/sync",
                 consumes = MediaType.APPLICATION_XML_VALUE,
                 produces = MediaType.APPLICATION_JSON_VALUE)
@@ -112,6 +128,15 @@ public class HttpForwardingController
                                       "received"));
   }
 
+  /**
+   * Receive a document via asynchronous HTTP forwarding. Parses the SBDH
+   * envelope, stores the document and triggers the C4 country code callback to
+   * phoss-ap asynchronously in a virtual thread.
+   *
+   * @param aBody
+   *        The raw XML document bytes.
+   * @return A JSON map containing the document ID and status.
+   */
   @PostMapping (path = "/forwarding/url/async",
                 consumes = MediaType.APPLICATION_XML_VALUE,
                 produces = MediaType.APPLICATION_JSON_VALUE)

@@ -47,6 +47,11 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 
+/**
+ * Implementation of {@link IDocumentForwarder} for using SFTP.
+ *
+ * @author Philip Helger
+ */
 public class SftpDocumentForwarder implements IDocumentForwarder
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (SftpDocumentForwarder.class);
@@ -55,6 +60,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
 
   private ISftpSettings m_aSftpSettings;
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
@@ -186,6 +192,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
     }
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
@@ -212,6 +219,7 @@ public class SftpDocumentForwarder implements IDocumentForwarder
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

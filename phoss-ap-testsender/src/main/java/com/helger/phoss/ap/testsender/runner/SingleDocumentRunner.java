@@ -38,12 +38,28 @@ public class SingleDocumentRunner
   private final DocumentSender m_aSender;
   private final TestSenderConfig m_aConfig;
 
+  /**
+   * Constructor for the single document runner.
+   *
+   * @param aSender
+   *        the document sender to use. May not be {@code null}.
+   * @param aConfig
+   *        the test sender configuration. May not be {@code null}.
+   */
   public SingleDocumentRunner (@NonNull final DocumentSender aSender, @NonNull final TestSenderConfig aConfig)
   {
     m_aSender = aSender;
     m_aConfig = aConfig;
   }
 
+  /**
+   * Run a single test scenario and optionally poll for the final transaction
+   * status.
+   *
+   * @param aScenario
+   *        the test scenario to execute. May not be {@code null}.
+   * @return the send result. Never {@code null}.
+   */
   @NonNull
   public SendResult run (@NonNull final ITestScenario aScenario)
   {

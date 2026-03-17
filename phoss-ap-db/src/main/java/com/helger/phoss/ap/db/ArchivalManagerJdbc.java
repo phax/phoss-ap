@@ -39,12 +39,21 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
 
   private final String m_sTableNamePrefix;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr, @NonNull final String sTableNamePrefix)
   {
     super (aTimestampMgr);
     m_sTableNamePrefix = sTableNamePrefix;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess archiveOutboundTransaction (@Nonempty final String sID)
   {
@@ -83,6 +92,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     });
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess archiveInboundTransaction (final String sID)
   {

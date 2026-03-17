@@ -46,12 +46,27 @@ public class BulkRunner
   private final DocumentSender m_aSender;
   private final TestSenderConfig m_aConfig;
 
+  /**
+   * Constructor for the bulk runner.
+   *
+   * @param aSender
+   *        the document sender to use. May not be {@code null}.
+   * @param aConfig
+   *        the test sender configuration. May not be {@code null}.
+   */
   public BulkRunner (@NonNull final DocumentSender aSender, @NonNull final TestSenderConfig aConfig)
   {
     m_aSender = aSender;
     m_aConfig = aConfig;
   }
 
+  /**
+   * Run all configured scenarios concurrently and collect aggregated results.
+   *
+   * @param aScenarios
+   *        the list of test scenarios to execute. May not be {@code null}.
+   * @return the aggregated bulk send result. Never {@code null}.
+   */
   @NonNull
   public BulkSendResult run (@NonNull final List <ITestScenario> aScenarios)
   {

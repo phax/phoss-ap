@@ -48,6 +48,16 @@ public final class APPeppolReportingHelper
   private APPeppolReportingHelper ()
   {}
 
+  /**
+   * Store a Peppol Reporting item for the given outbound transaction and update its reporting
+   * status.
+   *
+   * @param sTransactionID
+   *        The outbound transaction ID. May not be <code>null</code>.
+   * @param aReportingItem
+   *        The pre-built Peppol Reporting item to store. May not be <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if stored successfully, {@link ESuccess#FAILURE} otherwise.
+   */
   @NonNull
   public static ESuccess createOutboundPeppolReportingItem (@NonNull final String sTransactionID,
                                                             @NonNull final PeppolReportingItem aReportingItem)
@@ -87,6 +97,15 @@ public final class APPeppolReportingHelper
     return ESuccess.FAILURE;
   }
 
+  /**
+   * Build and store a Peppol Reporting item for the given inbound transaction and update its
+   * reporting status. The reporting item is constructed from the transaction's metadata including
+   * sender, receiver, document type, process, and country codes.
+   *
+   * @param sTransactionID
+   *        The inbound transaction ID. May not be <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if stored successfully, {@link ESuccess#FAILURE} otherwise.
+   */
   @NonNull
   public static ESuccess createInboundPeppolReportingItem (@NonNull final String sTransactionID)
   {

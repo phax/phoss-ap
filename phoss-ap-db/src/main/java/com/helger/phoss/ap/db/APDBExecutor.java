@@ -45,6 +45,15 @@ final class APDBExecutor extends DBExecutor
     return ret;
   }
 
+  /**
+   * Set the global {@link APDataSourceProvider} to be used. This method may
+   * only be called once.
+   *
+   * @param aDSP
+   *        The data source provider to use. May not be <code>null</code>.
+   * @throws IllegalStateException
+   *         if a data source provider was already set
+   */
   public static void setDataSourceProvider (@NonNull final APDataSourceProvider aDSP)
   {
     ValueEnforcer.notNull (aDSP, "DataSourceProvider");
@@ -77,6 +86,10 @@ final class APDBExecutor extends DBExecutor
     }
   }
 
+  /**
+   * @return a {@link Supplier} that creates new {@link APDBExecutor} instances.
+   *         Never <code>null</code>.
+   */
   @NonNull
   public static Supplier <APDBExecutor> createNew ()
   {

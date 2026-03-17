@@ -35,6 +35,13 @@ final class APDataSourceProvider implements IHasDataSource, Closeable
 
   private final BasicDataSource m_aDS;
 
+  /**
+   * Constructor creating a pooled data source from the provided JDBC
+   * configuration.
+   *
+   * @param aJdbcConfig
+   *        The JDBC configuration to use. May not be <code>null</code>.
+   */
   public APDataSourceProvider (@NonNull final APJdbcConfiguration aJdbcConfig)
   {
     m_aDS = new BasicDataSource ();
@@ -65,12 +72,19 @@ final class APDataSourceProvider implements IHasDataSource, Closeable
     LOGGER.info ("AP DataSource created with max " + nMaxConnections + " connections to " + aJdbcConfig.getJdbcUrl ());
   }
 
+  /** @return the underlying {@link BasicDataSource}. Never <code>null</code>. */
   @NonNull
   public BasicDataSource getDataSource ()
   {
     return m_aDS;
   }
 
+  /**
+   * Close the underlying data source and release all pooled connections.
+   *
+   * @throws IOException
+   *         if an SQL error occurs while closing the data source
+   */
   public void close () throws IOException
   {
     if (m_aDS != null)

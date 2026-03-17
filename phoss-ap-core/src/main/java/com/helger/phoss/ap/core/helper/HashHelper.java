@@ -24,6 +24,11 @@ import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.string.StringHex;
 import com.helger.security.messagedigest.EMessageDigestAlgorithm;
 
+/**
+ * Helper class for computing message digests and hex-encoded hash values.
+ *
+ * @author Philip Helger
+ */
 @Immutable
 public final class HashHelper
 {
@@ -32,24 +37,50 @@ public final class HashHelper
   private HashHelper ()
   {}
 
+  /**
+   * Create a new {@link MessageDigest} instance using the configured algorithm ({@link #MD_ALGO}).
+   *
+   * @return A new {@link MessageDigest} instance. Never <code>null</code>.
+   */
   @NonNull
   public static MessageDigest createMessageDigest ()
   {
     return MD_ALGO.createMessageDigest ();
   }
 
+  /**
+   * Convert a raw digest byte array to a lowercase hex-encoded string.
+   *
+   * @param aBytes
+   *        The digest bytes to encode. May not be <code>null</code>.
+   * @return The hex-encoded string. Never <code>null</code>.
+   */
   @NonNull
   public static String getDigestHex (final byte @NonNull [] aBytes)
   {
     return StringHex.getHexEncoded (aBytes);
   }
 
+  /**
+   * Finalize the given {@link MessageDigest} and return the result as a hex-encoded string.
+   *
+   * @param aMD
+   *        The message digest to finalize. May not be <code>null</code>.
+   * @return The hex-encoded digest string. Never <code>null</code>.
+   */
   @NonNull
   public static String getDigestHex (@NonNull final MessageDigest aMD)
   {
     return getDigestHex (aMD.digest ());
   }
 
+  /**
+   * Compute the SHA-256 hash of the given byte array and return the result as a hex-encoded string.
+   *
+   * @param aBytes
+   *        The bytes to hash. May not be <code>null</code>.
+   * @return The hex-encoded SHA-256 hash. Never <code>null</code>.
+   */
   @NonNull
   public static String sha256Hex (final byte @NonNull [] aBytes)
   {

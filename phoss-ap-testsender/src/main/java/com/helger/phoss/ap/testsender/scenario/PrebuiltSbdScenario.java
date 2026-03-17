@@ -32,11 +32,18 @@ public class PrebuiltSbdScenario implements ITestScenario
 {
   private final Path m_aSbdFile;
 
+  /**
+   * Construct a new prebuilt SBD scenario.
+   *
+   * @param aSbdFile
+   *        the path to the prebuilt SBD file to send. May not be {@code null}.
+   */
   public PrebuiltSbdScenario (@NonNull final Path aSbdFile)
   {
     m_aSbdFile = aSbdFile;
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public String getName ()
@@ -44,6 +51,7 @@ public class PrebuiltSbdScenario implements ITestScenario
     return "sbd";
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public SendResult execute (@NonNull final DocumentSender aSender, final int nIteration)

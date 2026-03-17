@@ -51,6 +51,9 @@ public final class APCoreConfig
     return APConfigProvider.getConfig ();
   }
 
+  /**
+   * @return {@code true} if the experimental offline mode is enabled.
+   */
   public static boolean isOfflineMode ()
   {
     // This property is not documented by purpose, as it is experimental

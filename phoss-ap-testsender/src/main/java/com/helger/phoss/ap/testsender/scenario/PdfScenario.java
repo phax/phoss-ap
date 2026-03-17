@@ -32,11 +32,18 @@ public class PdfScenario implements ITestScenario
 {
   private final Path m_aPdfFile;
 
+  /**
+   * Construct a new PDF scenario.
+   *
+   * @param aPdfFile
+   *        the path to the PDF file to send. May not be {@code null}.
+   */
   public PdfScenario (@NonNull final Path aPdfFile)
   {
     m_aPdfFile = aPdfFile;
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public String getName ()
@@ -44,6 +51,7 @@ public class PdfScenario implements ITestScenario
     return "pdf";
   }
 
+  /** {@inheritDoc} */
   @Override
   @NonNull
   public SendResult execute (@NonNull final DocumentSender aSender, final int nIteration)

@@ -31,6 +31,7 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
  */
 public class APTimestampManager implements IAPTimestampManager
 {
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getCurrentDateTime ()
   {
@@ -38,6 +39,7 @@ public class APTimestampManager implements IAPTimestampManager
     return PDTFactory.getCurrentOffsetDateTime ();
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getCurrentDateTimeUTC ()
   {
@@ -45,6 +47,7 @@ public class APTimestampManager implements IAPTimestampManager
     return PDTFactory.getCurrentOffsetDateTimeUTC ();
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

@@ -28,9 +28,22 @@ public class ReportResponse
   private String status;
   private String message;
 
+  /**
+   * Default constructor for JSON deserialization.
+   */
   public ReportResponse ()
   {}
 
+  /**
+   * Constructor with all fields.
+   *
+   * @param sTransactionID
+   *        The transaction ID.
+   * @param sStatus
+   *        The status string.
+   * @param sMessage
+   *        The human-readable message.
+   */
   public ReportResponse (final String sTransactionID, final String sStatus, final String sMessage)
   {
     transactionID = sTransactionID;
@@ -38,31 +51,46 @@ public class ReportResponse
     message = sMessage;
   }
 
+  /** @return the transaction ID */
   public String getTransactionID ()
   {
     return transactionID;
   }
 
+  /**
+   * @param sTransactionID
+   *        The transaction ID to set.
+   */
   public void setTransactionID (final String sTransactionID)
   {
     transactionID = sTransactionID;
   }
 
+  /** @return the status string */
   public String getStatus ()
   {
     return status;
   }
 
+  /**
+   * @param sStatus
+   *        The status to set.
+   */
   public void setStatus (final String sStatus)
   {
     status = sStatus;
   }
 
+  /** @return the human-readable message */
   public String getMessage ()
   {
     return message;
   }
 
+  /**
+   * @param sMessage
+   *        The message to set.
+   */
   public void setMessage (final String sMessage)
   {
     message = sMessage;

@@ -60,6 +60,14 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
 
   private final String m_sTableName;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public OutboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
                                          @NonNull final String sTableNamePrefix)
   {
@@ -67,6 +75,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     m_sTableName = sTableNamePrefix + "outbound_transaction";
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String create (@NonNull final ETransactionType eTransactionType,
                         @NonNull final String sSenderID,
@@ -132,6 +141,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return nRowsAffected == 0 ? null : sID;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public IOutboundTransaction getByID (@NonNull final String sID)
   {
@@ -150,6 +160,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return null;
   }
 
+  /** {@inheritDoc} */
   public boolean containsTransactionWithID (@NonNull final String sID)
   {
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" + " FROM " + m_sTableName + " WHERE id=?",
@@ -157,6 +168,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return nAffectedRows > 0;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public IOutboundTransaction getBySbdhInstanceID (@NonNull final String sSbdhInstanceID)
   {
@@ -179,6 +191,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return null;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatus (@NonNull final String sID, @NonNull final EOutboundStatus eStatus)
   {
@@ -191,6 +204,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatusAndRetry (@NonNull final String sID,
                                         @NonNull final EOutboundStatus eStatus,
@@ -210,6 +224,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatusCompleted (@NonNull final String sID, @NonNull final EOutboundStatus eStatus)
   {
@@ -223,6 +238,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateMlsStatus (@NonNull final String sID,
                                    @NonNull final EMlsReceptionStatus eMlsStatus,
@@ -240,6 +256,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateReportingStatus (@NonNull final String sID, @NonNull final EReportingStatus eReportingStatus)
   {
@@ -252,6 +269,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @ReturnsMutableCopy
   public ICommonsList <IOutboundTransaction> getAllInTransmission ()
@@ -271,6 +289,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ret;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @ReturnsMutableCopy
   public ICommonsList <IOutboundTransaction> getAllForRetry (@Nonnegative final int nBatchSize)
@@ -294,6 +313,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ret;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @ReturnsMutableCopy
   public ICommonsList <IOutboundTransaction> getAllForArchival (@Nonnegative final int nBatchSize)

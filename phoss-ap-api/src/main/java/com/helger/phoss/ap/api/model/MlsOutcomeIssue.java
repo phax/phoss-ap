@@ -107,6 +107,7 @@ public final class MlsOutcomeIssue
     return m_sDescription;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

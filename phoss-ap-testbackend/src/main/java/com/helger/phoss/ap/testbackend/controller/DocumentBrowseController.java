@@ -47,6 +47,14 @@ public class DocumentBrowseController
   @Autowired
   private DocumentStore m_aDocumentStore;
 
+  /**
+   * List all received documents, optionally filtered by forwarding channel.
+   *
+   * @param sChannel
+   *        The forwarding channel to filter by, or {@code null} to return all
+   *        documents.
+   * @return A list of document metadata maps.
+   */
   @GetMapping
   public ResponseEntity <List <Map <String, Object>>> listAll (@RequestParam (value = "channel",
                                                                               required = false) final String sChannel)
@@ -61,12 +69,24 @@ public class DocumentBrowseController
     return ResponseEntity.ok (aResult);
   }
 
+  /**
+   * Get the total number of received documents.
+   *
+   * @return A JSON map containing the total document count.
+   */
   @GetMapping ("/count")
   public ResponseEntity <Map <String, Integer>> count ()
   {
     return ResponseEntity.ok (Map.of ("total", Integer.valueOf (m_aDocumentStore.getCount ())));
   }
 
+  /**
+   * Get the metadata of a single document by its ID.
+   *
+   * @param id
+   *        The document ID.
+   * @return The document metadata map, or HTTP 404 if not found.
+   */
   @GetMapping ("/{id}")
   public ResponseEntity <Map <String, Object>> getByID (@PathVariable final String id)
   {
@@ -77,6 +97,16 @@ public class DocumentBrowseController
     return ResponseEntity.ok (_toMap (aDoc));
   }
 
+  /**
+   * Download the raw XML content of a stored document.
+   *
+   * @param id
+   *        The document ID.
+   * @return The raw document bytes as {@code application/xml}, or HTTP 404 if
+   *         not found.
+   * @throws IOException
+   *         If reading the file from disk fails.
+   */
   @GetMapping (value = "/{id}/content", produces = MediaType.APPLICATION_XML_VALUE)
   public ResponseEntity <byte []> getContent (@PathVariable final String id) throws IOException
   {
@@ -87,6 +117,11 @@ public class DocumentBrowseController
     return ResponseEntity.ok (aContent);
   }
 
+  /**
+   * Delete all documents from the in-memory store.
+   *
+   * @return A JSON map confirming the store was cleared.
+   */
   @DeleteMapping
   public ResponseEntity <Map <String, String>> clearAll ()
   {

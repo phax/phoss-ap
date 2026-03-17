@@ -55,6 +55,14 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
   private final String m_sOutboundTable;
   private final String m_sOutboundAttemptTable;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public MlsMetricsManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
                                 @NonNull final String sTableNamePrefix)
   {

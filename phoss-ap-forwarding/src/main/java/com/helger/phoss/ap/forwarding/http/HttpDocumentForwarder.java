@@ -59,6 +59,16 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   private String m_sEndpointURL;
   private final HttpClientSettings m_aHCS = new HttpClientSettings ();
 
+  /**
+   * Constructor for creating an HTTP document forwarder with the specified
+   * forwarding mode.
+   *
+   * @param eMode
+   *        The forwarding mode to use. Must be either
+   *        {@link EForwardingMode#HTTP_POST_SYNC} or
+   *        {@link EForwardingMode#HTTP_POST_ASYNC}. May not be
+   *        <code>null</code>.
+   */
   public HttpDocumentForwarder (@NonNull final EForwardingMode eMode)
   {
     ValueEnforcer.notNull (eMode, "Mode");
@@ -67,6 +77,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     m_eMode = eMode;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
@@ -86,6 +97,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     return ESuccess.SUCCESS;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
@@ -151,6 +163,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

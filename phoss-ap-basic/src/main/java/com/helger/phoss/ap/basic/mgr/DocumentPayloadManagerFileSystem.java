@@ -48,6 +48,9 @@ import com.helger.phoss.ap.basic.APBasicConfig;
  */
 public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
 {
+  /**
+   * Default constructor.
+   */
   public DocumentPayloadManagerFileSystem ()
   {}
 

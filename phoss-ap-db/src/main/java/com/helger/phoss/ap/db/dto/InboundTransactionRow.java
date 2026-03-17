@@ -70,6 +70,12 @@ public class InboundTransactionRow implements IInboundTransaction
   private final EPeppolMLSResponseCode m_eMlsResponseCode;
   private final String m_sMlsOutboundTransactionID;
 
+  /**
+   * Construct an inbound transaction row from a JDBC result row.
+   *
+   * @param aRow
+   *        The database result row to read from. May not be <code>null</code>.
+   */
   public InboundTransactionRow (@NonNull final DBResultRow aRow)
   {
     m_sID = aRow.getAsString (0);
@@ -124,6 +130,7 @@ public class InboundTransactionRow implements IInboundTransaction
     ValueEnforcer.notNull (m_eMlsType, "MlsType");
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getID ()
@@ -131,6 +138,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getIncomingID ()
@@ -138,6 +146,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sIncomingID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getC2SeatID ()
@@ -145,6 +154,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sC2SeatID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getC3SeatID ()
@@ -152,6 +162,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sC3SeatID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getSigningCertCN ()
@@ -159,6 +170,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sSigningCertCN;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getSenderID ()
@@ -166,6 +178,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sSenderID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getReceiverID ()
@@ -173,6 +186,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sReceiverID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getDocTypeID ()
@@ -180,6 +194,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sDocTypeID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getProcessID ()
@@ -187,6 +202,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sProcessID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getDocumentPath ()
@@ -194,12 +210,14 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sDocumentPath;
   }
 
+  /** {@inheritDoc} */
   @Nonnegative
   public long getDocumentSize ()
   {
     return m_nDocumentSize;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getDocumentHash ()
@@ -207,6 +225,7 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sDocumentHash;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getAS4MessageID ()
@@ -214,12 +233,14 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sAS4MessageID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getAS4Timestamp ()
   {
     return m_aAS4Timestamp;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getSbdhInstanceID ()
@@ -227,88 +248,103 @@ public class InboundTransactionRow implements IInboundTransaction
     return m_sSbdhInstanceID;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getC1CountryCode ()
   {
     return m_sC1CountryCode;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getC4CountryCode ()
   {
     return m_sC4CountryCode;
   }
 
+  /** {@inheritDoc} */
   public boolean isDuplicateAS4 ()
   {
     return m_bIsDuplicateAS4;
   }
 
+  /** {@inheritDoc} */
   public boolean isDuplicateSBDH ()
   {
     return m_bIsDuplicateSBDH;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public EInboundStatus getStatus ()
   {
     return m_eStatus;
   }
 
+  /** {@inheritDoc} */
   @Nonnegative
   public int getAttemptCount ()
   {
     return m_nAttemptCount;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getReceivedDT ()
   {
     return m_aReceivedDT;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public OffsetDateTime getCompletedDT ()
   {
     return m_aCompletedDT;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public EReportingStatus getReportingStatus ()
   {
     return m_eReportingStatus;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public OffsetDateTime getNextRetryDT ()
   {
     return m_aNextRetryDT;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getErrorDetails ()
   {
     return m_sErrorDetails;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getMlsTo ()
   {
     return m_sMlsTo;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public EPeppolMLSType getMlsType ()
   {
     return m_eMlsType;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public EPeppolMLSResponseCode getMlsResponseCode ()
   {
     return m_eMlsResponseCode;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getMlsOutboundTransactionID ()
   {

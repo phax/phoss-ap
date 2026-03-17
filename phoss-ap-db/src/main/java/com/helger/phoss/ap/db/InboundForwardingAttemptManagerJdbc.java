@@ -31,6 +31,11 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
 import com.helger.phoss.ap.db.dto.InboundForwardingAttemptRow;
 
+/**
+ * JDBC implementation of {@link IInboundForwardingAttemptManager}.
+ *
+ * @author Philip Helger
+ */
 public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager implements
                                                  IInboundForwardingAttemptManager
 {
@@ -38,6 +43,14 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
 
   private final String m_sTableNameName;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public InboundForwardingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
                                               @NonNull final String sTableNamePrefix)
   {
@@ -45,6 +58,7 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
     m_sTableNameName = sTableNamePrefix + "inbound_forwarding_attempt";
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String create (@NonNull final String sInboundTransactionID,
                         @NonNull final EAttemptStatus eAttemptStatus,
@@ -69,16 +83,19 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
     return nRowsAffected == 0 ? null : sID;
   }
 
+  /** {@inheritDoc} */
   public String createSuccess (final String sInboundTransactionID)
   {
     return create (sInboundTransactionID, EAttemptStatus.SUCCESS, null, null);
   }
 
+  /** {@inheritDoc} */
   public String createFailure (final String sInboundTransactionID, final String sErrorCode, final String sErrorDetails)
   {
     return create (sInboundTransactionID, EAttemptStatus.FAILED, sErrorCode, sErrorDetails);
   }
 
+  /** {@inheritDoc} */
   public ICommonsList <IInboundForwardingAttempt> getByTransactionID (final String sInboundTransactionID)
   {
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +

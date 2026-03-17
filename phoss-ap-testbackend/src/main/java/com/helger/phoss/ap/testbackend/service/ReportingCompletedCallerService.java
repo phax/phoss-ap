@@ -32,6 +32,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service that calls back to phoss-ap's inbound report endpoint to notify
+ * that a document has been successfully received and to provide the C4
+ * country code for Peppol reporting.
+ *
+ * @author Philip Helger
+ */
 @Service
 public class ReportingCompletedCallerService
 {
@@ -43,6 +50,22 @@ public class ReportingCompletedCallerService
   @Value ("${testbackend.http.default-country-code:AT}")
   private String m_sDefaultCountryCode;
 
+  /**
+   * Send the C4 country code callback to phoss-ap's inbound report endpoint.
+   *
+   * @param sSbdhInstanceID
+   *        The SBDH Instance Identifier of the inbound transaction. May not be
+   *        {@code null}.
+   * @param sC4CountryCode
+   *        The C4 country code to report, or {@code null} to use the configured
+   *        default.
+   * @return A map containing the callback status, target URL, HTTP status code
+   *         and response body.
+   * @throws IOException
+   *         If the HTTP request fails.
+   * @throws InterruptedException
+   *         If the HTTP request is interrupted.
+   */
   public Map <String, String> sendCountryC4Back (@NonNull final String sSbdhInstanceID,
                                                  @Nullable final String sC4CountryCode) throws IOException,
                                                                                         InterruptedException

@@ -53,6 +53,14 @@ public class AS4ServletRegistration
       APServletInit.init (aSC);
   }
 
+  /**
+   * Create the {@link Phase4PeppolAS4Servlet} registration bean, mapped to
+   * {@code /as4}.
+   *
+   * @param ctx
+   *        The servlet context. May not be <code>null</code>.
+   * @return The servlet registration bean. Never <code>null</code>.
+   */
   @Bean
   public ServletRegistrationBean <Phase4PeppolAS4Servlet> as4Servlet (final ServletContext ctx)
   {
@@ -81,6 +89,12 @@ public class AS4ServletRegistration
     }
   }
 
+  /**
+   * Create the {@link Destroyer} bean that triggers graceful shutdown of
+   * {@link APServletInit} when the Spring context is closed.
+   *
+   * @return A new {@link Destroyer} instance. Never <code>null</code>.
+   */
   @Bean
   public Destroyer destroyer ()
   {

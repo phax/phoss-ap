@@ -44,6 +44,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
     Sentry.logger ().log (SentryLogLevel.ERROR, SentryLogParameters.create (SentryAttributes.fromMap (aParams)), sMsg);
   }
 
+  /** {@inheritDoc} */
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
                                               @NonNull final String sSbdhInstanceID,
                                               @Nullable final String sErrorDetails)
@@ -57,6 +58,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        sErrorDetails));
   }
 
+  /** {@inheritDoc} */
   public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
                                                  @NonNull final String sSbdhInstanceID,
                                                  @Nullable final String sErrorDetails)
@@ -70,6 +72,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        sErrorDetails));
   }
 
+  /** {@inheritDoc} */
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                             @NonNull final String sReceiverID,
                                             @NonNull final String sDocTypeID,
@@ -89,6 +92,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        sSbdhInstanceID));
   }
 
+  /** {@inheritDoc} */
   public void onInboundPermanentForwardingFailure (@NonNull final String sTransactionID,
                                                    @NonNull final String sSbdhInstanceID,
                                                    @Nullable final String sErrorDetails)
@@ -102,6 +106,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        sErrorDetails));
   }
 
+  /** {@inheritDoc} */
   public void onInboundMLSCorrelationError (@NonNull final String sTransactionID,
                                             @NonNull final String sReferencedSbdhInstanceID,
                                             @NonNull final EPeppolMLSResponseCode eMlsResponseCode)
@@ -115,12 +120,14 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        eMlsResponseCode.getID ()));
   }
 
+  /** {@inheritDoc} */
   public void onInboundForwardingError (@NonNull final String sTransactionID, final boolean bIsRetry)
   {
     _logError ("onInboundForwardingError",
                Map.of ("transactionID", sTransactionID, "isRetry", Boolean.valueOf (bIsRetry)));
   }
 
+  /** {@inheritDoc} */
   public void onPeppolReportingTSRFailure (@NonNull final YearMonth aYearMonth)
   {
     _logError ("onPeppolReportingTSRFailure",
@@ -130,6 +137,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        Integer.valueOf (aYearMonth.getMonthValue ())));
   }
 
+  /** {@inheritDoc} */
   public void onPeppolReportingEUSRFailure (@NonNull final YearMonth aYearMonth)
   {
     _logError ("onPeppolReportingEUSRFailure",
@@ -139,6 +147,7 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        Integer.valueOf (aYearMonth.getMonthValue ())));
   }
 
+  /** {@inheritDoc} */
   public void onUnexpectedException (@NonNull final String sContext,
                                      @NonNull final String sMessage,
                                      @NonNull final Exception aException)

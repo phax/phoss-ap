@@ -29,6 +29,11 @@ import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
+/**
+ * Background scheduler that periodically archives completed inbound and outbound transactions.
+ *
+ * @author Philip Helger
+ */
 public final class ArchivalScheduler
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalScheduler.class);
@@ -97,6 +102,10 @@ public final class ArchivalScheduler
     }
   }
 
+  /**
+   * Start the archival scheduler. If the archival scheduler is disabled via configuration, this
+   * method does nothing.
+   */
   public static void start ()
   {
     if (!APCoreConfig.isArchivalSchedulerEnabled ())
@@ -120,6 +129,9 @@ public final class ArchivalScheduler
     }, nIntervalMs, nIntervalMs);
   }
 
+  /**
+   * Stop the archival scheduler. If it was not started, this method does nothing.
+   */
   public static void stop ()
   {
     if (s_aTimer != null)

@@ -35,6 +35,11 @@ import com.helger.base.string.StringHelper;
 import com.helger.db.api.config.IJdbcConfiguration;
 import com.helger.db.api.flyway.IFlywayConfiguration;
 
+/**
+ * Utility class for running Flyway database migrations for the AP.
+ *
+ * @author Philip Helger
+ */
 public final class APFlywayMigrator
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APFlywayMigrator.class);
@@ -42,6 +47,16 @@ public final class APFlywayMigrator
   private APFlywayMigrator ()
   {}
 
+  /**
+   * Run Flyway database migration using the provided JDBC and Flyway
+   * configuration. If Flyway is disabled via configuration, this method returns
+   * immediately.
+   *
+   * @param aJdbcConfig
+   *        The JDBC configuration to use. May not be <code>null</code>.
+   * @param aFlywayCfg
+   *        The Flyway configuration to use. May not be <code>null</code>.
+   */
   public static void runFlyway (@NonNull final IJdbcConfiguration aJdbcConfig,
                                 @NonNull final IFlywayConfiguration aFlywayCfg)
   {

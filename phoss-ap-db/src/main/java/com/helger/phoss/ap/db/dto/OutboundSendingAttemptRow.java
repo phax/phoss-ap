@@ -46,6 +46,12 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
   private final String m_sErrorDetails;
   private final String m_sSendingReport;
 
+  /**
+   * Construct an outbound sending attempt row from a JDBC result row.
+   *
+   * @param aRow
+   *        The database result row to read from. May not be <code>null</code>.
+   */
   public OutboundSendingAttemptRow (@NonNull final DBResultRow aRow)
   {
     m_sID = aRow.getAsString (0);
@@ -66,6 +72,7 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
     ValueEnforcer.notNull (m_eAttemptStatus, "AttemptStatus");
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getID ()
@@ -73,6 +80,7 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
     return m_sID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getOutboundTransactionID ()
@@ -80,6 +88,7 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
     return m_sOutboundTransactionID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getAS4MessageID ()
@@ -87,42 +96,49 @@ public class OutboundSendingAttemptRow implements IOutboundSendingAttempt
     return m_sAS4MessageID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getAS4Timestamp ()
   {
     return m_aAS4Timestamp;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getReceiptMessageID ()
   {
     return m_sReceiptMessageID;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public Integer getHttpStatusCode ()
   {
     return m_aHttpStatusCode;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getAttemptDT ()
   {
     return m_aAttemptDT;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public EAttemptStatus getAttemptStatus ()
   {
     return m_eAttemptStatus;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getErrorDetails ()
   {
     return m_sErrorDetails;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getSendingReport ()
   {

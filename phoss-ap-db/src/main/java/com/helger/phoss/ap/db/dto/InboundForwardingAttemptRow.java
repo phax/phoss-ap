@@ -42,6 +42,12 @@ public class InboundForwardingAttemptRow implements IInboundForwardingAttempt
   private final String m_sErrorCode;
   private final String m_sErrorDetails;
 
+  /**
+   * Construct an inbound forwarding attempt row from a JDBC result row.
+   *
+   * @param aRow
+   *        The database result row to read from. May not be <code>null</code>.
+   */
   public InboundForwardingAttemptRow (@NonNull final DBResultRow aRow)
   {
     m_sID = aRow.getAsString (0);
@@ -56,6 +62,7 @@ public class InboundForwardingAttemptRow implements IInboundForwardingAttempt
     ValueEnforcer.notNull (m_eAttemptStatus, "AttemptStatus");
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getID ()
@@ -63,6 +70,7 @@ public class InboundForwardingAttemptRow implements IInboundForwardingAttempt
     return m_sID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   @Nonempty
   public String getInboundTransactionID ()
@@ -70,24 +78,28 @@ public class InboundForwardingAttemptRow implements IInboundForwardingAttempt
     return m_sInboundTransactionID;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public OffsetDateTime getAttemptDT ()
   {
     return m_aAttemptDT;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public EAttemptStatus getAttemptStatus ()
   {
     return m_eAttemptStatus;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getErrorCode ()
   {
     return m_sErrorCode;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String getErrorDetails ()
   {

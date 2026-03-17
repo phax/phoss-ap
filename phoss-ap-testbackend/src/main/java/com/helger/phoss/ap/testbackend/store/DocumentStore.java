@@ -38,6 +38,12 @@ import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 
 import jakarta.annotation.PostConstruct;
 
+/**
+ * In-memory store for received documents. Persists document content to disk and
+ * maintains metadata in a {@link ConcurrentHashMap}.
+ *
+ * @author Philip Helger
+ */
 @Component
 public class DocumentStore
 {
@@ -48,6 +54,9 @@ public class DocumentStore
   @Value ("${testbackend.storage.base-dir:generated/received/}")
   private String m_sBaseDir;
 
+  /**
+   * Initialize the storage base directory, creating it if it does not exist.
+   */
   @PostConstruct
   public void init ()
   {
@@ -59,6 +68,21 @@ public class DocumentStore
     }
   }
 
+  /**
+   * Store a document by writing its content to disk and registering it in the
+   * in-memory map.
+   *
+   * @param sChannel
+   *        The forwarding channel name (e.g. "http-sync", "http-async").
+   * @param sFilename
+   *        The original filename.
+   * @param aContent
+   *        The raw document bytes.
+   * @param sSbdhID
+   *        The SBDH Instance Identifier for logging purposes.
+   * @return The stored {@link ReceivedDocument}, or {@code null} if writing to
+   *         disk failed.
+   */
   public ReceivedDocument storeDocument (final String sChannel,
                                          final String sFilename,
                                          final byte [] aContent,
@@ -102,6 +126,20 @@ public class DocumentStore
     return aDoc;
   }
 
+  /**
+   * Register a document that was stored externally (e.g. via SFTP or S3)
+   * without copying its content.
+   *
+   * @param sChannel
+   *        The forwarding channel name (e.g. "sftp", "s3").
+   * @param sFilename
+   *        The original filename.
+   * @param nSizeBytes
+   *        The file size in bytes.
+   * @param sAbsolutePath
+   *        The absolute path to the file on disk.
+   * @return The registered {@link ReceivedDocument}.
+   */
   public ReceivedDocument registerExternalDocument (final String sChannel,
                                                     final String sFilename,
                                                     final long nSizeBytes,
@@ -119,21 +157,48 @@ public class DocumentStore
     return aDoc;
   }
 
+  /**
+   * Get a received document by its ID.
+   *
+   * @param sID
+   *        The document ID.
+   * @return The matching document, or {@code null} if not found.
+   */
   public ReceivedDocument getByID (final String sID)
   {
     return m_aDocuments.get (sID);
   }
 
+  /**
+   * @return An unmodifiable list of all received documents.
+   */
   public List <ReceivedDocument> getAll ()
   {
     return Collections.unmodifiableList (new ArrayList <> (m_aDocuments.values ()));
   }
 
+  /**
+   * Get all received documents for a specific forwarding channel.
+   *
+   * @param sChannel
+   *        The channel name to filter by.
+   * @return A list of documents matching the given channel.
+   */
   public List <ReceivedDocument> getAllByChannel (final String sChannel)
   {
     return m_aDocuments.values ().stream ().filter (d -> d.getChannel ().equals (sChannel)).toList ();
   }
 
+  /**
+   * Read the raw content of a stored document from disk.
+   *
+   * @param sID
+   *        The document ID.
+   * @return The file content as a byte array, or {@code null} if no document
+   *         with the given ID exists.
+   * @throws IOException
+   *         If reading the file fails.
+   */
   public byte [] readContent (final String sID) throws IOException
   {
     final ReceivedDocument aDoc = m_aDocuments.get (sID);
@@ -142,11 +207,18 @@ public class DocumentStore
     return Files.readAllBytes (Path.of (aDoc.getStoragePath ()));
   }
 
+  /**
+   * @return The total number of stored documents.
+   */
   public int getCount ()
   {
     return m_aDocuments.size ();
   }
 
+  /**
+   * Remove all documents from the in-memory store. Does not delete files from
+   * disk.
+   */
   public void clear ()
   {
     m_aDocuments.clear ();

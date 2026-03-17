@@ -40,6 +40,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+/**
+ * Implementation of {@link IDocumentForwarder} for using Amazon S3.
+ *
+ * @author Philip Helger
+ */
 public class S3DocumentForwarder implements IDocumentForwarder
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (S3DocumentForwarder.class);
@@ -50,6 +55,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
   private String m_sSecretAccessKey;
   private String m_sKeyPrefix;
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig)
   {
@@ -82,6 +88,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
     return ESuccess.SUCCESS;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
@@ -143,6 +150,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String toString ()
   {

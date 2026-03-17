@@ -55,6 +55,11 @@ public class S3DirectoryPoller
 
   private final Set <String> m_aKnownFiles = new HashSet <> ();
 
+  /**
+   * Initialize the S3 poll directory. If the directory already exists, all
+   * existing files are registered so they are not re-detected on the first
+   * poll.
+   */
   @PostConstruct
   public void init ()
   {
@@ -81,6 +86,10 @@ public class S3DirectoryPoller
     }
   }
 
+  /**
+   * Poll the configured S3 directory for new files and register any newly
+   * discovered files in the {@link DocumentStore}.
+   */
   @Scheduled (fixedDelayString = "${testbackend.s3poll.interval-ms:5000}")
   public void poll ()
   {

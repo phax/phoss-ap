@@ -45,6 +45,12 @@ public class ResultReporter
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (ResultReporter.class);
 
+  /**
+   * Report a single send result to the console log.
+   *
+   * @param aResult
+   *        the send result to report. May not be {@code null}.
+   */
   public void reportSingle (@NonNull final SendResult aResult)
   {
     LOGGER.info ("--- Single Send Result ---");
@@ -57,6 +63,12 @@ public class ResultReporter
       LOGGER.info ("Error:    " + aResult.getErrorMessage ());
   }
 
+  /**
+   * Report an aggregated bulk send result to the console log.
+   *
+   * @param aResult
+   *        the bulk send result to report. May not be {@code null}.
+   */
   public void reportBulk (@NonNull final BulkSendResult aResult)
   {
     LOGGER.info ("--- Bulk Send Result ---");
@@ -85,6 +97,15 @@ public class ResultReporter
     }
   }
 
+  /**
+   * Write the bulk send result to a JSON file. Does nothing if
+   * {@code sOutputFile} is {@code null} or blank.
+   *
+   * @param aResult
+   *        the bulk send result to serialize. May not be {@code null}.
+   * @param sOutputFile
+   *        the output file path, or {@code null} to skip writing.
+   */
   public void writeJsonFile (@NonNull final BulkSendResult aResult, @Nullable final String sOutputFile)
   {
     if (sOutputFile == null || sOutputFile.isBlank ())

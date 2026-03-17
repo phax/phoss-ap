@@ -177,6 +177,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
                                          @NonNull final IDocumentTypeIdentifier aDocTypeID,
@@ -185,6 +186,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     return _callPhorm (sDocumentPath);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess verifyOutboundDocument (@NonNull @Nonempty final String sDocumentPath,
                                           @NonNull final IDocumentTypeIdentifier aDocTypeID,

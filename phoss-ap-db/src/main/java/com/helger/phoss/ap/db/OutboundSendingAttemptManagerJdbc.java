@@ -31,6 +31,11 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IOutboundSendingAttempt;
 import com.helger.phoss.ap.db.dto.OutboundSendingAttemptRow;
 
+/**
+ * JDBC implementation of {@link IOutboundSendingAttemptManager}.
+ *
+ * @author Philip Helger
+ */
 public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager implements IOutboundSendingAttemptManager
 {
   private static final String COLS = "id, outbound_transaction_id, as4_message_id, as4_timestamp," +
@@ -39,6 +44,14 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
 
   private final String m_sTableNameName;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public OutboundSendingAttemptManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
                                             @NonNull final String sTableNamePrefix)
   {
@@ -46,6 +59,7 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
     m_sTableNameName = sTableNamePrefix + "outbound_sending_attempt";
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String create (@NonNull final String sOutboundTransactionID,
                         @NonNull final String sAS4MessageID,
@@ -78,6 +92,7 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
     return nRowsAffected == 0 ? null : sID;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String createSuccess (@NonNull final String sOutboundTransactionID,
                                @NonNull final String sAS4MessageID,
@@ -95,6 +110,7 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                    sSendingReport);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull final String sOutboundTransactionID)
   {

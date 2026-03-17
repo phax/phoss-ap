@@ -42,6 +42,11 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.db.dto.InboundTransactionRow;
 
+/**
+ * JDBC implementation of {@link IInboundTransactionManager}.
+ *
+ * @author Philip Helger
+ */
 public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager implements IInboundTransactionManager
 {
   private static final String COLS = "id, incoming_id, c2_seat_id, c3_seat_id, signing_cert_cn," +
@@ -56,6 +61,14 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
 
   private final String m_sTableName;
 
+  /**
+   * Constructor.
+   *
+   * @param aTimestampMgr
+   *        The timestamp manager to use. May not be <code>null</code>.
+   * @param sTableNamePrefix
+   *        The database table name prefix. May not be <code>null</code>.
+   */
   public InboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
                                         @NonNull final String sTableNamePrefix)
   {
@@ -63,6 +76,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     m_sTableName = sTableNamePrefix + "inbound_transaction";
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public String create (@NonNull final String sIncomingID,
                         @NonNull final String sC2SeatID,
@@ -128,6 +142,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return nRowsAffected == 0 ? null : sID;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public IInboundTransaction getByID (@NonNull final String sID)
   {
@@ -146,6 +161,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return null;
   }
 
+  /** {@inheritDoc} */
   public boolean containsTransactionWithID (@NonNull final String sID)
   {
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" + " FROM " + m_sTableName + " WHERE id=?",
@@ -153,6 +169,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return nAffectedRows > 0;
   }
 
+  /** {@inheritDoc} */
   public boolean containsByAS4MessageID (@NonNull final String sAS4MessageID)
   {
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" +
@@ -163,6 +180,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return nAffectedRows > 0;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public IInboundTransaction getByAS4MessageID (@NonNull final String sAS4MessageID)
   {
@@ -185,6 +203,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return null;
   }
 
+  /** {@inheritDoc} */
   public boolean containsBySbdhInstanceID (@NonNull final String sSbdhInstanceID)
   {
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" +
@@ -195,6 +214,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return nAffectedRows > 0;
   }
 
+  /** {@inheritDoc} */
   @Nullable
   public IInboundTransaction getBySbdhInstanceID (@NonNull final String sSbdhInstanceID)
   {
@@ -217,6 +237,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return null;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatus (@NonNull final String sID, @NonNull final EInboundStatus eStatus)
   {
@@ -229,6 +250,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatusAndRetry (@NonNull final String sID,
                                         @NonNull final EInboundStatus eStatus,
@@ -248,6 +270,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateStatusCompleted (@NonNull final String sID, @NonNull final EInboundStatus eStatus)
   {
@@ -261,6 +284,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateC4CountryCode (@NonNull final String sID, @NonNull final String sC4CountryCode)
   {
@@ -273,6 +297,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateMlsFields (@NonNull final String sID,
                                    @Nullable final EPeppolMLSResponseCode eMlsResponseCode,
@@ -290,6 +315,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess updateReportingStatus (@NonNull final String sID, @NonNull final EReportingStatus eReportingStatus)
   {
@@ -302,6 +328,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ICommonsList <IInboundTransaction> getAllInProcessing ()
   {
@@ -320,6 +347,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ret;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ICommonsList <IInboundTransaction> getAllForRetry (@Nonnegative final int nBatchSize)
   {
@@ -340,6 +368,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ret;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative final int nBatchSize)
   {
@@ -365,6 +394,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ret;
   }
 
+  /** {@inheritDoc} */
   @NonNull
   public ICommonsList <IInboundTransaction> getAllWithoutMlsResponse ()
   {

@@ -136,10 +136,25 @@ public final class APConfigurationProperties
   public static final long ARCHIVAL_SCHEDULER_INTERVAL_MS_DEFAULT = 3_600_000L;
 
   // Document storage
+  public static final String STORAGE_MODE = "storage.mode";
   public static final String STORAGE_INBOUND_PATH = "storage.inbound.path";
   public static final String STORAGE_INBOUND_PATH_DEFAULT = "/var/phoss-ap/inbound";
   public static final String STORAGE_OUTBOUND_PATH = "storage.outbound.path";
   public static final String STORAGE_OUTBOUND_PATH_DEFAULT = "/var/phoss-ap/outbound";
+
+  // Document storage - S3 (since 0.1.1)
+  public static final String STORAGE_S3_REGION = "storage.s3.region";
+  public static final String STORAGE_S3_BUCKET = "storage.s3.bucket";
+  public static final String STORAGE_S3_ACCESS_KEY_ID = "storage.s3.access-key-id";
+  public static final String STORAGE_S3_SECRET_ACCESS_KEY = "storage.s3.secret-access-key";
+
+  // Outbound S3 submission (sender uploads to S3, AP fetches) (since 0.1.1)
+  public static final String OUTBOUND_S3_ENABLED = "outbound.s3.enabled";
+  public static final boolean OUTBOUND_S3_ENABLED_DEFAULT = false;
+  public static final String OUTBOUND_S3_REGION = "outbound.s3.region";
+  public static final String OUTBOUND_S3_BUCKET = "outbound.s3.bucket";
+  public static final String OUTBOUND_S3_ACCESS_KEY_ID = "outbound.s3.access-key-id";
+  public static final String OUTBOUND_S3_SECRET_ACCESS_KEY = "outbound.s3.secret-access-key";
 
   // Shutdown / Startup
   public static final String SHUTDOWN_TIMEOUT_MS = "shutdown.timeout.ms";

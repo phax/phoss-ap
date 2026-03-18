@@ -52,7 +52,13 @@
       <groupId>com.helger.phoss.ap</groupId>
       <artifactId>phoss-ap-api</artifactId>
     </dependency>
-    
+
+    <!-- S3 document storage backend -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>

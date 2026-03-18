@@ -19,6 +19,7 @@ package com.helger.phoss.ap.basic;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,13 +28,14 @@ import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.httpclient.HttpClientSettings;
 import com.helger.httpclient.HttpClientSettingsConfig;
 import com.helger.phoss.ap.api.codelist.EPeppolIdentifierMode;
+import com.helger.phoss.ap.api.codelist.EStorageMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 
 /**
- * Configuration accessor for basic AP settings such as document storage paths,
- * Peppol identifier mode, and outbound HTTP proxy settings. All values are read
- * from the central {@link APConfigProvider} configuration.
+ * Configuration accessor for basic AP settings such as document storage paths, Peppol identifier
+ * mode, and outbound HTTP proxy settings. All values are read from the central
+ * {@link APConfigProvider} configuration.
  *
  * @author Philip Helger
  */
@@ -52,8 +54,19 @@ public final class APBasicConfig
   }
 
   /**
-   * @return The configured filesystem path for storing inbound documents. Never
-   *         <code>null</code>.
+   * @return The configured storage mode. Never <code>null</code>.
+   * @since v0.1.1
+   */
+  @NonNull
+  public static EStorageMode getStorageMode ()
+  {
+    final String sMode = _getConfig ().getAsString (APConfigurationProperties.STORAGE_MODE);
+    return EStorageMode.getFromIDOrDefault (sMode);
+  }
+
+  /**
+   * @return The configured path for storing inbound documents. This applies to all storage modes in
+   *         the same way. Never <code>null</code>.
    */
   @NonNull
   public static String getStorageInboundPath ()
@@ -63,8 +76,8 @@ public final class APBasicConfig
   }
 
   /**
-   * @return The configured filesystem path for storing outbound documents.
-   *         Never <code>null</code>.
+   * @return The configured path for storing outbound documents. This applies to all storage modes
+   *         in the same way.Never <code>null</code>.
    */
   @NonNull
   public static String getStorageOutboundPath ()
@@ -74,8 +87,49 @@ public final class APBasicConfig
   }
 
   /**
-   * @return The configured Peppol identifier mode (strict or lax). Never
-   *         <code>null</code>.
+   * @return The configured S3 bucket for document storage. May be <code>null</code>.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getStorageS3Bucket ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_S3_BUCKET);
+  }
+
+  /**
+   * @return The configured S3 region for document storage. May be <code>null</code>.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getStorageS3Region ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_S3_REGION);
+  }
+
+  /**
+   * @return The configured S3 access key ID for document storage. May be <code>null</code> for IAM
+   *         role-based authentication.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getStorageS3AccessKeyID ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_S3_ACCESS_KEY_ID);
+  }
+
+  /**
+   * @return The configured S3 secret access key for document storage. May be <code>null</code> for
+   *         IAM role-based authentication.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getStorageS3SecretAccessKey ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_S3_SECRET_ACCESS_KEY);
+  }
+
+  /**
+   * @return The configured Peppol identifier mode (strict or lax). Never <code>null</code>.
    */
   @NonNull
   public static EPeppolIdentifierMode getPeppolIdentifierMode ()
@@ -88,10 +142,9 @@ public final class APBasicConfig
   private static HttpClientSettingsConfig.HttpClientConfig s_aHCC = null;
 
   /**
-   * Apply the configured outbound HTTP proxy settings to the provided
-   * {@link HttpClientSettings}. This reads the <code>http.proxy.*</code>
-   * configuration properties and applies them to the general proxy of the
-   * provided settings object.
+   * Apply the configured outbound HTTP proxy settings to the provided {@link HttpClientSettings}.
+   * This reads the <code>http.proxy.*</code> configuration properties and applies them to the
+   * general proxy of the provided settings object.
    *
    * @param aHCS
    *        The HTTP client settings to configure. May not be <code>null</code>.

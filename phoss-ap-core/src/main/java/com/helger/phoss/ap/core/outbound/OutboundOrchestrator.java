@@ -16,7 +16,6 @@
  */
 package com.helger.phoss.ap.core.outbound;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.DigestInputStream;
@@ -316,8 +315,7 @@ public final class OutboundOrchestrator
       // Rename temp file to final name
       final String sTempFile = aTempPathHolder.get ();
       final String sTargetDir = FilenameHelper.getPath (sTempFile);
-      final File aDstFile = aDocPayloadMgr.renameFile (sTempFile, sTargetDir, sSbdhInstanceID, ".sbd");
-      sDocumentPath = aDstFile.getAbsolutePath ().toString ();
+      sDocumentPath = aDocPayloadMgr.renameFile (sTempFile, sTargetDir, sSbdhInstanceID, ".sbd");
     }
 
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();

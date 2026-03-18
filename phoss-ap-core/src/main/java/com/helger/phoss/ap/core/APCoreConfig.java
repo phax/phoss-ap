@@ -282,6 +282,59 @@ public final class APCoreConfig
   }
 
   /**
+   * @return {@code true} if the outbound S3 submission endpoint is enabled.
+   * @since v0.1.1
+   */
+  public static boolean isOutboundS3Enabled ()
+  {
+    return _getConfig ().getAsBoolean (APConfigurationProperties.OUTBOUND_S3_ENABLED,
+                                       APConfigurationProperties.OUTBOUND_S3_ENABLED_DEFAULT);
+  }
+
+  /**
+   * @return The configured S3 region for the outbound sender bucket. May be <code>null</code>.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getOutboundS3Region ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_S3_REGION);
+  }
+
+  /**
+   * @return The configured S3 bucket from which the AP fetches sender-uploaded documents. May be
+   *         <code>null</code>.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getOutboundS3Bucket ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_S3_BUCKET);
+  }
+
+  /**
+   * @return The configured S3 access key ID for the outbound sender bucket. May be
+   *         <code>null</code> for IAM role-based authentication.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getOutboundS3AccessKeyID ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_S3_ACCESS_KEY_ID);
+  }
+
+  /**
+   * @return The configured S3 secret access key for the outbound sender bucket. May be
+   *         <code>null</code> for IAM role-based authentication.
+   * @since v0.1.1
+   */
+  @Nullable
+  public static String getOutboundS3SecretAccessKey ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_S3_SECRET_ACCESS_KEY);
+  }
+
+  /**
    * @return {@code true} if outbound document verification via SPI is enabled.
    */
   public static boolean isVerificationOutboundEnabled ()

@@ -16,7 +16,6 @@
  */
 package com.helger.phoss.ap.api.mgr;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.OffsetDateTime;
@@ -27,31 +26,28 @@ import org.jspecify.annotations.NonNull;
 import com.helger.annotation.Nonempty;
 
 /**
- * Interface for reading and writing document files. Documents are stored as
- * flat files rather than as BYTEA columns in the database. Implementations may
- * use local disk, network storage, or other backends.
+ * Interface for reading and writing document files. Documents are stored as flat files rather than
+ * as BYTEA columns in the database. Implementations may use local disk, network storage, or other
+ * backends.
  *
  * @author Philip Helger
  */
 public interface IDocumentPayloadManager
 {
   /**
-   * Verify that the storage configuration is valid and the storage directories
-   * are accessible.
+   * Verify that the storage configuration is valid and the storage directories are accessible.
    *
    * @throws RuntimeException
-   *         if the configuration is invalid or the directories are not
-   *         writable.
+   *         if the configuration is invalid or the directories are not writable.
    */
   void verifyConfiguration ();
 
   /**
-   * Write bytes to a file under the given base directory, using the provided
-   * filename. Creates the directory if needed.
+   * Write bytes to a file under the given base directory, using the provided filename. Creates the
+   * directory if needed.
    *
    * @param sBaseDir
-   *        The base directory to store the file in. May not be
-   *        <code>null</code>.
+   *        The base directory to store the file in. May not be <code>null</code>.
    * @param aReferenceDT
    *        The reference date time to which the message should be stored.
    * @param sFilename
@@ -67,22 +63,20 @@ public interface IDocumentPayloadManager
                         byte @NonNull [] aBytes);
 
   /**
-   * Open an {@link OutputStream} for writing a document file. The caller is
-   * responsible for closing the stream.
+   * Open an {@link OutputStream} for writing a document file. The caller is responsible for closing
+   * the stream.
    *
    * @param sBaseDir
-   *        The base directory to store the file in. May not be
-   *        <code>null</code>.
+   *        The base directory to store the file in. May not be <code>null</code>.
    * @param aReferenceDT
    *        The reference date time to which the message should be stored.
    * @param sFilename
    *        The filename to use. May not be <code>null</code>.
    * @param sFileExt
-   *        The file extension including the leading dot. May not be
-   *        <code>null</code>.
+   *        The file extension including the leading dot. May not be <code>null</code>.
    * @param aPathConsumer
-   *        A consumer that receives the absolute path of the file being
-   *        written. May not be <code>null</code>.
+   *        A consumer that receives the absolute path of the file being written. May not be
+   *        <code>null</code>.
    * @return An open output stream.
    */
   @NonNull
@@ -93,17 +87,16 @@ public interface IDocumentPayloadManager
                                            @NonNull Consumer <String> aPathConsumer);
 
   /**
-   * Open an {@link OutputStream} for writing a temporary document file. The
-   * caller is responsible for closing the stream.
+   * Open an {@link OutputStream} for writing a temporary document file. The caller is responsible
+   * for closing the stream.
    *
    * @param sBaseDir
-   *        The base directory to store the file in. May not be
-   *        <code>null</code>.
+   *        The base directory to store the file in. May not be <code>null</code>.
    * @param aReferenceDT
    *        The reference date time to which the message should be stored.
    * @param aPathConsumer
-   *        A consumer that receives the absolute path of the file being
-   *        written. May not be <code>null</code>.
+   *        A consumer that receives the absolute path of the file being written. May not be
+   *        <code>null</code>.
    * @return An open output stream.
    */
   @NonNull
@@ -119,18 +112,16 @@ public interface IDocumentPayloadManager
    * @param sTargetDir
    *        The target directory. May not be <code>null</code>.
    * @param sBaseName
-   *        The base name (without extension) of the target file. May not be
-   *        <code>null</code>.
+   *        The base name (without extension) of the target file. May not be <code>null</code>.
    * @param sFileExt
-   *        The file extension including the leading dot. May not be
-   *        <code>null</code>.
-   * @return The target file.
+   *        The file extension including the leading dot. May not be <code>null</code>.
+   * @return The new path of the renamed document (changed in 0.1.1 from File to String)
    */
   @NonNull
-  File renameFile (@NonNull String sSrcFile,
-                   @NonNull String sTargetDir,
-                   @NonNull @Nonempty String sBaseName,
-                   @NonNull @Nonempty String sFileExt);
+  String renameFile (@NonNull String sSrcFile,
+                     @NonNull String sTargetDir,
+                     @NonNull @Nonempty String sBaseName,
+                     @NonNull @Nonempty String sFileExt);
 
   /**
    * Read all bytes from the file at the given absolute path.
@@ -142,8 +133,8 @@ public interface IDocumentPayloadManager
   byte @NonNull [] readDocument (@NonNull String sAbsolutePath);
 
   /**
-   * Open an {@link InputStream} for the file at the given absolute path. The
-   * caller is responsible for closing the stream.
+   * Open an {@link InputStream} for the file at the given absolute path. The caller is responsible
+   * for closing the stream.
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
@@ -157,8 +148,7 @@ public interface IDocumentPayloadManager
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file was deleted, <code>false</code> if it
-   *         did not exist.
+   * @return <code>true</code> if the file was deleted, <code>false</code> if it did not exist.
    */
   boolean deleteDocument (@NonNull String sAbsolutePath);
 
@@ -167,8 +157,7 @@ public interface IDocumentPayloadManager
    *
    * @param sAbsolutePath
    *        The absolute path of the file. May not be <code>null</code>.
-   * @return <code>true</code> if the file exists, <code>false</code> if it does
-   *         not exist.
+   * @return <code>true</code> if the file exists, <code>false</code> if it does not exist.
    */
   boolean existsDocument (@NonNull String sAbsolutePath);
 }

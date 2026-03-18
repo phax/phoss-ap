@@ -272,14 +272,14 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
    *        The desired base filename (without extension). May not be empty.
    * @param sFileExt
    *        The file extension including the leading dot. May not be empty.
-   * @return The destination {@link File} after renaming. Never
+   * @return The absolute path of the destination file after renaming. Never
    *         <code>null</code>.
    */
   @NonNull
-  public File renameFile (@NonNull final String sSrcFile,
-                          @NonNull final String sTargetDir,
-                          @NonNull @Nonempty final String sBaseName,
-                          @NonNull @Nonempty final String sFileExt)
+  public String renameFile (@NonNull final String sSrcFile,
+                            @NonNull final String sTargetDir,
+                            @NonNull @Nonempty final String sBaseName,
+                            @NonNull @Nonempty final String sFileExt)
   {
     final File aSrcFile = new File (sSrcFile);
     final File aDstFile = _ensureUniqueFile (new File (sTargetDir), sBaseName, sFileExt);
@@ -290,7 +290,7 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
                                        "' to '" +
                                        aDstFile.getAbsolutePath () +
                                        "'");
-    return aDstFile;
+    return aDstFile.getAbsolutePath ();
   }
 
   /**

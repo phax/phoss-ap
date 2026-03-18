@@ -30,6 +30,7 @@ import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.basic.mgr.APTimestampManager;
 import com.helger.phoss.ap.basic.mgr.DocumentPayloadManagerFileSystem;
+import com.helger.phoss.ap.basic.mgr.DocumentPayloadManagerS3;
 import com.helger.scope.IScope;
 import com.helger.scope.singleton.AbstractGlobalSingleton;
 
@@ -55,8 +56,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   {}
 
   /**
-   * @return The global singleton instance of this manager. Never
-   *         <code>null</code>.
+   * @return The global singleton instance of this manager. Never <code>null</code>.
    */
   @NonNull
   public static APBasicMetaManager getInstance ()
@@ -70,17 +70,32 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
     LOGGER.info ("Initializing " + ClassHelper.getClassLocalName (this));
     try
     {
-      m_aDocPayloadMgr = new DocumentPayloadManagerFileSystem ();
+      // Initialize document payload manager
+      m_aDocPayloadMgr = switch (APBasicConfig.getStorageMode ())
+      {
+        case FILE_SYSTEM ->
+        {
+          LOGGER.info ("Using filesystem document storage backend");
+          yield new DocumentPayloadManagerFileSystem ();
+        }
+        case S3 ->
+        {
+          LOGGER.info ("Using S3 document storage backend");
+          yield new DocumentPayloadManagerS3 ();
+        }
+      };
       m_aDocPayloadMgr.verifyConfiguration ();
 
       // Determine identifier factory from configuration
       m_aIdentifierFactory = switch (APBasicConfig.getPeppolIdentifierMode ())
       {
-        case STRICT -> {
+        case STRICT ->
+        {
           LOGGER.info ("Using strict Peppol Identifier Factory");
           yield PeppolIdentifierFactory.INSTANCE;
         }
-        case LAX -> {
+        case LAX ->
+        {
           LOGGER.info ("Using lax Peppol Identifier Factory");
           yield PeppolLaxIdentifierFactory.INSTANCE;
         }
@@ -97,8 +112,8 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   }
 
   /**
-   * @return The document payload manager for storing and retrieving documents on
-   *         the filesystem. Never <code>null</code>.
+   * @return The document payload manager for storing and retrieving documents on the filesystem.
+   *         Never <code>null</code>.
    */
   @NonNull
   public static IDocumentPayloadManager getDocPayloadMgr ()
@@ -107,8 +122,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   }
 
   /**
-   * @return The timestamp manager used for generating UTC timestamps. Never
-   *         <code>null</code>.
+   * @return The timestamp manager used for generating UTC timestamps. Never <code>null</code>.
    */
   @NonNull
   public static IAPTimestampManager getTimestampMgr ()
@@ -117,8 +131,7 @@ public final class APBasicMetaManager extends AbstractGlobalSingleton
   }
 
   /**
-   * @return The Peppol identifier factory (strict or lax) as configured. Never
-   *         <code>null</code>.
+   * @return The Peppol identifier factory (strict or lax) as configured. Never <code>null</code>.
    */
   @NonNull
   public static IIdentifierFactory getIdentifierFactory ()

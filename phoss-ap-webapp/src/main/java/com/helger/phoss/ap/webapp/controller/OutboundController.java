@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,14 +47,21 @@ import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
+import com.helger.phoss.ap.webapp.dto.OutboundS3SubmitRequest;
 import com.helger.phoss.ap.webapp.dto.OutboundTransactionResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 /**
- * REST controller for outbound transaction operations including submitting raw
- * documents and pre-built SBDs for Peppol AS4 sending, querying transaction
- * status, and listing all transactions currently in transmission.
+ * REST controller for outbound transaction operations including submitting raw documents and
+ * pre-built SBDs for Peppol AS4 sending, querying transaction status, and listing all transactions
+ * currently in transmission.
  *
  * @author Philip Helger
  */
@@ -64,9 +72,9 @@ public class OutboundController
   private static final Logger LOGGER = LoggerFactory.getLogger (OutboundController.class);
 
   /**
-   * Submit a raw (payload-only) document for outbound sending via the Peppol
-   * network. The document payload is read from the HTTP request body. Peppol
-   * identifiers are parsed from the URL path variables.
+   * Submit a raw (payload-only) document for outbound sending via the Peppol network. The document
+   * payload is read from the HTTP request body. Peppol identifiers are parsed from the URL path
+   * variables.
    *
    * @param sSenderID
    *        The sender participant identifier.
@@ -81,8 +89,7 @@ public class OutboundController
    * @param aServletRequest
    *        The HTTP servlet request containing the document payload.
    * @param sSbdhInstanceID
-   *        Optional SBDH Instance ID. A random one is generated if not
-   *        provided.
+   *        Optional SBDH Instance ID. A random one is generated if not provided.
    * @param sMlsTo
    *        Optional MLS "To" address.
    * @param sSbdhStandard
@@ -93,8 +100,7 @@ public class OutboundController
    *        Optional SBDH type.
    * @param sPayloadMimeType
    *        Optional payload MIME type.
-   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an
-   *         error response.
+   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
    */
@@ -125,8 +131,8 @@ public class OutboundController
       return ResponseEntity.notFound ().build ();
     }
 
-    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID : PeppolSBDHData
-                                                                                                                        .createRandomSBDHInstanceIdentifier ();
+    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
+                                                                                      : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
 
     // Parse the identifiers
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
@@ -222,16 +228,14 @@ public class OutboundController
   }
 
   /**
-   * Submit a pre-built Standard Business Document (SBD) for outbound sending
-   * via the Peppol network. The complete SBD is read from the HTTP request
-   * body.
+   * Submit a pre-built Standard Business Document (SBD) for outbound sending via the Peppol
+   * network. The complete SBD is read from the HTTP request body.
    *
    * @param aServletRequest
    *        The HTTP servlet request containing the SBD payload.
    * @param sMlsTo
    *        Optional MLS "To" address.
-   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an
-   *         error response.
+   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
    */
@@ -271,6 +275,181 @@ public class OutboundController
   }
 
   /**
+   * Submit a document for outbound sending by referencing an S3 object. The document payload is
+   * fetched from the specified S3 bucket/key rather than being inlined in the HTTP request body.
+   * This allows sender backends to upload large documents to S3 and then trigger sending via the
+   * AP.
+   *
+   * @param aRequest
+   *        The JSON request body containing Peppol identifiers and S3 reference. May not be
+   *        <code>null</code>.
+   * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
+   */
+  @PostMapping (value = "/submit-s3",
+                consumes = MediaType.APPLICATION_JSON_VALUE,
+                produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity <String> submitFromS3 (@RequestBody final OutboundS3SubmitRequest aRequest)
+  {
+    if (!APCoreConfig.isSendingEnabled ())
+    {
+      LOGGER.info ("Peppol AP sending is disabled");
+      return ResponseEntity.notFound ().build ();
+    }
+
+    if (!APCoreConfig.isOutboundS3Enabled ())
+    {
+      LOGGER.info ("Outbound S3 submission is disabled");
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Outbound S3 submission is not enabled").getAsJsonString ());
+    }
+
+    // Validate required fields
+    if (StringHelper.isEmpty (aRequest.getSenderID ()) ||
+      StringHelper.isEmpty (aRequest.getReceiverID ()) ||
+      StringHelper.isEmpty (aRequest.getDocTypeID ()) ||
+      StringHelper.isEmpty (aRequest.getProcessID ()) ||
+      StringHelper.isEmpty (aRequest.getC1CountryCode ()) ||
+      StringHelper.isEmpty (aRequest.getS3Key ()))
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Missing required fields: senderID, receiverID, docTypeID, processID, c1CountryCode, s3Key")
+                                           .getAsJsonString ());
+    }
+
+    final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (aRequest.getSbdhInstanceID ()) ? aRequest.getSbdhInstanceID ()
+                                                                                                    : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
+
+    // Parse the identifiers
+    final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
+
+    IParticipantIdentifier aSenderID = aIF.parseParticipantIdentifier (aRequest.getSenderID ());
+    if (aSenderID == null)
+      aSenderID = aIF.createParticipantIdentifierWithDefaultScheme (aRequest.getSenderID ());
+    if (aSenderID == null)
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Failed to parse the sending participant ID '" +
+                                                    aRequest.getSenderID () +
+                                                    "'").getAsJsonString ());
+    }
+
+    IParticipantIdentifier aReceiverID = aIF.parseParticipantIdentifier (aRequest.getReceiverID ());
+    if (aReceiverID == null)
+      aReceiverID = aIF.createParticipantIdentifierWithDefaultScheme (aRequest.getReceiverID ());
+    if (aReceiverID == null)
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Failed to parse the receiving participant ID '" +
+                                                    aRequest.getReceiverID () +
+                                                    "'").getAsJsonString ());
+    }
+
+    IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (aRequest.getDocTypeID ());
+    if (aDocTypeID == null)
+      aDocTypeID = aIF.createDocumentTypeIdentifierWithDefaultScheme (aRequest.getDocTypeID ());
+    if (aDocTypeID == null)
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Failed to parse the document type ID '" +
+                                                    aRequest.getDocTypeID () +
+                                                    "'").getAsJsonString ());
+    }
+
+    IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (aRequest.getProcessID ());
+    if (aProcessID == null)
+      aProcessID = aIF.createProcessIdentifierWithDefaultScheme (aRequest.getProcessID ());
+    if (aProcessID == null)
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Failed to parse the process ID '" + aRequest.getProcessID () + "'")
+                                           .getAsJsonString ());
+    }
+
+    // Determine the S3 region - use from configuration
+    final String sS3Region = APCoreConfig.getOutboundS3Region ();
+    if (StringHelper.isEmpty (sS3Region))
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("No outbound S3 region configured (outbound.s3.region)")
+                                           .getAsJsonString ());
+    }
+    final Region aRegion = Region.of (sS3Region);
+    if (aRegion == null)
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("The outbound S3 region configuration '" +
+                                                    sS3Region +
+                                                    "' is invalid!").getAsJsonString ());
+    }
+
+    // Determine the S3 bucket - use from request, fallback to configured default
+    final String sS3Bucket = StringHelper.isNotEmpty (aRequest.getS3Bucket ()) ? aRequest.getS3Bucket ()
+                                                                               : APCoreConfig.getOutboundS3Bucket ();
+    if (StringHelper.isEmpty (sS3Bucket))
+    {
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("No S3 bucket specified in request and no default configured")
+                                           .getAsJsonString ());
+    }
+
+    // Build S3 client for the sender's bucket
+
+    final S3ClientBuilder aS3Builder = S3Client.builder ().region (aRegion);
+    final String sAccessKeyID = APCoreConfig.getOutboundS3AccessKeyID ();
+    final String sSecretAccessKey = APCoreConfig.getOutboundS3SecretAccessKey ();
+    if (StringHelper.isNotEmpty (sAccessKeyID) && StringHelper.isNotEmpty (sSecretAccessKey))
+    {
+      aS3Builder.credentialsProvider (StaticCredentialsProvider.create (AwsBasicCredentials.create (sAccessKeyID,
+                                                                                                    sSecretAccessKey)));
+    }
+
+    try (final S3Client aS3Client = aS3Builder.build ();
+         final InputStream aIS = aS3Client.getObject (GetObjectRequest.builder ()
+                                                                      .bucket (sS3Bucket)
+                                                                      .key (aRequest.getS3Key ())
+                                                                      .build ()))
+    {
+      // Store in DB
+      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[SubmitS3] ",
+                                                                               aSenderID,
+                                                                               aReceiverID,
+                                                                               aDocTypeID,
+                                                                               aProcessID,
+                                                                               sEffectiveSbdhInstanceID,
+                                                                               aRequest.getC1CountryCode (),
+                                                                               aIS,
+                                                                               aRequest.getMlsTo (),
+                                                                               aRequest.getSbdhStandard (),
+                                                                               aRequest.getSbdhTypeVersion (),
+                                                                               aRequest.getSbdhType (),
+                                                                               aRequest.getPayloadMimeType ());
+      if (aTx == null)
+      {
+        return ResponseEntity.unprocessableContent ()
+                             .body (JsonValue.create ("Failed to submit outbound transaction from S3")
+                                             .getAsJsonString ());
+      }
+
+      // Perform actual sending
+      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitS3] ", aTx);
+      if (!aSendingReport.isOverallSuccess ())
+      {
+        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
+      }
+
+      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Failed to fetch document from S3 bucket '" + sS3Bucket + "' key '" + aRequest.getS3Key () + "'",
+                    ex);
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("Failed to fetch document from S3: " + ex.getMessage ())
+                                           .getAsJsonString ());
+    }
+  }
+
+  /**
    * Get the current status of an outbound transaction by its SBDH Instance ID.
    *
    * @param sSbdhInstanceID
@@ -294,8 +473,8 @@ public class OutboundController
   }
 
   /**
-   * Get all outbound transactions that are currently in transmission (not yet
-   * completed or permanently failed).
+   * Get all outbound transactions that are currently in transmission (not yet completed or
+   * permanently failed).
    *
    * @return A list of in-transmission outbound transactions.
    */

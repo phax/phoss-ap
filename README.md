@@ -1,5 +1,10 @@
 # phoss-ap
 
+<!-- ph-badge-start -->
+[![Sonatype Central](https://maven-badges.sml.io/sonatype-central/com.helger.phoss.ap/phoss-ap-parent-pom/badge.svg)](https://maven-badges.sml.io/sonatype-central/com.helger.phoss.ap/phoss-ap-parent-pom/)
+[![javadoc](https://javadoc.io/badge2/com.helger.phoss.ap/phoss-ap-api/javadoc.svg)](https://javadoc.io/doc/com.helger.phoss.ap/phoss-ap-api)
+<!-- ph-badge-end -->
+
 phoss Peppol Access Point - when looking for the SMP, see [phoss SMP](https://github.com/phax/phoss-smp)
 
 A complete open-source Peppol Access Point based on [phase4](https://github.com/phax/phase4).

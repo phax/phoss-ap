@@ -83,11 +83,11 @@ public class SentryLoggingConfig
   }
 
   /**
-   * Create the Sentry appender registrar bean that installs the Sentry Logback
-   * appender after the application has started.
+   * Create the Sentry appender registrar bean that installs the Sentry Logback appender after the
+   * application has started.
    *
-   * @return An {@link ApplicationListener} that registers the Sentry appender.
-   *         Never <code>null</code>.
+   * @return An {@link ApplicationListener} that registers the Sentry appender. Never
+   *         <code>null</code>.
    */
   @Bean
   public ApplicationListener <ApplicationStartedEvent> sentryAppenderRegistrar ()

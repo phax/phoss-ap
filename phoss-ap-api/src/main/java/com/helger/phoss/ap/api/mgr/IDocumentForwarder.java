@@ -24,9 +24,9 @@ import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
- * SPI interface for forwarding received inbound documents to the Receiver
- * Backend (C4). Implementations are loaded via {@link java.util.ServiceLoader}.
- * Exactly one implementation must be present on the classpath at runtime.
+ * SPI interface for forwarding received inbound documents to the Receiver Backend (C4).
+ * Implementations are loaded via {@link java.util.ServiceLoader}. Exactly one implementation must
+ * be present on the classpath at runtime.
  *
  * @author Philip Helger
  */
@@ -43,15 +43,14 @@ public interface IDocumentForwarder
   ESuccess initFromConfiguration (@NonNull IConfigWithFallback aConfig);
 
   /**
-   * Forward the given inbound transaction's document to the Receiver Backend.
-   * This method should never throw an exception.
+   * Forward the given inbound transaction's document to the Receiver Backend. This method should
+   * never throw an exception.
    *
    * @param aTransaction
-   *        The inbound transaction whose document bytes should be forwarded.
-   *        Never <code>null</code>.
+   *        The inbound transaction whose document bytes should be forwarded. Never
+   *        <code>null</code>.
    * @return {@link ForwardingResult#success()} if forwarding succeeded, or
-   *         {@link ForwardingResult#failure(String, String)} with error details
-   *         otherwise.
+   *         {@link ForwardingResult#failure(String, String)} with error details otherwise.
    */
   @NonNull
   ForwardingResult forwardDocument (@NonNull IInboundTransaction aTransaction);

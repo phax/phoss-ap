@@ -24,8 +24,7 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Whether a Peppol Reporting record (TSR/EUSR) has been created for a
- * transaction.
+ * Whether a Peppol Reporting record (TSR/EUSR) has been created for a transaction.
  *
  * @author Philip Helger
  */

@@ -125,9 +125,8 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                                                             null,
                                                                                                             null,
                                                                                                             sMlsTo,
-                                                                                                            eTransactionType ==
-                                                                                                                    ETransactionType.BUSINESS_DOCUMENT ? EMlsReceptionStatus.PENDING.getID ()
-                                                                                                                                                       : null,
+                                                                                                            eTransactionType == ETransactionType.BUSINESS_DOCUMENT ? EMlsReceptionStatus.PENDING.getID ()
+                                                                                                                                                                   : null,
                                                                                                             null,
                                                                                                             null,
                                                                                                             sMlsInboundTransactionID,

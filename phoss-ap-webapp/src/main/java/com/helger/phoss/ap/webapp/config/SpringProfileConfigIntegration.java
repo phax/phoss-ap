@@ -48,8 +48,8 @@ public class SpringProfileConfigIntegration
    * Constructor.
    *
    * @param aEnvironment
-   *        The Spring {@link Environment} to read active profiles from. May not
-   *        be <code>null</code>.
+   *        The Spring {@link Environment} to read active profiles from. May not be
+   *        <code>null</code>.
    */
   public SpringProfileConfigIntegration (@NonNull final Environment aEnvironment)
   {
@@ -57,8 +57,8 @@ public class SpringProfileConfigIntegration
   }
 
   /**
-   * Integrate active Spring profile configuration files into the ph-config
-   * system. Called automatically after bean construction.
+   * Integrate active Spring profile configuration files into the ph-config system. Called
+   * automatically after bean construction.
    */
   @PostConstruct
   public void integrateSpringProfiles ()

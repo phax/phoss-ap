@@ -133,8 +133,7 @@ public class DocumentSender
   }
 
   /**
-   * Send a PDF document via POST /api/outbound/submit/{ids} with PDF-specific
-   * parameters.
+   * Send a PDF document via POST /api/outbound/submit/{ids} with PDF-specific parameters.
    *
    * @param aPdfFile
    *        the PDF file to be sent. May not be {@code null}.

@@ -25,8 +25,7 @@ import com.helger.phoss.ap.testsender.sender.DocumentSender;
 import com.helger.phoss.ap.testsender.sender.SendResult;
 
 /**
- * Scenario that sends a prebuilt Standard Business Document (with SBDH
- * envelope).
+ * Scenario that sends a prebuilt Standard Business Document (with SBDH envelope).
  */
 public class PrebuiltSbdScenario implements ITestScenario
 {

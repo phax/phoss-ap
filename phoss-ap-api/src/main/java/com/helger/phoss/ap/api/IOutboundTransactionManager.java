@@ -55,8 +55,8 @@ public interface IOutboundTransactionManager
    * @param sSbdhInstanceID
    *        SBDH Instance Identifier. Never <code>null</code>.
    * @param eSourceType
-   *        Source type indicating how the document was submitted (raw XML or
-   *        pre-built SBD). Never <code>null</code>.
+   *        Source type indicating how the document was submitted (raw XML or pre-built SBD). Never
+   *        <code>null</code>.
    * @param sDocumentPath
    *        Absolute path to the document file on disk. Never <code>null</code>.
    * @param nDocumentSize
@@ -66,28 +66,24 @@ public interface IOutboundTransactionManager
    * @param sC1CountryCode
    *        Country code of the sender (C1). Never <code>null</code>.
    * @param aCreationTD
-   *        The date and time when the message was created. Never
-   *        <code>null</code>.
+   *        The date and time when the message was created. Never <code>null</code>.
    * @param sMlsTo
    *        Optional MLS_TO override. May be <code>null</code>.
    * @param sMlsInboundTransactionID
-   *        ID of the inbound transaction for MLS responses. May be
-   *        <code>null</code>.
+   *        ID of the inbound transaction for MLS responses. May be <code>null</code>.
    * @param sSbdhStandard
-   *        SBDH Standard override for non-XML payloads (e.g.
-   *        {@code urn:peppol:doctype:pdf+xml}). May be <code>null</code> to
-   *        auto-derive from document type.
+   *        SBDH Standard override for non-XML payloads (e.g. {@code urn:peppol:doctype:pdf+xml}).
+   *        May be <code>null</code> to auto-derive from document type.
    * @param sSbdhTypeVersion
-   *        SBDH TypeVersion override for non-XML payloads (e.g. {@code 0}). May
-   *        be <code>null</code> to auto-derive from document type.
+   *        SBDH TypeVersion override for non-XML payloads (e.g. {@code 0}). May be
+   *        <code>null</code> to auto-derive from document type.
    * @param sSbdhType
-   *        SBDH Type override for non-XML payloads (e.g. {@code factur-x}). May
-   *        be <code>null</code> to auto-derive from document type.
+   *        SBDH Type override for non-XML payloads (e.g. {@code factur-x}). May be
+   *        <code>null</code> to auto-derive from document type.
    * @param sPayloadMimeType
-   *        MIME type for binary payloads (e.g. {@code application/pdf}). May be
-   *        <code>null</code> for XML payloads.
-   * @return The ID of the created transaction. Only <code>null</code> if
-   *         insertion fails.
+   *        MIME type for binary payloads (e.g. {@code application/pdf}). May be <code>null</code>
+   *        for XML payloads.
+   * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
    */
   @Nullable
   String create (@NonNull ETransactionType eTransactionType,
@@ -124,8 +120,7 @@ public interface IOutboundTransactionManager
    *
    * @param sID
    *        The ID to check. May not be <code>null</code>.
-   * @return <code>true</code> if the transaction exists, <code>false</code> if
-   *         not.
+   * @return <code>true</code> if the transaction exists, <code>false</code> if not.
    */
   boolean containsTransactionWithID (@NonNull String sID);
 
@@ -217,8 +212,7 @@ public interface IOutboundTransactionManager
   ESuccess updateReportingStatus (@NonNull String sID, @NonNull EReportingStatus eReportingStatus);
 
   /**
-   * @return All outbound transactions that are not yet in a final state. Never
-   *         <code>null</code>.
+   * @return All outbound transactions that are not yet in a final state. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy

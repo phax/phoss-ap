@@ -84,9 +84,8 @@ public final class DBResultRowHelper
   }
 
   /**
-   * Create a {@link DBResultRow} from the given values. Each value becomes a
-   * column named {@code "col0"}, {@code "col1"}, etc. The JDBC type is inferred
-   * from the Java type.
+   * Create a {@link DBResultRow} from the given values. Each value becomes a column named
+   * {@code "col0"}, {@code "col1"}, etc. The JDBC type is inferred from the Java type.
    *
    * @param aValues
    *        Values to add.

@@ -161,8 +161,7 @@ public final class APPeppolReportHelper
   }
 
   /**
-   * Create, validate, store, send and store sending reports for Peppol TSR and
-   * EUSR for one period.
+   * Create, validate, store, send and store sending reports for Peppol TSR and EUSR for one period.
    *
    * @param aYearMonth
    *        The reporting period to use. May not be <code>null</code>.

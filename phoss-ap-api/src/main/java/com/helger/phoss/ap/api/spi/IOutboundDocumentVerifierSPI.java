@@ -25,9 +25,9 @@ import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 
 /**
- * SPI interface for optional document verification. Implementations are loaded
- * via {@link java.util.ServiceLoader}. Multiple verifiers may be registered and
- * are evaluated in order — all must pass for the document to be accepted.
+ * SPI interface for optional document verification. Implementations are loaded via
+ * {@link java.util.ServiceLoader}. Multiple verifiers may be registered and are evaluated in order
+ * — all must pass for the document to be accepted.
  *
  * @author Philip Helger
  */
@@ -35,18 +35,17 @@ import com.helger.peppolid.IProcessIdentifier;
 public interface IOutboundDocumentVerifierSPI
 {
   /**
-   * Verify a document's content against the given document type and process
-   * identifiers.
+   * Verify a document's content against the given document type and process identifiers.
    *
    * @param sDocumentPath
-   *        The path where the document resides. Must only be opened for
-   *        reading. Never <code>null</code>.
+   *        The path where the document resides. Must only be opened for reading. Never
+   *        <code>null</code>.
    * @param aDocTypeID
    *        The Peppol Document Type Identifier. Never <code>null</code>.
    * @param aProcessID
    *        The Peppol Process Identifier. Never <code>null</code>.
-   * @return {@link ESuccess#SUCCESS} if the document is valid,
-   *         {@link ESuccess#FAILURE} if verification failed.
+   * @return {@link ESuccess#SUCCESS} if the document is valid, {@link ESuccess#FAILURE} if
+   *         verification failed.
    */
   @NonNull
   ESuccess verifyOutboundDocument (@NonNull @Nonempty String sDocumentPath,

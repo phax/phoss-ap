@@ -71,8 +71,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   {}
 
   /**
-   * @return The global singleton instance of this manager. Never
-   *         <code>null</code>.
+   * @return The global singleton instance of this manager. Never <code>null</code>.
    */
   @NonNull
   public static APJdbcMetaManager getInstance ()
@@ -147,8 +146,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   }
 
   /**
-   * @return The JDBC configuration used by this manager. Never
-   *         <code>null</code>.
+   * @return The JDBC configuration used by this manager. Never <code>null</code>.
    */
   @NonNull
   public static APJdbcConfiguration getJdbcConfig ()
@@ -202,8 +200,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   }
 
   /**
-   * @return The MLS metrics manager for SLA calculations. Never
-   *         <code>null</code>.
+   * @return The MLS metrics manager for SLA calculations. Never <code>null</code>.
    */
   @NonNull
   public static MlsMetricsManagerJdbc getMlsMetricsMgr ()

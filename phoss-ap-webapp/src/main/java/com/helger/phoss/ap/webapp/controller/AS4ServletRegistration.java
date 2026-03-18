@@ -33,9 +33,9 @@ import jakarta.servlet.ServletContext;
 public class AS4ServletRegistration
 {
   /**
-   * Constructor. The injected {@link SpringProfileConfigIntegration} parameter
-   * ensures that Spring profile-specific properties are loaded into ph-config
-   * before {@link APServletInit#init(ServletContext)} runs.
+   * Constructor. The injected {@link SpringProfileConfigIntegration} parameter ensures that Spring
+   * profile-specific properties are loaded into ph-config before
+   * {@link APServletInit#init(ServletContext)} runs.
    *
    * @param aProfileConfigIntegration
    *        Injected solely for bean ordering. Not used directly.
@@ -54,8 +54,7 @@ public class AS4ServletRegistration
   }
 
   /**
-   * Create the {@link Phase4PeppolAS4Servlet} registration bean, mapped to
-   * {@code /as4}.
+   * Create the {@link Phase4PeppolAS4Servlet} registration bean, mapped to {@code /as4}.
    *
    * @param ctx
    *        The servlet context. May not be <code>null</code>.
@@ -75,8 +74,7 @@ public class AS4ServletRegistration
   }
 
   /**
-   * Special class that is only present to have a graceful shutdown. The the
-   * bean method below.
+   * Special class that is only present to have a graceful shutdown. The the bean method below.
    *
    * @author Philip Helger
    */
@@ -90,8 +88,8 @@ public class AS4ServletRegistration
   }
 
   /**
-   * Create the {@link Destroyer} bean that triggers graceful shutdown of
-   * {@link APServletInit} when the Spring context is closed.
+   * Create the {@link Destroyer} bean that triggers graceful shutdown of {@link APServletInit} when
+   * the Spring context is closed.
    *
    * @return A new {@link Destroyer} instance. Never <code>null</code>.
    */

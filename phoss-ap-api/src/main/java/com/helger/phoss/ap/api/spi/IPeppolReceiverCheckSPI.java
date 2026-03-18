@@ -21,10 +21,9 @@ import org.jspecify.annotations.NonNull;
 import com.helger.annotation.style.IsSPIInterface;
 
 /**
- * SPI interface for verifying that this AP services a given receiver
- * participant. Implementations are loaded via {@link java.util.ServiceLoader}.
- * If the receiver is not serviced, the inbound AS4 message is rejected before
- * database storage.
+ * SPI interface for verifying that this AP services a given receiver participant. Implementations
+ * are loaded via {@link java.util.ServiceLoader}. If the receiver is not serviced, the inbound AS4
+ * message is rejected before database storage.
  *
  * @author Philip Helger
  */
@@ -32,8 +31,8 @@ import com.helger.annotation.style.IsSPIInterface;
 public interface IPeppolReceiverCheckSPI
 {
   /**
-   * Check whether the given receiver participant is serviced by this AP for the
-   * specified document type and process.
+   * Check whether the given receiver participant is serviced by this AP for the specified document
+   * type and process.
    *
    * @param sReceiverID
    *        The Peppol Participant ID of the receiver. Never <code>null</code>.
@@ -41,8 +40,7 @@ public interface IPeppolReceiverCheckSPI
    *        The Peppol Document Type Identifier. Never <code>null</code>.
    * @param sProcessID
    *        The Peppol Process Identifier. Never <code>null</code>.
-   * @return <code>true</code> if the receiver is serviced, <code>false</code>
-   *         otherwise.
+   * @return <code>true</code> if the receiver is serviced, <code>false</code> otherwise.
    */
   boolean isReceiverServiced (@NonNull String sReceiverID, @NonNull String sDocTypeID, @NonNull String sProcessID);
 }

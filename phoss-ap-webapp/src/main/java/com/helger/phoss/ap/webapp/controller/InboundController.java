@@ -38,9 +38,9 @@ import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.ReportResponse;
 
 /**
- * REST controller for inbound transaction operations including reporting the C4
- * country code, querying transaction status by SBDH Instance ID, and listing
- * all transactions currently in processing.
+ * REST controller for inbound transaction operations including reporting the C4 country code,
+ * querying transaction status by SBDH Instance ID, and listing all transactions currently in
+ * processing.
  *
  * @author Philip Helger
  */
@@ -51,16 +51,15 @@ public class InboundController
   private static final Logger LOGGER = LoggerFactory.getLogger (InboundController.class);
 
   /**
-   * Store the C4 country code for a received inbound transaction and create the
-   * corresponding Peppol Reporting entry.
+   * Store the C4 country code for a received inbound transaction and create the corresponding
+   * Peppol Reporting entry.
    *
    * @param sSbdhInstanceID
-   *        The SBDH Instance ID of the transaction. May not be
-   *        <code>null</code>.
+   *        The SBDH Instance ID of the transaction. May not be <code>null</code>.
    * @param sC4CountryCode
    *        The C4 country code to store. May not be <code>null</code>.
-   * @return A {@link ReportResponse} on success, 404 if the transaction does
-   *         not exist, or 400 if the C4 country code was already set.
+   * @return A {@link ReportResponse} on success, 404 if the transaction does not exist, or 400 if
+   *         the C4 country code was already set.
    */
   @PostMapping ("/report")
   public ResponseEntity <ReportResponse> reportInbound (@RequestParam ("sbdhInstanceID") final String sSbdhInstanceID,
@@ -113,8 +112,8 @@ public class InboundController
   }
 
   /**
-   * Get all inbound transactions that are currently being processed (not yet
-   * completed or permanently failed).
+   * Get all inbound transactions that are currently being processed (not yet completed or
+   * permanently failed).
    *
    * @return A list of in-processing inbound transactions.
    */

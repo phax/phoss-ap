@@ -28,8 +28,8 @@ import com.helger.base.state.ESuccess;
 public interface IArchivalManager
 {
   /**
-   * Archive the provided outbound transaction. This includes the main
-   * transaction as well as all attempts.
+   * Archive the provided outbound transaction. This includes the main transaction as well as all
+   * attempts.
    *
    * @param sID
    *        The outbound transaction to archive. May not be <code>null</code>.
@@ -39,8 +39,8 @@ public interface IArchivalManager
   ESuccess archiveOutboundTransaction (@NonNull String sID);
 
   /**
-   * Archive the provided inbound transaction. This includes the main
-   * transaction as well as all attempts.
+   * Archive the provided inbound transaction. This includes the main transaction as well as all
+   * attempts.
    *
    * @param sID
    *        The inbound transaction to archive. May not be <code>null</code>.

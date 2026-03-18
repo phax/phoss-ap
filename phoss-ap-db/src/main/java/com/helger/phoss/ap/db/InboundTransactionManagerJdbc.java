@@ -307,9 +307,8 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       m_sTableName +
                                                                       " SET mls_response_code=?, mls_outbound_transaction_id=?" +
                                                                       " WHERE id=?",
-                                                                      new ConstantPreparedStatementDataProvider (eMlsResponseCode !=
-                                                                                                                 null ? eMlsResponseCode.getID ()
-                                                                                                                      : null,
+                                                                      new ConstantPreparedStatementDataProvider (eMlsResponseCode != null ? eMlsResponseCode.getID ()
+                                                                                                                                          : null,
                                                                                                                  sMlsOutboundTransactionID,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);

@@ -60,14 +60,11 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   private final HttpClientSettings m_aHCS = new HttpClientSettings ();
 
   /**
-   * Constructor for creating an HTTP document forwarder with the specified
-   * forwarding mode.
+   * Constructor for creating an HTTP document forwarder with the specified forwarding mode.
    *
    * @param eMode
-   *        The forwarding mode to use. Must be either
-   *        {@link EForwardingMode#HTTP_POST_SYNC} or
-   *        {@link EForwardingMode#HTTP_POST_ASYNC}. May not be
-   *        <code>null</code>.
+   *        The forwarding mode to use. Must be either {@link EForwardingMode#HTTP_POST_SYNC} or
+   *        {@link EForwardingMode#HTTP_POST_ASYNC}. May not be <code>null</code>.
    */
   public HttpDocumentForwarder (@NonNull final EForwardingMode eMode)
   {
@@ -120,7 +117,8 @@ public class HttpDocumentForwarder implements IDocumentForwarder
       final byte [] aResponse = aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
       return switch (m_eMode)
       {
-        case HTTP_POST_SYNC -> {
+        case HTTP_POST_SYNC ->
+        {
           final IJsonObject aJsonObject = JsonReader.builder ().source (aResponse).readAsObject ();
           if (aJsonObject == null)
             yield ForwardingResult.failure ("http_response_error", "Failed to parse response as JSON object");
@@ -129,11 +127,13 @@ public class HttpDocumentForwarder implements IDocumentForwarder
           LOGGER.info ("Received C4 Country Code is '" + sCountryCodeC4 + "'");
           yield ForwardingResult.success (sCountryCodeC4);
         }
-        case HTTP_POST_ASYNC -> {
+        case HTTP_POST_ASYNC ->
+        {
           LOGGER.info ("HTTP forwarding successful for transaction " + aTransaction.getID ());
           yield ForwardingResult.success ();
         }
-        default -> {
+        default ->
+        {
           LOGGER.error ("Unexpected forwarding mode " + m_eMode + " for HTTP forwarder");
           yield ForwardingResult.failure ("http_configuration_error", "Unexpected forwarding mode " + m_eMode);
         }

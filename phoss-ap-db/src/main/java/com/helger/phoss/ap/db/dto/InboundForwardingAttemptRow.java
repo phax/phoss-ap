@@ -28,8 +28,7 @@ import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
 
 /**
- * Simple implementation of {@link IInboundForwardingAttempt} created from JDBC
- * result object.
+ * Simple implementation of {@link IInboundForwardingAttempt} created from JDBC result object.
  *
  * @author Philip Helger
  */

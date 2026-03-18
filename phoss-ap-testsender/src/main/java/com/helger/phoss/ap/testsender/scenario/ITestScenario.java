@@ -27,8 +27,7 @@ import com.helger.phoss.ap.testsender.sender.SendResult;
 public interface ITestScenario
 {
   /**
-   * @return The human-readable name of this scenario (e.g. "xml", "sbd",
-   *         "pdf").
+   * @return The human-readable name of this scenario (e.g. "xml", "sbd", "pdf").
    */
   @NonNull
   String getName ();

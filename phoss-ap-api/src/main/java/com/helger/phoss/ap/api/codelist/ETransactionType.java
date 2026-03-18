@@ -26,10 +26,10 @@ import com.helger.base.lang.EnumHelper;
 /**
  * Distinguishes the purpose of an outbound transaction.
  * <ul>
- * <li>{@link #BUSINESS_DOCUMENT} &mdash; A regular Peppol business document
- * sent from Sender Backend to a remote AP.</li>
- * <li>{@link #MLS_RESPONSE} &mdash; A Message Level Status response sent back
- * to the original sending AP.</li>
+ * <li>{@link #BUSINESS_DOCUMENT} &mdash; A regular Peppol business document sent from Sender
+ * Backend to a remote AP.</li>
+ * <li>{@link #MLS_RESPONSE} &mdash; A Message Level Status response sent back to the original
+ * sending AP.</li>
  * </ul>
  *
  * @author Philip Helger

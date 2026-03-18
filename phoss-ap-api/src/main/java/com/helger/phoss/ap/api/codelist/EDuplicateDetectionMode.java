@@ -24,8 +24,8 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Configurable behavior when a duplicate is detected on either the AS4 Message
- * ID or SBDH Instance Identifier level.
+ * Configurable behavior when a duplicate is detected on either the AS4 Message ID or SBDH Instance
+ * Identifier level.
  *
  * @author Philip Helger
  */

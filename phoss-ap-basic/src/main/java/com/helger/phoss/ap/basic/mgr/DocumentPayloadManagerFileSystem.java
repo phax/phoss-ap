@@ -40,9 +40,8 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.basic.APBasicConfig;
 
 /**
- * Default implementation of {@link IDocumentPayloadManager} that stores
- * documents as flat files on the local filesystem, organized by date/hour
- * directories.
+ * Default implementation of {@link IDocumentPayloadManager} that stores documents as flat files on
+ * the local filesystem, organized by date/hour directories.
  *
  * @author Philip Helger
  */
@@ -55,9 +54,8 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   {}
 
   /**
-   * Verify that the configured inbound and outbound storage paths exist, are
-   * writable, and can be created if missing. Throws an
-   * {@link InitializationException} if any check fails.
+   * Verify that the configured inbound and outbound storage paths exist, are writable, and can be
+   * created if missing. Throws an {@link InitializationException} if any check fails.
    */
   public void verifyConfiguration ()
   {
@@ -104,14 +102,13 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   }
 
   /**
-   * Store a document as a file on the filesystem under a date/hour organized
-   * directory structure.
+   * Store a document as a file on the filesystem under a date/hour organized directory structure.
    *
    * @param sBaseDir
    *        The base directory for storage. May not be <code>null</code>.
    * @param aReferenceDT
-   *        The reference date/time used to derive the subdirectory path. May
-   *        not be <code>null</code>.
+   *        The reference date/time used to derive the subdirectory path. May not be
+   *        <code>null</code>.
    * @param sFilename
    *        The filename to use. May not be <code>null</code>.
    * @param aBytes
@@ -179,25 +176,22 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   }
 
   /**
-   * Open an {@link OutputStream} for writing a document to the filesystem. The
-   * file is placed under a date/hour organized directory structure with a
-   * unique filename.
+   * Open an {@link OutputStream} for writing a document to the filesystem. The file is placed under
+   * a date/hour organized directory structure with a unique filename.
    *
    * @param sBaseDir
    *        The base directory for storage. May not be <code>null</code>.
    * @param aReferenceDT
-   *        The reference date/time used to derive the subdirectory path. May
-   *        not be <code>null</code>.
+   *        The reference date/time used to derive the subdirectory path. May not be
+   *        <code>null</code>.
    * @param sFilename
    *        The base filename (without extension). May not be empty.
    * @param sFileExt
-   *        The file extension including the leading dot (e.g.
-   *        {@code ".xml"}). May not be empty.
+   *        The file extension including the leading dot (e.g. {@code ".xml"}). May not be empty.
    * @param aPathConsumer
-   *        A consumer that receives the absolute path of the created file.
-   *        May not be <code>null</code>.
-   * @return A buffered {@link OutputStream} for writing. Never
-   *         <code>null</code>.
+   *        A consumer that receives the absolute path of the created file. May not be
+   *        <code>null</code>.
+   * @return A buffered {@link OutputStream} for writing. Never <code>null</code>.
    */
   @NonNull
   public OutputStream openDocumentStreamForWrite (@NonNull final String sBaseDir,
@@ -237,19 +231,18 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   }
 
   /**
-   * Open an {@link OutputStream} for writing a temporary document with a random
-   * UUID-based filename and {@code .tmp} extension.
+   * Open an {@link OutputStream} for writing a temporary document with a random UUID-based filename
+   * and {@code .tmp} extension.
    *
    * @param sBaseDir
    *        The base directory for storage. May not be <code>null</code>.
    * @param aReferenceDT
-   *        The reference date/time used to derive the subdirectory path. May
-   *        not be <code>null</code>.
+   *        The reference date/time used to derive the subdirectory path. May not be
+   *        <code>null</code>.
    * @param aPathConsumer
-   *        A consumer that receives the absolute path of the created
-   *        temporary file. May not be <code>null</code>.
-   * @return A buffered {@link OutputStream} for writing. Never
-   *         <code>null</code>.
+   *        A consumer that receives the absolute path of the created temporary file. May not be
+   *        <code>null</code>.
+   * @return A buffered {@link OutputStream} for writing. Never <code>null</code>.
    */
   @NonNull
   public OutputStream openTemporaryDocumentStreamForWrite (@NonNull final String sBaseDir,
@@ -264,16 +257,14 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
    * Rename a file to a new unique name in the target directory.
    *
    * @param sSrcFile
-   *        The absolute path of the source file. May not be
-   *        <code>null</code>.
+   *        The absolute path of the source file. May not be <code>null</code>.
    * @param sTargetDir
    *        The target directory. May not be <code>null</code>.
    * @param sBaseName
    *        The desired base filename (without extension). May not be empty.
    * @param sFileExt
    *        The file extension including the leading dot. May not be empty.
-   * @return The absolute path of the destination file after renaming. Never
-   *         <code>null</code>.
+   * @return The absolute path of the destination file after renaming. Never <code>null</code>.
    */
   @NonNull
   public String renameFile (@NonNull final String sSrcFile,
@@ -297,8 +288,7 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
    * Read an entire document from the filesystem into a byte array.
    *
    * @param sAbsolutePath
-   *        The absolute path of the file to read. May not be
-   *        <code>null</code>.
+   *        The absolute path of the file to read. May not be <code>null</code>.
    * @return The file contents as byte array. Never <code>null</code>.
    */
   public byte @NonNull [] readDocument (@NonNull final String sAbsolutePath)
@@ -316,12 +306,10 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   }
 
   /**
-   * Open a buffered {@link InputStream} for reading a document from the
-   * filesystem.
+   * Open a buffered {@link InputStream} for reading a document from the filesystem.
    *
    * @param sAbsolutePath
-   *        The absolute path of the file to read. May not be
-   *        <code>null</code>.
+   *        The absolute path of the file to read. May not be <code>null</code>.
    * @return A buffered {@link InputStream}. Never <code>null</code>.
    */
   @NonNull
@@ -343,10 +331,8 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
    * Delete a document from the filesystem if it exists.
    *
    * @param sAbsolutePath
-   *        The absolute path of the file to delete. May not be
-   *        <code>null</code>.
-   * @return {@code true} if the file existed and was deleted, {@code false} if
-   *         it did not exist.
+   *        The absolute path of the file to delete. May not be <code>null</code>.
+   * @return {@code true} if the file existed and was deleted, {@code false} if it did not exist.
    */
   public boolean deleteDocument (@NonNull final String sAbsolutePath)
   {

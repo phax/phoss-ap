@@ -40,10 +40,9 @@ import com.helger.phoss.ap.forwarding.s3.S3DocumentForwarder;
 import com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder;
 
 /**
- * Central manager for core AP components including the document forwarder,
- * inbound/outbound document verifiers, receiver checks, and notification
- * handlers. Components are initialized from configuration and via
- * {@link ServiceLoader} SPI.
+ * Central manager for core AP components including the document forwarder, inbound/outbound
+ * document verifiers, receiver checks, and notification handlers. Components are initialized from
+ * configuration and via {@link ServiceLoader} SPI.
  *
  * @author Philip Helger
  */
@@ -61,9 +60,8 @@ public final class APCoreMetaManager
   {}
 
   /**
-   * Initialize the core meta manager by creating the document forwarder from
-   * configuration and loading all SPI-based verifiers, receiver checks, and
-   * notification handlers.
+   * Initialize the core meta manager by creating the document forwarder from configuration and
+   * loading all SPI-based verifiers, receiver checks, and notification handlers.
    */
   public static void init ()
   {
@@ -133,8 +131,7 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return The configured document forwarder instance. Never
-   *         <code>null</code>.
+   * @return The configured document forwarder instance. Never <code>null</code>.
    */
   @NonNull
   public static IDocumentForwarder getForwarder ()
@@ -143,8 +140,7 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered inbound document verifiers. Never
-   *         <code>null</code>.
+   * @return A mutable copy of all registered inbound document verifiers. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy
@@ -154,8 +150,7 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered outbound document verifiers. Never
-   *         <code>null</code>.
+   * @return A mutable copy of all registered outbound document verifiers. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy
@@ -165,8 +160,7 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered Peppol receiver checks. Never
-   *         <code>null</code>.
+   * @return A mutable copy of all registered Peppol receiver checks. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy
@@ -176,8 +170,7 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered notification handlers. Never
-   *         <code>null</code>.
+   * @return A mutable copy of all registered notification handlers. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy

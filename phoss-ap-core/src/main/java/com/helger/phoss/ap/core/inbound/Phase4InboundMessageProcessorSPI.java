@@ -232,9 +232,9 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         {
           // Scheme is valid
           if (sValue != null &&
-              sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
-              sValue.length () > 5 &&
-              RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
+            sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
+            sValue.length () > 5 &&
+            RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
           {
             // Value is valid as well - use it
             sValidMlsTo = CIdentifier.getURIEncoded (sScheme, sValue);

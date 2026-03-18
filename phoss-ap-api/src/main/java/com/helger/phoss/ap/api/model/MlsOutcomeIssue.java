@@ -26,8 +26,8 @@ import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 
 /**
- * A single issue within an MLS rejection response. Each issue references an
- * error location, a status reason code and a human-readable description.
+ * A single issue within an MLS rejection response. Each issue references an error location, a
+ * status reason code and a human-readable description.
  * <p>
  * JSON format:
  *
@@ -53,14 +53,12 @@ public final class MlsOutcomeIssue
    *
    * @param sErrorField
    *        The error field reference (XPath expression or
-   *        {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE}). May neither be
-   *        <code>null</code> nor empty.
+   *        {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE}). May neither be <code>null</code> nor empty.
    * @param eStatusReasonCode
-   *        The MLS status reason code (e.g. "BV", "BW", "FD", "SV"). May
-   *        neither be <code>null</code> nor empty.
+   *        The MLS status reason code (e.g. "BV", "BW", "FD", "SV"). May neither be
+   *        <code>null</code> nor empty.
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
    */
   public MlsOutcomeIssue (@NonNull @Nonempty final String sErrorField,
                           @NonNull final EPeppolMLSStatusReasonCode eStatusReasonCode,
@@ -76,8 +74,7 @@ public final class MlsOutcomeIssue
 
   /**
    * @return The error field reference (XPath expression or
-   *         {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE}). Never <code>null</code>
-   *         nor empty.
+   *         {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE}). Never <code>null</code> nor empty.
    */
   @NonNull
   @Nonempty
@@ -87,8 +84,8 @@ public final class MlsOutcomeIssue
   }
 
   /**
-   * @return The MLS status reason code (e.g. "BV", "BW", "FD", "SV"). Never
-   *         <code>null</code> nor empty.
+   * @return The MLS status reason code (e.g. "BV", "BW", "FD", "SV"). Never <code>null</code> nor
+   *         empty.
    */
   @NonNull
   public EPeppolMLSStatusReasonCode getStatusReasonCode ()
@@ -97,8 +94,7 @@ public final class MlsOutcomeIssue
   }
 
   /**
-   * @return Human-readable error description. Never <code>null</code> nor
-   *         empty.
+   * @return Human-readable error description. Never <code>null</code> nor empty.
    */
   @NonNull
   @Nonempty
@@ -121,11 +117,9 @@ public final class MlsOutcomeIssue
    * Factory method for a business rule violation (fatal).
    *
    * @param sErrorField
-   *        The error field reference. May neither be <code>null</code> nor
-   *        empty.
+   *        The error field reference. May neither be <code>null</code> nor empty.
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
    * @return A new {@link MlsOutcomeIssue} with status reason code "BV".
    */
   @NonNull
@@ -139,11 +133,9 @@ public final class MlsOutcomeIssue
    * Factory method for a business rule warning.
    *
    * @param sErrorField
-   *        The error field reference. May neither be <code>null</code> nor
-   *        empty.
+   *        The error field reference. May neither be <code>null</code> nor empty.
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
    * @return A new {@link MlsOutcomeIssue} with status reason code "BW".
    */
   @NonNull
@@ -157,10 +149,8 @@ public final class MlsOutcomeIssue
    * Factory method for a failure of delivery.
    *
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
-   * @return A new {@link MlsOutcomeIssue} with status reason code "FD" and
-   *         error field "NA".
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
+   * @return A new {@link MlsOutcomeIssue} with status reason code "FD" and error field "NA".
    */
   @NonNull
   public static MlsOutcomeIssue failureOfDelivery (@NonNull @Nonempty final String sDescription)
@@ -174,11 +164,9 @@ public final class MlsOutcomeIssue
    * Factory method for a syntax violation.
    *
    * @param sErrorField
-   *        The error field reference. May neither be <code>null</code> nor
-   *        empty.
+   *        The error field reference. May neither be <code>null</code> nor empty.
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
    * @return A new {@link MlsOutcomeIssue} with status reason code "SV".
    */
   @NonNull
@@ -189,15 +177,12 @@ public final class MlsOutcomeIssue
   }
 
   /**
-   * Factory method using {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE} as the error
-   * field.
+   * Factory method using {@link CPeppolMLS#LINE_ID_NOT_AVAILABLE} as the error field.
    *
    * @param eStatusReasonCode
-   *        The MLS status reason code. May neither be <code>null</code> nor
-   *        empty.
+   *        The MLS status reason code. May neither be <code>null</code> nor empty.
    * @param sDescription
-   *        Human-readable error description. May neither be <code>null</code>
-   *        nor empty.
+   *        Human-readable error description. May neither be <code>null</code> nor empty.
    * @return A new {@link MlsOutcomeIssue} with error field "NA".
    */
   @NonNull

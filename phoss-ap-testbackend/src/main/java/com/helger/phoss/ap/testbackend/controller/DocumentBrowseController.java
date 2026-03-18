@@ -35,8 +35,7 @@ import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 import com.helger.phoss.ap.testbackend.store.DocumentStore;
 
 /**
- * Browse, inspect and download received documents across all forwarding
- * channels (HTTP, SFTP, S3).
+ * Browse, inspect and download received documents across all forwarding channels (HTTP, SFTP, S3).
  *
  * @author Philip Helger
  */
@@ -51,8 +50,7 @@ public class DocumentBrowseController
    * List all received documents, optionally filtered by forwarding channel.
    *
    * @param sChannel
-   *        The forwarding channel to filter by, or {@code null} to return all
-   *        documents.
+   *        The forwarding channel to filter by, or {@code null} to return all documents.
    * @return A list of document metadata maps.
    */
   @GetMapping
@@ -102,8 +100,7 @@ public class DocumentBrowseController
    *
    * @param id
    *        The document ID.
-   * @return The raw document bytes as {@code application/xml}, or HTTP 404 if
-   *         not found.
+   * @return The raw document bytes as {@code application/xml}, or HTTP 404 if not found.
    * @throws IOException
    *         If reading the file from disk fails.
    */

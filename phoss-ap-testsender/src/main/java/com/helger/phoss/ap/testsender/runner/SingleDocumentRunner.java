@@ -27,8 +27,7 @@ import com.helger.phoss.ap.testsender.sender.DocumentSender;
 import com.helger.phoss.ap.testsender.sender.SendResult;
 
 /**
- * Runs a single document scenario and optionally polls for the final
- * transaction status.
+ * Runs a single document scenario and optionally polls for the final transaction status.
  */
 @Component
 public class SingleDocumentRunner
@@ -53,8 +52,7 @@ public class SingleDocumentRunner
   }
 
   /**
-   * Run a single test scenario and optionally poll for the final transaction
-   * status.
+   * Run a single test scenario and optionally poll for the final transaction status.
    *
    * @param aScenario
    *        the test scenario to execute. May not be {@code null}.

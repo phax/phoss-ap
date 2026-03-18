@@ -21,8 +21,7 @@ import org.jspecify.annotations.NonNull;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
- * JSON response DTO representing an inbound transaction with all relevant
- * fields for the REST API.
+ * JSON response DTO representing an inbound transaction with all relevant fields for the REST API.
  *
  * @author Philip Helger
  */

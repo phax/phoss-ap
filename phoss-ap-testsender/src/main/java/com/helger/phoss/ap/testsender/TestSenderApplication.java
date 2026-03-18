@@ -215,9 +215,8 @@ public class TestSenderApplication implements CommandLineRunner
   }
 
   /**
-   * Resolve a resource path that can be either a classpath resource or an
-   * absolute/relative file path. For classpath resources, the content is copied
-   * to a temporary file.
+   * Resolve a resource path that can be either a classpath resource or an absolute/relative file
+   * path. For classpath resources, the content is copied to a temporary file.
    */
   private static Path _resolvePath (final String sPath) throws IOException
   {

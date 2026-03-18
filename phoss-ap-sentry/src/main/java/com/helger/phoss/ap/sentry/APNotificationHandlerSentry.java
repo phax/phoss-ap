@@ -31,9 +31,9 @@ import io.sentry.SentryLogLevel;
 import io.sentry.logger.SentryLogParameters;
 
 /**
- * Special implementation of {@link IAPNotificationHandlerSPI} for Sentry log
- * events. It is not registered as an SPI provider, because it is included
- * dependent on the existence of the Sentry dependencies.
+ * Special implementation of {@link IAPNotificationHandlerSPI} for Sentry log events. It is not
+ * registered as an SPI provider, because it is included dependent on the existence of the Sentry
+ * dependencies.
  *
  * @author Philip Helger
  */

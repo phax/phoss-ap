@@ -33,8 +33,7 @@ import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 
 /**
- * Simple implementation of {@link IOutboundTransaction} created from JDBC
- * result object.
+ * Simple implementation of {@link IOutboundTransaction} created from JDBC result object.
  *
  * @author Philip Helger
  */

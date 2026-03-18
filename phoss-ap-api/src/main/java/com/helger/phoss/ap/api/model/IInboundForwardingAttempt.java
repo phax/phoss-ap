@@ -26,8 +26,8 @@ import com.helger.base.id.IHasID;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 
 /**
- * Read-only view of a single inbound forwarding attempt. Each attempt
- * represents one forwarding operation to the Receiver Backend.
+ * Read-only view of a single inbound forwarding attempt. Each attempt represents one forwarding
+ * operation to the Receiver Backend.
  *
  * @author Philip Helger
  */
@@ -60,15 +60,13 @@ public interface IInboundForwardingAttempt extends IHasID <String>
   EAttemptStatus getAttemptStatus ();
 
   /**
-   * @return Machine-readable error code classifying the failure, or
-   *         <code>null</code> on success.
+   * @return Machine-readable error code classifying the failure, or <code>null</code> on success.
    */
   @Nullable
   String getErrorCode ();
 
   /**
-   * @return The error message or reason for failure, or <code>null</code> on
-   *         success.
+   * @return The error message or reason for failure, or <code>null</code> on success.
    */
   @Nullable
   String getErrorDetails ();

@@ -35,8 +35,7 @@ import com.helger.phoss.ap.testsender.sender.DocumentSender;
 import com.helger.phoss.ap.testsender.sender.SendResult;
 
 /**
- * Runs multiple document scenarios concurrently to test throughput and discover
- * race conditions.
+ * Runs multiple document scenarios concurrently to test throughput and discover race conditions.
  */
 @Component
 public class BulkRunner

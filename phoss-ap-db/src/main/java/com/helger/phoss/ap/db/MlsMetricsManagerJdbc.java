@@ -34,9 +34,8 @@ import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 
 /**
- * JDBC manager for querying MLS SLA metrics across inbound/outbound tables.
- * Provides the data needed to calculate MLS-1 (M2 - M1) and MLS-2 (M3 - M1) per
- * Peppol Network Policy.
+ * JDBC manager for querying MLS SLA metrics across inbound/outbound tables. Provides the data
+ * needed to calculate MLS-1 (M2 - M1) and MLS-2 (M3 - M1) per Peppol Network Policy.
  *
  * @author Philip Helger
  */
@@ -84,8 +83,7 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
    * @param durationSeconds
    *        The duration in seconds between the 2 timestamps
    * @param withinSla
-   *        <code>true</code> if the entry is within the SLA, <code>false</code>
-   *        if not.
+   *        <code>true</code> if the entry is within the SLA, <code>false</code> if not.
    */
   public record MlsSlaEntry (@NonNull String sbdhInstanceID,
                              @NonNull OffsetDateTime m1,
@@ -118,8 +116,7 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
                               @Nonnegative long thresholdSeconds)
   {
     /**
-     * @return {@code true} if the compliance percentage meets or exceeds the
-     *         target percentage.
+     * @return {@code true} if the compliance percentage meets or exceeds the target percentage.
      */
     public boolean isMeetingSla ()
     {
@@ -168,12 +165,11 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
   }
 
   /**
-   * Calculate MLS-1 SLA (M2 - M1) for the receiving side. M1 = AS4 timestamp of
-   * the received inbound business document. M2 = AS4 timestamp of the
-   * successful sending attempt of the MLS response outbound transaction.
+   * Calculate MLS-1 SLA (M2 - M1) for the receiving side. M1 = AS4 timestamp of the received
+   * inbound business document. M2 = AS4 timestamp of the successful sending attempt of the MLS
+   * response outbound transaction.
    * <p>
-   * Joins: inbound_transaction → (mls_outbound_transaction_id) →
-   * outbound_sending_attempt (success)
+   * Joins: inbound_transaction → (mls_outbound_transaction_id) → outbound_sending_attempt (success)
    *
    * @return The SLA report. Never <code>null</code>.
    */
@@ -203,12 +199,12 @@ public class MlsMetricsManagerJdbc extends AbstractAPJdbcManager
   }
 
   /**
-   * Calculate MLS-2 SLA (M3 - M1) for the sending side. M1 = AS4 timestamp of
-   * the successful sending attempt of the outbound business document. M3 =
-   * mls_received_dt on the outbound transaction.
+   * Calculate MLS-2 SLA (M3 - M1) for the sending side. M1 = AS4 timestamp of the successful
+   * sending attempt of the outbound business document. M3 = mls_received_dt on the outbound
+   * transaction.
    * <p>
-   * Joins: outbound_transaction (business docs with MLS received) →
-   * outbound_sending_attempt (success)
+   * Joins: outbound_transaction (business docs with MLS received) → outbound_sending_attempt
+   * (success)
    *
    * @return The SLA report. Never <code>null</code>.
    */

@@ -38,8 +38,7 @@ import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 public final class SafeNotificationHandlerTest
 {
   /**
-   * A counting notification handler that records how many times each method was
-   * called.
+   * A counting notification handler that records how many times each method was called.
    */
   private static final class CountingHandler implements IAPNotificationHandlerSPI
   {

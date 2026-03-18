@@ -29,16 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Receives HTTP-forwarded documents from phoss-ap's
- * {@code HttpDocumentForwarderSPI}. Handles both sync and async modes:
+ * Receives HTTP-forwarded documents from phoss-ap's {@code HttpDocumentForwarderSPI}. Handles both
+ * sync and async modes:
  * <ul>
- * <li><b>Sync mode</b>: the AP expects a JSON response containing
- * {@code countryCodeC4}</li>
- * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is
- * triggered later via the callback API</li>
+ * <li><b>Sync mode</b>: the AP expects a JSON response containing {@code countryCodeC4}</li>
+ * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is triggered later via the
+ * callback API</li>
  * </ul>
- * The endpoint URL matches the default in phoss-ap's
- * {@code application.properties}:
+ * The endpoint URL matches the default in phoss-ap's {@code application.properties}:
  * {@code forwarding.http.endpoint=http://localhost:8888/forwarding/url}
  *
  * @author Philip Helger
@@ -50,8 +48,8 @@ public class AS4FakeResponder
   private static final Logger LOGGER = LoggerFactory.getLogger (AS4FakeResponder.class);
 
   /**
-   * Return a plain text response with the given HTTP status code. This endpoint
-   * is used to simulate AS4 responses for testing purposes.
+   * Return a plain text response with the given HTTP status code. This endpoint is used to simulate
+   * AS4 responses for testing purposes.
    *
    * @param aServletRequest
    *        The raw servlet request.

@@ -39,16 +39,14 @@ import com.helger.phoss.ap.testbackend.service.ReportingCompletedCallerService;
 import com.helger.phoss.ap.testbackend.store.DocumentStore;
 
 /**
- * Receives HTTP-forwarded documents from phoss-ap's
- * {@code HttpDocumentForwarderSPI}. Handles both sync and async modes:
+ * Receives HTTP-forwarded documents from phoss-ap's {@code HttpDocumentForwarderSPI}. Handles both
+ * sync and async modes:
  * <ul>
- * <li><b>Sync mode</b>: the AP expects a JSON response containing
- * {@code countryCodeC4}</li>
- * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is
- * triggered later via the callback API</li>
+ * <li><b>Sync mode</b>: the AP expects a JSON response containing {@code countryCodeC4}</li>
+ * <li><b>Async mode</b>: the AP only checks for HTTP 200; reporting is triggered later via the
+ * callback API</li>
  * </ul>
- * The endpoint URL matches the default in phoss-ap's
- * {@code application.properties}:
+ * The endpoint URL matches the default in phoss-ap's {@code application.properties}:
  * {@code forwarding.http.endpoint=http://localhost:8888/forwarding/url}
  *
  * @author Philip Helger
@@ -70,8 +68,8 @@ public class HttpForwardingController
    * Constructor for {@link HttpForwardingController}.
    *
    * @param aSvc
-   *        The reporting completed caller service used for async callbacks. May
-   *        not be {@code null}.
+   *        The reporting completed caller service used for async callbacks. May not be
+   *        {@code null}.
    */
   public HttpForwardingController (@NonNull final ReportingCompletedCallerService aSvc)
   {
@@ -79,9 +77,8 @@ public class HttpForwardingController
   }
 
   /**
-   * Receive a document via synchronous HTTP forwarding. Parses the SBDH
-   * envelope, stores the document and returns the C4 country code in the JSON
-   * response body.
+   * Receive a document via synchronous HTTP forwarding. Parses the SBDH envelope, stores the
+   * document and returns the C4 country code in the JSON response body.
    *
    * @param aBody
    *        The raw XML document bytes.
@@ -129,9 +126,9 @@ public class HttpForwardingController
   }
 
   /**
-   * Receive a document via asynchronous HTTP forwarding. Parses the SBDH
-   * envelope, stores the document and triggers the C4 country code callback to
-   * phoss-ap asynchronously in a virtual thread.
+   * Receive a document via asynchronous HTTP forwarding. Parses the SBDH envelope, stores the
+   * document and triggers the C4 country code callback to phoss-ap asynchronously in a virtual
+   * thread.
    *
    * @param aBody
    *        The raw XML document bytes.

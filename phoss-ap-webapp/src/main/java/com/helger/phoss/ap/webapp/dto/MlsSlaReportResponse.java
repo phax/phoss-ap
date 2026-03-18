@@ -21,8 +21,8 @@ import java.util.List;
 import com.helger.phoss.ap.db.MlsMetricsManagerJdbc;
 
 /**
- * JSON response DTO representing an MLS SLA compliance report with individual
- * measurement entries and aggregated statistics.
+ * JSON response DTO representing an MLS SLA compliance report with individual measurement entries
+ * and aggregated statistics.
  *
  * @author Philip Helger
  */

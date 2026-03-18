@@ -26,8 +26,8 @@ import com.helger.base.id.IHasID;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 
 /**
- * Read-only view of a single outbound sending attempt. Each attempt represents
- * one AS4 message exchange with the remote AP.
+ * Read-only view of a single outbound sending attempt. Each attempt represents one AS4 message
+ * exchange with the remote AP.
  *
  * @author Philip Helger
  */
@@ -55,22 +55,19 @@ public interface IOutboundSendingAttempt extends IHasID <String>
   String getAS4MessageID ();
 
   /**
-   * @return The AS4 MessageInfo/Timestamp from this attempt (UTC). Never
-   *         <code>null</code>.
+   * @return The AS4 MessageInfo/Timestamp from this attempt (UTC). Never <code>null</code>.
    */
   @NonNull
   OffsetDateTime getAS4Timestamp ();
 
   /**
-   * @return The AS4 Message ID from the synchronous receipt, or
-   *         <code>null</code> on failure.
+   * @return The AS4 Message ID from the synchronous receipt, or <code>null</code> on failure.
    */
   @Nullable
   String getReceiptMessageID ();
 
   /**
-   * @return The HTTP status code from the AS4 response, or <code>null</code> on
-   *         failure.
+   * @return The HTTP status code from the AS4 response, or <code>null</code> on failure.
    */
   @Nullable
   Integer getHttpStatusCode ();
@@ -88,15 +85,14 @@ public interface IOutboundSendingAttempt extends IHasID <String>
   EAttemptStatus getAttemptStatus ();
 
   /**
-   * @return The error message or reason for failure, or <code>null</code> on
-   *         success.
+   * @return The error message or reason for failure, or <code>null</code> on success.
    */
   @Nullable
   String getErrorDetails ();
 
   /**
-   * @return The Phase4 Peppol sending report as a JSON string, or
-   *         <code>null</code> if not available.
+   * @return The Phase4 Peppol sending report as a JSON string, or <code>null</code> if not
+   *         available.
    */
   @Nullable
   String getSendingReport ();

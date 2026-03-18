@@ -39,8 +39,8 @@ import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 import jakarta.annotation.PostConstruct;
 
 /**
- * In-memory store for received documents. Persists document content to disk and
- * maintains metadata in a {@link ConcurrentHashMap}.
+ * In-memory store for received documents. Persists document content to disk and maintains metadata
+ * in a {@link ConcurrentHashMap}.
  *
  * @author Philip Helger
  */
@@ -69,8 +69,7 @@ public class DocumentStore
   }
 
   /**
-   * Store a document by writing its content to disk and registering it in the
-   * in-memory map.
+   * Store a document by writing its content to disk and registering it in the in-memory map.
    *
    * @param sChannel
    *        The forwarding channel name (e.g. "http-sync", "http-async").
@@ -80,8 +79,7 @@ public class DocumentStore
    *        The raw document bytes.
    * @param sSbdhID
    *        The SBDH Instance Identifier for logging purposes.
-   * @return The stored {@link ReceivedDocument}, or {@code null} if writing to
-   *         disk failed.
+   * @return The stored {@link ReceivedDocument}, or {@code null} if writing to disk failed.
    */
   public ReceivedDocument storeDocument (final String sChannel,
                                          final String sFilename,
@@ -127,8 +125,8 @@ public class DocumentStore
   }
 
   /**
-   * Register a document that was stored externally (e.g. via SFTP or S3)
-   * without copying its content.
+   * Register a document that was stored externally (e.g. via SFTP or S3) without copying its
+   * content.
    *
    * @param sChannel
    *        The forwarding channel name (e.g. "sftp", "s3").
@@ -194,8 +192,8 @@ public class DocumentStore
    *
    * @param sID
    *        The document ID.
-   * @return The file content as a byte array, or {@code null} if no document
-   *         with the given ID exists.
+   * @return The file content as a byte array, or {@code null} if no document with the given ID
+   *         exists.
    * @throws IOException
    *         If reading the file fails.
    */
@@ -216,8 +214,7 @@ public class DocumentStore
   }
 
   /**
-   * Remove all documents from the in-memory store. Does not delete files from
-   * disk.
+   * Remove all documents from the in-memory store. Does not delete files from disk.
    */
   public void clear ()
   {

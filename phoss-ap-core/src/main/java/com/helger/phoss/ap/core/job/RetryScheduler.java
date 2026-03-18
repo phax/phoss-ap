@@ -32,8 +32,7 @@ import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 
 /**
- * This class makes sure the inbound and outbound transactions are automatically
- * retried.
+ * This class makes sure the inbound and outbound transactions are automatically retried.
  *
  * @author Philip Helger
  */

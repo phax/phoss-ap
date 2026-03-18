@@ -30,9 +30,9 @@ import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
 
 /**
- * Read-only view of an inbound transaction. Inbound transactions represent
- * documents received at this AP (C3) from a remote AP (C2), stored in the
- * database and forwarded to the Receiver Backend (C4).
+ * Read-only view of an inbound transaction. Inbound transactions represent documents received at
+ * this AP (C3) from a remote AP (C2), stored in the database and forwarded to the Receiver Backend
+ * (C4).
  *
  * @author Philip Helger
  */
@@ -60,8 +60,7 @@ public interface IInboundTransaction extends IHasID <String>
   String getC2SeatID ();
 
   /**
-   * @return The Peppol Seat ID of the receiving AP (C3). Never
-   *         <code>null</code>.
+   * @return The Peppol Seat ID of the receiving AP (C3). Never <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -75,16 +74,14 @@ public interface IInboundTransaction extends IHasID <String>
   String getSigningCertCN ();
 
   /**
-   * @return The Peppol Participant ID of the sender (C1). Never
-   *         <code>null</code>.
+   * @return The Peppol Participant ID of the sender (C1). Never <code>null</code>.
    */
   @NonNull
   @Nonempty
   String getSenderID ();
 
   /**
-   * @return The Peppol Participant ID of the receiver (C4). Never
-   *         <code>null</code>.
+   * @return The Peppol Participant ID of the receiver (C4). Never <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -105,8 +102,7 @@ public interface IInboundTransaction extends IHasID <String>
   String getProcessID ();
 
   /**
-   * @return The absolute path to the document file on disk. Never
-   *         <code>null</code>.
+   * @return The absolute path to the document file on disk. Never <code>null</code>.
    */
   @NonNull
   @Nonempty
@@ -126,16 +122,15 @@ public interface IInboundTransaction extends IHasID <String>
   String getDocumentHash ();
 
   /**
-   * @return The AS4 Message ID from the inbound message. Never
-   *         <code>null</code>.
+   * @return The AS4 Message ID from the inbound message. Never <code>null</code>.
    */
   @NonNull
   @Nonempty
   String getAS4MessageID ();
 
   /**
-   * @return The AS4 MessageInfo/Timestamp from the incoming AS4 message (UTC).
-   *         Never <code>null</code>.
+   * @return The AS4 MessageInfo/Timestamp from the incoming AS4 message (UTC). Never
+   *         <code>null</code>.
    */
   @NonNull
   OffsetDateTime getAS4Timestamp ();
@@ -160,14 +155,14 @@ public interface IInboundTransaction extends IHasID <String>
   String getC4CountryCode ();
 
   /**
-   * @return <code>true</code> if this message was detected as a duplicate on
-   *         the AS4 Message ID level.
+   * @return <code>true</code> if this message was detected as a duplicate on the AS4 Message ID
+   *         level.
    */
   boolean isDuplicateAS4 ();
 
   /**
-   * @return <code>true</code> if this message was detected as a duplicate on
-   *         the SBDH Instance Identifier level.
+   * @return <code>true</code> if this message was detected as a duplicate on the SBDH Instance
+   *         Identifier level.
    */
   boolean isDuplicateSBDH ();
 
@@ -190,8 +185,7 @@ public interface IInboundTransaction extends IHasID <String>
   OffsetDateTime getReceivedDT ();
 
   /**
-   * @return When the transaction was completed, or <code>null</code> if not yet
-   *         completed.
+   * @return When the transaction was completed, or <code>null</code> if not yet completed.
    */
   @Nullable
   OffsetDateTime getCompletedDT ();
@@ -203,44 +197,40 @@ public interface IInboundTransaction extends IHasID <String>
   EReportingStatus getReportingStatus ();
 
   /**
-   * @return The planned date/time of the next forwarding retry, or
-   *         <code>null</code> if not scheduled.
+   * @return The planned date/time of the next forwarding retry, or <code>null</code> if not
+   *         scheduled.
    */
   @Nullable
   OffsetDateTime getNextRetryDT ();
 
   /**
-   * @return The error details from the last failed attempt, or
-   *         <code>null</code> on success.
+   * @return The error details from the last failed attempt, or <code>null</code> on success.
    */
   @Nullable
   String getErrorDetails ();
 
   /**
-   * @return The MLS_TO target participant ID (from SBDH extension), or
-   *         <code>null</code> if not set. Only present if the MLS_TO was valid
-   *         and according to the rules.
+   * @return The MLS_TO target participant ID (from SBDH extension), or <code>null</code> if not
+   *         set. Only present if the MLS_TO was valid and according to the rules.
    */
   @Nullable
   String getMlsTo ();
 
   /**
-   * @return The MLS sending strategy captured at reception time. Never
-   *         <code>null</code>.
+   * @return The MLS sending strategy captured at reception time. Never <code>null</code>.
    */
   @NonNull
   EPeppolMLSType getMlsType ();
 
   /**
-   * @return The MLS response code sent or to be sent, or <code>null</code> if
-   *         not yet determined.
+   * @return The MLS response code sent or to be sent, or <code>null</code> if not yet determined.
    */
   @Nullable
   EPeppolMLSResponseCode getMlsResponseCode ();
 
   /**
-   * @return The ID of the outbound transaction representing the MLS sending, or
-   *         <code>null</code> if not yet created.
+   * @return The ID of the outbound transaction representing the MLS sending, or <code>null</code>
+   *         if not yet created.
    */
   @Nullable
   String getMlsOutboundTransactionID ();

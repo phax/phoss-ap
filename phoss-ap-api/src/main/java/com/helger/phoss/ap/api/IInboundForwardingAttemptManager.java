@@ -34,8 +34,7 @@ public interface IInboundForwardingAttemptManager
    *
    * @param sInboundTransactionID
    *        The parent inbound transaction ID. Never <code>null</code>.
-   * @return The ID of the created attempt row, or <code>null</code> if
-   *         insertion fails.
+   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
    */
   @Nullable
   String createSuccess (@NonNull String sInboundTransactionID);
@@ -46,12 +45,10 @@ public interface IInboundForwardingAttemptManager
    * @param sInboundTransactionID
    *        The parent inbound transaction ID. Never <code>null</code>.
    * @param sErrorCode
-   *        Machine-readable error code classifying the failure. May be
-   *        <code>null</code>.
+   *        Machine-readable error code classifying the failure. May be <code>null</code>.
    * @param sErrorDetails
    *        Human-readable error description. May be <code>null</code>.
-   * @return The ID of the created attempt row, or <code>null</code> if
-   *         insertion fails.
+   * @return The ID of the created attempt row, or <code>null</code> if insertion fails.
    */
   @Nullable
   String createFailure (@NonNull String sInboundTransactionID,
@@ -59,8 +56,7 @@ public interface IInboundForwardingAttemptManager
                         @Nullable String sErrorDetails);
 
   /**
-   * Get all forwarding attempts for the given inbound transaction, ordered by
-   * attempt date.
+   * Get all forwarding attempts for the given inbound transaction, ordered by attempt date.
    *
    * @param sInboundTransactionID
    *        The parent inbound transaction ID. Never <code>null</code>.

@@ -40,10 +40,10 @@ public final class StartupRecovery
   {}
 
   /**
-   * Run the startup recovery process. If startup recovery is disabled via configuration, this method
-   * returns immediately. Otherwise it resets all outbound transactions stuck in {@code SENDING}
-   * status and all inbound transactions stuck in {@code FORWARDING} status so they become eligible
-   * for retry.
+   * Run the startup recovery process. If startup recovery is disabled via configuration, this
+   * method returns immediately. Otherwise it resets all outbound transactions stuck in
+   * {@code SENDING} status and all inbound transactions stuck in {@code FORWARDING} status so they
+   * become eligible for retry.
    */
   public static void run ()
   {

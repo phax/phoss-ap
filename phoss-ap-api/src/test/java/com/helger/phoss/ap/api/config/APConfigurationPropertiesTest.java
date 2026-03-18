@@ -46,9 +46,9 @@ public final class APConfigurationPropertiesTest
       // Only check public static final String fields
       final int nMods = aField.getModifiers ();
       if (Modifier.isPublic (nMods) &&
-          Modifier.isStatic (nMods) &&
-          Modifier.isFinal (nMods) &&
-          aField.getType () == String.class)
+        Modifier.isStatic (nMods) &&
+        Modifier.isFinal (nMods) &&
+        aField.getType () == String.class)
       {
         final String sValue = (String) aField.get (null);
         assertNotNull ("Field " + aField.getName () + " has a null value", sValue);

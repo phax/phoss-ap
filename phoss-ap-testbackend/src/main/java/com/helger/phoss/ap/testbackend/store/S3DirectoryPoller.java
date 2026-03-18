@@ -31,12 +31,11 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
 /**
- * Polls a local directory for files uploaded via S3 (e.g. a MinIO data
- * directory or an S3-mounted filesystem). New files are registered in the
- * {@link DocumentStore} under the "s3" channel.
+ * Polls a local directory for files uploaded via S3 (e.g. a MinIO data directory or an S3-mounted
+ * filesystem). New files are registered in the {@link DocumentStore} under the "s3" channel.
  * <p>
- * Configure the directory via {@code testbackend.s3poll.directory} and the
- * polling interval via {@code testbackend.s3poll.interval-ms}.
+ * Configure the directory via {@code testbackend.s3poll.directory} and the polling interval via
+ * {@code testbackend.s3poll.interval-ms}.
  * </p>
  *
  * @author Philip Helger
@@ -56,9 +55,8 @@ public class S3DirectoryPoller
   private final Set <String> m_aKnownFiles = new HashSet <> ();
 
   /**
-   * Initialize the S3 poll directory. If the directory already exists, all
-   * existing files are registered so they are not re-detected on the first
-   * poll.
+   * Initialize the S3 poll directory. If the directory already exists, all existing files are
+   * registered so they are not re-detected on the first poll.
    */
   @PostConstruct
   public void init ()
@@ -87,8 +85,8 @@ public class S3DirectoryPoller
   }
 
   /**
-   * Poll the configured S3 directory for new files and register any newly
-   * discovered files in the {@link DocumentStore}.
+   * Poll the configured S3 directory for new files and register any newly discovered files in the
+   * {@link DocumentStore}.
    */
   @Scheduled (fixedDelayString = "${testbackend.s3poll.interval-ms:5000}")
   public void poll ()

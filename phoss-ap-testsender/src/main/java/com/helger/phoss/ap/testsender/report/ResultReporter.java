@@ -98,8 +98,8 @@ public class ResultReporter
   }
 
   /**
-   * Write the bulk send result to a JSON file. Does nothing if
-   * {@code sOutputFile} is {@code null} or blank.
+   * Write the bulk send result to a JSON file. Does nothing if {@code sOutputFile} is {@code null}
+   * or blank.
    *
    * @param aResult
    *        the bulk send result to serialize. May not be {@code null}.

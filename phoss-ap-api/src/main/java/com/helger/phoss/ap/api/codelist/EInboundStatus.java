@@ -61,8 +61,8 @@ public enum EInboundStatus implements IHasID <String>
   }
 
   /**
-   * @return <code>true</code> if this status represents a terminal state where
-   *         no further processing will occur.
+   * @return <code>true</code> if this status represents a terminal state where no further
+   *         processing will occur.
    */
   public boolean isFinalState ()
   {

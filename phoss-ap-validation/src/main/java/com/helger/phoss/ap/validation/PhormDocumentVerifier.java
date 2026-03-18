@@ -54,10 +54,9 @@ import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 /**
- * Document verifier implementation that calls the phorm Validation Service to
- * validate documents. The validation service automatically detects the document
- * type and validates it against the appropriate rules. This class implements
- * both inbound and outbound verification SPIs.
+ * Document verifier implementation that calls the phorm Validation Service to validate documents.
+ * The validation service automatically detects the document type and validates it against the
+ * appropriate rules. This class implements both inbound and outbound verification SPIs.
  *
  * @author Philip Helger
  */

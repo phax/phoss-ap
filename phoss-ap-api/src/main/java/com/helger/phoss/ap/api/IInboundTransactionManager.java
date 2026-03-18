@@ -75,12 +75,11 @@ public interface IInboundTransactionManager
    * @param bIsDuplicateSBDH
    *        Whether this is a duplicate on the SBDH Instance Identifier level.
    * @param sMlsTo
-   *        Optional MLS_TO target participant ID. In the form scheme::value.
-   *        May be <code>null</code>.
+   *        Optional MLS_TO target participant ID. In the form scheme::value. May be
+   *        <code>null</code>.
    * @param eMlsType
    *        The MLS sending strategy. Never <code>null</code>.
-   * @return The ID of the created transaction. Only <code>null</code> if
-   *         insertion fails.
+   * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
    */
   @Nullable
   String create (@NonNull String sIncomingID,
@@ -118,8 +117,7 @@ public interface IInboundTransactionManager
    *
    * @param sID
    *        The ID to check. May not be <code>null</code>.
-   * @return <code>true</code> if the transaction exists, <code>false</code> if
-   *         not.
+   * @return <code>true</code> if the transaction exists, <code>false</code> if not.
    */
   boolean containsTransactionWithID (@NonNull String sID);
 
@@ -183,8 +181,7 @@ public interface IInboundTransactionManager
    * @param nAttemptCount
    *        The updated attempt count. Must be &ge; 0.
    * @param aNextRetryDT
-   *        The next retry date/time. May be <code>null</code> if we're on
-   *        permanently failed.
+   *        The next retry date/time. May be <code>null</code> if we're on permanently failed.
    * @param sErrorDetails
    *        Error details. May be <code>null</code>.
    * @return {@link ESuccess}
@@ -221,8 +218,7 @@ public interface IInboundTransactionManager
   ESuccess updateC4CountryCode (@NonNull String sID, @NonNull String sC4CountryCode);
 
   /**
-   * Update MLS-related fields after an MLS response has been determined or
-   * sent.
+   * Update MLS-related fields after an MLS response has been determined or sent.
    *
    * @param sID
    *        The transaction ID. Never <code>null</code>.
@@ -250,8 +246,7 @@ public interface IInboundTransactionManager
   ESuccess updateReportingStatus (@NonNull String sID, @NonNull EReportingStatus eReportingStatus);
 
   /**
-   * @return All inbound transactions that are not yet in a final state. Never
-   *         <code>null</code>.
+   * @return All inbound transactions that are not yet in a final state. Never <code>null</code>.
    */
   @NonNull
   ICommonsList <IInboundTransaction> getAllInProcessing ();
@@ -277,12 +272,10 @@ public interface IInboundTransactionManager
   ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
 
   /**
-   * Get all inbound business document transactions (excluding MLS messages) for
-   * which no MLS response has been sent yet (i.e.
-   * {@code mls_response_code IS NULL}).
+   * Get all inbound business document transactions (excluding MLS messages) for which no MLS
+   * response has been sent yet (i.e. {@code mls_response_code IS NULL}).
    *
-   * @return The list of transactions without an MLS response. Never
-   *         <code>null</code>.
+   * @return The list of transactions without an MLS response. Never <code>null</code>.
    */
   @NonNull
   ICommonsList <IInboundTransaction> getAllWithoutMlsResponse ();

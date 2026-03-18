@@ -36,8 +36,7 @@ final class APDataSourceProvider implements IHasDataSource, Closeable
   private final BasicDataSource m_aDS;
 
   /**
-   * Constructor creating a pooled data source from the provided JDBC
-   * configuration.
+   * Constructor creating a pooled data source from the provided JDBC configuration.
    *
    * @param aJdbcConfig
    *        The JDBC configuration to use. May not be <code>null</code>.

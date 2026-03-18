@@ -31,9 +31,8 @@ import com.helger.phoss.ap.webapp.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.webapp.dto.MlsSlaReportResponse;
 
 /**
- * REST controller for MLS (Message Level Status) related operations including
- * querying transactions with missing MLS responses and retrieving MLS SLA
- * compliance reports per Peppol Network Policy.
+ * REST controller for MLS (Message Level Status) related operations including querying transactions
+ * with missing MLS responses and retrieving MLS SLA compliance reports per Peppol Network Policy.
  *
  * @author Philip Helger
  */
@@ -42,8 +41,7 @@ import com.helger.phoss.ap.webapp.dto.MlsSlaReportResponse;
 public class MlsController
 {
   /**
-   * Get all inbound business document transactions for which no MLS response
-   * has been sent yet.
+   * Get all inbound business document transactions for which no MLS response has been sent yet.
    *
    * @return List of inbound transactions without MLS response.
    */
@@ -58,9 +56,9 @@ public class MlsController
   }
 
   /**
-   * Get MLS-1 SLA report (receiving side). Measures M2 - M1: time between
-   * receiving the original business document (M1) and successfully sending back
-   * the MLS response (M2). SLR: 99.5% within 20 minutes.
+   * Get MLS-1 SLA report (receiving side). Measures M2 - M1: time between receiving the original
+   * business document (M1) and successfully sending back the MLS response (M2). SLR: 99.5% within
+   * 20 minutes.
    *
    * @return The MLS-1 SLA report.
    */
@@ -74,9 +72,9 @@ public class MlsController
   }
 
   /**
-   * Get MLS-2 SLA report (sending side). Measures M3 - M1: time between
-   * successfully sending the business document (M1) and receiving the MLS
-   * response from C3 (M3). SLR: 99.5% within 25 minutes.
+   * Get MLS-2 SLA report (sending side). Measures M3 - M1: time between successfully sending the
+   * business document (M1) and receiving the MLS response from C3 (M3). SLR: 99.5% within 25
+   * minutes.
    *
    * @return The MLS-2 SLA report.
    */

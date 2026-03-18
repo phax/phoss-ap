@@ -43,10 +43,8 @@ import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.reporting.APPeppolReportHelper;
 
 /**
- * This is the primary REST controller for the APIs to create Peppol Reports TSR
- * and EUSR.<br>
- * IMPORTANT: this API will only work, if you configure a Peppol Reporting
- * backend in your pom.xml.
+ * This is the primary REST controller for the APIs to create Peppol Reports TSR and EUSR.<br>
+ * IMPORTANT: this API will only work, if you configure a Peppol Reporting backend in your pom.xml.
  *
  * @author Philip Helger
  */
@@ -153,8 +151,8 @@ public class PeppolReportingController
   }
 
   /**
-   * This API creates a TSR and EUSR report for the provided year and month,
-   * validate them, store them and send them to the dedicated receiver.
+   * This API creates a TSR and EUSR report for the provided year and month, validate them, store
+   * them and send them to the dedicated receiver.
    *
    * @param nYear
    *        The year to use. Must be &ge; 2024

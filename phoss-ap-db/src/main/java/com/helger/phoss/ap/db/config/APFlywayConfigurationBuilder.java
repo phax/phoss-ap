@@ -41,8 +41,8 @@ public class APFlywayConfigurationBuilder extends FlywayConfigurationBuilderConf
    * @param aConfig
    *        The configuration object. May not be <code>null</code>.
    * @param aJdbcConfig
-   *        The JDBC configuration to act as a potential fallback for JDBC
-   *        connection data. May not be <code>null</code>.
+   *        The JDBC configuration to act as a potential fallback for JDBC connection data. May not
+   *        be <code>null</code>.
    */
   public APFlywayConfigurationBuilder (@NonNull final IConfig aConfig, @NonNull final IJdbcConfiguration aJdbcConfig)
   {

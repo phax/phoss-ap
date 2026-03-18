@@ -33,9 +33,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Service that calls back to phoss-ap's inbound report endpoint to notify
- * that a document has been successfully received and to provide the C4
- * country code for Peppol reporting.
+ * Service that calls back to phoss-ap's inbound report endpoint to notify that a document has been
+ * successfully received and to provide the C4 country code for Peppol reporting.
  *
  * @author Philip Helger
  */
@@ -54,13 +53,10 @@ public class ReportingCompletedCallerService
    * Send the C4 country code callback to phoss-ap's inbound report endpoint.
    *
    * @param sSbdhInstanceID
-   *        The SBDH Instance Identifier of the inbound transaction. May not be
-   *        {@code null}.
+   *        The SBDH Instance Identifier of the inbound transaction. May not be {@code null}.
    * @param sC4CountryCode
-   *        The C4 country code to report, or {@code null} to use the configured
-   *        default.
-   * @return A map containing the callback status, target URL, HTTP status code
-   *         and response body.
+   *        The C4 country code to report, or {@code null} to use the configured default.
+   * @return A map containing the callback status, target URL, HTTP status code and response body.
    * @throws IOException
    *         If the HTTP request fails.
    * @throws InterruptedException

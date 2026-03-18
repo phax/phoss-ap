@@ -19,8 +19,8 @@ package com.helger.phoss.ap.testbackend.model;
 import java.time.OffsetDateTime;
 
 /**
- * Immutable model representing a document received by the test backend via any
- * forwarding channel (HTTP, SFTP, S3).
+ * Immutable model representing a document received by the test backend via any forwarding channel
+ * (HTTP, SFTP, S3).
  *
  * @author Philip Helger
  */

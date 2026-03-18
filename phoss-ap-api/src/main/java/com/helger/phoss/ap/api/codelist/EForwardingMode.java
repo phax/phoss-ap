@@ -24,21 +24,19 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * The method used to deliver received documents to the Receiver Backend.
- * Configured per AP instance.
+ * The method used to deliver received documents to the Receiver Backend. Configured per AP
+ * instance.
  *
  * @author Philip Helger
  */
 public enum EForwardingMode implements IHasID <String>
 {
   /**
-   * SBD is POSTed to the Receiver Backend; reporting is triggered
-   * asynchronously later.
+   * SBD is POSTed to the Receiver Backend; reporting is triggered asynchronously later.
    */
   HTTP_POST_ASYNC ("http_post_async"),
   /**
-   * SBD is POSTed to the Receiver Backend; C4 country code is returned
-   * synchronously.
+   * SBD is POSTed to the Receiver Backend; C4 country code is returned synchronously.
    */
   HTTP_POST_SYNC ("http_post_sync"),
   /**
@@ -64,9 +62,8 @@ public enum EForwardingMode implements IHasID <String>
   }
 
   /**
-   * @return <code>true</code> if this forwarding mode provides delivery
-   *         confirmation (HTTP modes), <code>false</code> if it does not (SFTP,
-   *         S3).
+   * @return <code>true</code> if this forwarding mode provides delivery confirmation (HTTP modes),
+   *         <code>false</code> if it does not (SFTP, S3).
    */
   public boolean isWithDeliveryConfirmation ()
   {

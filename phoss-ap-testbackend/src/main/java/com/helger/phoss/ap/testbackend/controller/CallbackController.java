@@ -30,12 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.helger.phoss.ap.testbackend.service.ReportingCompletedCallerService;
 
 /**
- * Trigger async callbacks to phoss-ap. This controller lets you simulate the C4
- * (Receiver Backend) reporting back to the AP after receiving a document via
- * async HTTP forwarding.
+ * Trigger async callbacks to phoss-ap. This controller lets you simulate the C4 (Receiver Backend)
+ * reporting back to the AP after receiving a document via async HTTP forwarding.
  * <p>
- * Calls phoss-ap's {@code POST /api/inbound/report} endpoint with the SBDH
- * Instance ID and C4 country code.
+ * Calls phoss-ap's {@code POST /api/inbound/report} endpoint with the SBDH Instance ID and C4
+ * country code.
  * </p>
  *
  * @author Philip Helger
@@ -60,14 +59,12 @@ public class CallbackController
   }
 
   /**
-   * Trigger the C4 country code callback to phoss-ap for a specific SBDH
-   * Instance ID.
+   * Trigger the C4 country code callback to phoss-ap for a specific SBDH Instance ID.
    *
    * @param sSbdhInstanceID
    *        The SBDH Instance Identifier of the inbound transaction.
    * @param sC4CountryCode
-   *        The C4 country code. Defaults to the configured default if not
-   *        provided.
+   *        The C4 country code. Defaults to the configured default if not provided.
    * @return Status of the callback invocation.
    */
   @PostMapping ("/report")

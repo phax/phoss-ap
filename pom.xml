@@ -55,7 +55,6 @@
     <awssdk.version>2.42.13</awssdk.version>
     <failsafe.version>3.3.2</failsafe.version>
     <flyway.version>12.1.0</flyway.version>
-    <jackson.version>2.21.1</jackson.version>
     <jaxb-impl.version>4.0.6</jaxb-impl.version>
     <log4j.version>2.25.3</log4j.version>
     <postgres.version>42.7.10</postgres.version>

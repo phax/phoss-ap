@@ -53,7 +53,7 @@
 
     <!-- External dependency versions -->
     <awssdk.version>2.42.13</awssdk.version>
-    <commons-compression.version>1.26.0</commons-compression.version>
+    <commons-compression.version>1.28.0</commons-compression.version>
     <failsafe.version>3.3.2</failsafe.version>
     <flyway.version>12.1.0</flyway.version>
     <jackson.version>3.1.0</jackson.version>

@@ -71,7 +71,7 @@
     <peppol-ap-support.version>2.1.1</peppol-ap-support.version>
     <peppol-commons.version>12.3.12</peppol-commons.version>
     <peppol-reporting.version>4.1.1</peppol-reporting.version>
-    <phase4.version>4.3.2</phase4.version>
+    <phase4.version>4.4.0</phase4.version>
     <ph-db.version>8.1.2</ph-db.version>
   </properties>
 

@@ -62,16 +62,16 @@
     <log4j.version>2.25.3</log4j.version>
     <postgres.version>42.7.10</postgres.version>
     <sentry.version>8.35.0</sentry.version>
-    <spring-boot.version>4.0.3</spring-boot.version>
+    <spring-boot.version>4.0.4</spring-boot.version>
 
     <ph-commons.version>12.1.5</ph-commons.version>
     <ph-web.version>11.2.4</ph-web.version>
     <phive.version>12.0.1</phive.version>
     <ph-oton.version>10.2.2</ph-oton.version>
     <peppol-ap-support.version>2.1.1</peppol-ap-support.version>
-    <peppol-commons.version>12.3.12</peppol-commons.version>
+    <peppol-commons.version>12.4.0</peppol-commons.version>
     <peppol-reporting.version>4.1.1</peppol-reporting.version>
-    <phase4.version>4.4.0</phase4.version>
+    <phase4.version>4.4.1</phase4.version>
     <ph-db.version>8.1.2</ph-db.version>
   </properties>
 

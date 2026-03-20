@@ -64,7 +64,6 @@
     <dependency>
       <groupId>com.helger.peppol</groupId>
       <artifactId>peppol-reporting-backend-sql</artifactId>
-      <version>${peppol-reporting.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

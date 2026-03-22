@@ -170,7 +170,7 @@ public class HttpForwardingController
       {
         // Make sure sync response is received first
         Thread.sleep (100);
-        m_aSvc.sendCountryC4Back (aSBD.getInstanceIdentifier (), "AT");
+        m_aSvc.sendCountryC4Back (aSBD.getInstanceIdentifier (), m_sDefaultCountryCode);
       }
       catch (final Exception ex)
       {

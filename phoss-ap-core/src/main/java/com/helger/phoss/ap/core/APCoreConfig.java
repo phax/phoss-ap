@@ -417,6 +417,16 @@ public final class APCoreConfig
   }
 
   /**
+   * @return The number of transactions to archive per scheduler cycle. Default is {@code 100}.
+   */
+  @Nonnegative
+  public static int getArchivalSchedulerBatchSize ()
+  {
+    return _getConfig ().getAsInt (APConfigurationProperties.ARCHIVAL_SCHEDULER_BATCH_SIZE,
+                                   APConfigurationProperties.ARCHIVAL_SCHEDULER_BATCH_SIZE_DEFAULT);
+  }
+
+  /**
    * @return {@code true} if startup recovery of in-flight transactions is enabled.
    */
   public static boolean isStartupRecoveryEnabled ()

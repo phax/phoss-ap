@@ -22,6 +22,8 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.helger.annotation.Nonnegative;
+import com.helger.base.exception.InitializationException;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
@@ -37,21 +39,20 @@ import com.helger.phoss.ap.db.APJdbcMetaManager;
 public final class ArchivalScheduler
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalScheduler.class);
-  private static final int BATCH_SIZE = 100;
 
   private static Timer s_aTimer;
 
   private ArchivalScheduler ()
   {}
 
-  private static void _archiveOutbound ()
+  private static void _archiveOutbound (@Nonnegative final int nBatchSize)
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
 
     try
     {
-      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (BATCH_SIZE);
+      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
       if (aTransactions.isNotEmpty ())
       {
         LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
@@ -73,14 +74,14 @@ public final class ArchivalScheduler
     }
   }
 
-  private static void _archiveInbound ()
+  private static void _archiveInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
 
     try
     {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (BATCH_SIZE);
+      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
       if (aTransactions.isNotEmpty ())
       {
         LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
@@ -114,17 +115,24 @@ public final class ArchivalScheduler
       return;
     }
 
-    final long nIntervalMs = APCoreConfig.getArchivalSchedulerIntervalMs ();
-    LOGGER.info ("Starting phoss AP archival scheduler with interval " + nIntervalMs + " ms");
+    final int nBatchSize = APCoreConfig.getArchivalSchedulerBatchSize ();
+    if (nBatchSize < 1)
+      throw new InitializationException ("The archival scheduler batch size must be >= 1, but is " + nBatchSize);
 
-    s_aTimer = new Timer ("ap-archival-scheduler", true);
+    final long nIntervalMs = APCoreConfig.getArchivalSchedulerIntervalMs ();
+    LOGGER.info ("Starting phoss AP archival scheduler with interval " +
+                 nIntervalMs +
+                 " ms and batch size " +
+                 nBatchSize);
+
+    s_aTimer = new Timer ("phoss-ap-archival-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()
     {
       @Override
       public void run ()
       {
-        _archiveOutbound ();
-        _archiveInbound ();
+        _archiveOutbound (nBatchSize);
+        _archiveInbound (nBatchSize);
       }
     }, nIntervalMs, nIntervalMs);
   }

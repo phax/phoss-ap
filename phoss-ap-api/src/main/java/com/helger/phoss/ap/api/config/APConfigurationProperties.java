@@ -136,6 +136,8 @@ public final class APConfigurationProperties
   public static final boolean ARCHIVAL_SCHEDULER_ENABLED_DEFAULT = true;
   public static final String ARCHIVAL_SCHEDULER_INTERVAL_MS = "archival.scheduler.interval.ms";
   public static final long ARCHIVAL_SCHEDULER_INTERVAL_MS_DEFAULT = 3_600_000L;
+  public static final String ARCHIVAL_SCHEDULER_BATCH_SIZE = "archival.scheduler.batch-size";
+  public static final int ARCHIVAL_SCHEDULER_BATCH_SIZE_DEFAULT = 100;
 
   // Document storage
   public static final String STORAGE_MODE = "storage.mode";

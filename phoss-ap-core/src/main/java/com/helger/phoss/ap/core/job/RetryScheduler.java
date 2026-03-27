@@ -138,7 +138,7 @@ public final class RetryScheduler
     final long nIntervalMs = APCoreConfig.getRetrySchedulerIntervalMs ();
     LOGGER.info ("Starting phoss AP retry scheduler with interval " + nIntervalMs + " ms");
 
-    s_aTimer = new Timer ("ap-retry-scheduler", true);
+    s_aTimer = new Timer ("phoss-ap-retry-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()
     {
       @Override

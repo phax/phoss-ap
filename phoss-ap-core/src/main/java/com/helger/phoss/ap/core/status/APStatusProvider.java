@@ -69,14 +69,14 @@ public final class APStatusProvider
 
     final IJsonObject aStatusData = new JsonObject ();
 
-    // Build information
-    aStatusData.add ("build.version", CPhossAPVersion.BUILD_VERSION);
-    aStatusData.add ("build.timestamp", CPhossAPVersion.BUILD_TIMESTAMP);
-
     // Runtime
     aStatusData.addIfNotNull ("startup.datetime", _formatDT (APServletInit.getStartupDateTime ()));
     aStatusData.add ("status.datetime", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format (aNow));
     aStatusData.add ("version.java", SystemProperties.getJavaVersion ());
+
+    // Build information
+    aStatusData.add ("build.version", CPhossAPVersion.BUILD_VERSION);
+    aStatusData.add ("build.timestamp", CPhossAPVersion.BUILD_TIMESTAMP);
 
     // Library versions
     aStatusData.add ("version.peppol-commons", CPeppolCommonsVersion.BUILD_VERSION);
@@ -119,6 +119,9 @@ public final class APStatusProvider
     // Duplicate detection
     aStatusData.add ("duplicate.detection.as4.mode", APCoreConfig.getDuplicateDetectionAS4Mode ().getID ());
     aStatusData.add ("duplicate.detection.sbdh.mode", APCoreConfig.getDuplicateDetectionSBDHMode ().getID ());
+
+    // Sentry configuration
+    aStatusData.add ("sentry.enabled", APConfigProvider.getConfig ().containsNonNullValue ("sentry.dsn"));
 
     return aStatusData;
   }

@@ -743,10 +743,11 @@ public final class OutboundOrchestrator
             aSendingReport.setOverallSuccess (false);
 
             // Call after any Sending Report modifications
+            final String sErrorMsg = ex != null ? ex.getMessage () : "Error in AS4 sending with result code " + eResult;
             if (nNewAttemptCount >= APCoreConfig.getRetrySendingMaxAttempts ())
-              onPermanentFailure.accept (ex.getMessage ());
+              onPermanentFailure.accept (sErrorMsg);
             else
-              onFailed.accept (ex.getMessage ());
+              onFailed.accept (sErrorMsg);
           }
           else
           {

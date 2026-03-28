@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.xbill.DNS.ResolverConfig;
 
 import com.helger.annotation.concurrent.ThreadSafe;
 import com.helger.annotation.style.ReturnsMutableCopy;
@@ -122,6 +123,9 @@ public final class APStatusProvider
 
     // Sentry configuration
     aStatusData.add ("sentry.enabled", APConfigProvider.getConfig ().containsNonNullValue ("sentry.dsn"));
+
+    // DNS configuration
+    aStatusData.add ("dns.config.servers", ResolverConfig.getCurrentConfig ().servers ());
 
     return aStatusData;
   }

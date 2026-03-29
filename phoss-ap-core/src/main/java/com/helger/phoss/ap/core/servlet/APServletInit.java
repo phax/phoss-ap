@@ -45,7 +45,6 @@ import com.helger.phase4.config.AS4Configuration;
 import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
 import com.helger.phase4.crypto.AS4CryptoFactoryInMemoryKeyStore;
 import com.helger.phase4.dump.AS4DumpManager;
-import com.helger.phase4.dump.AS4IncomingDumperFileBased;
 import com.helger.phase4.dump.AS4OutgoingDumperFileBased;
 import com.helger.phase4.incoming.AS4ServerInitializer;
 import com.helger.phase4.incoming.mgr.AS4ProfileSelector;
@@ -65,6 +64,7 @@ import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.StartupRecovery;
 import com.helger.phoss.ap.core.dump.AS4GroupedExchangeDumper;
+import com.helger.phoss.ap.core.dump.AS4IncomingDumperWithMetadata;
 import com.helger.phoss.ap.core.job.ArchivalScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -173,7 +173,7 @@ public class APServletInit
       {
         case DIRECTION ->
         {
-          AS4DumpManager.setIncomingDumper (new AS4IncomingDumperFileBased ());
+          AS4DumpManager.setIncomingDumper (new AS4IncomingDumperWithMetadata ());
           AS4DumpManager.setOutgoingDumper (new AS4OutgoingDumperFileBased ());
           LOGGER.info ("AS4 message dumping enabled to '" + sDumpPath + "'");
         }

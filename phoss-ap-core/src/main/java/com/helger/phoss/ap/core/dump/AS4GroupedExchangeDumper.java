@@ -19,8 +19,8 @@ package com.helger.phoss.ap.core.dump;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
@@ -32,14 +32,16 @@ import com.helger.annotation.Nonempty;
 import com.helger.annotation.Nonnegative;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.string.StringHelper;
-import com.helger.collection.commons.ICommonsList;
 import com.helger.http.CHttp;
 import com.helger.http.header.HttpHeaderMap;
 import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.FilenameHelper;
+import com.helger.io.file.SimpleFileIO;
+import com.helger.json.serialize.JsonWriterSettings;
 import com.helger.phase4.dump.IAS4IncomingDumper;
 import com.helger.phase4.dump.IAS4OutgoingDumper;
+import com.helger.phase4.incoming.AS4IncomingHelper;
 import com.helger.phase4.incoming.IAS4IncomingMessageMetadata;
 import com.helger.phase4.incoming.IAS4IncomingMessageState;
 import com.helger.phase4.messaging.EAS4MessageMode;
@@ -81,6 +83,8 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
   private final File m_aBaseDir;
   /** Maps outgoing AS4 Message ID to its grouped directory (scenario b). */
   private final ConcurrentHashMap <String, File> m_aOutboundDirs = new ConcurrentHashMap <> ();
+  /** Maps incoming unique ID to its grouped directory (scenario a) — for metadata writing. */
+  private final ConcurrentHashMap <String, File> m_aInboundDirs = new ConcurrentHashMap <> ();
 
   /**
    * Constructor.
@@ -121,7 +125,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
 
     if (aHeaders != null && aHeaders.isNotEmpty ())
     {
-      for (final Map.Entry <String, ICommonsList <String>> aEntry : aHeaders)
+      for (final var aEntry : aHeaders)
       {
         final String sKey = aEntry.getKey ();
         for (final String sValue : aEntry.getValue ())
@@ -135,6 +139,16 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
       aOS.write (CHttp.EOL.getBytes (CHttp.HTTP_CHARSET));
     }
     return aOS;
+  }
+
+  private static void _writeMetadataJson (@NonNull final File aDir,
+                                          @NonNull final IAS4IncomingMessageMetadata aMessageMetadata)
+  {
+    final File aFile = new File (aDir, "metadata.json");
+    final String sJson = AS4IncomingHelper.getIncomingMetadataAsJson (aMessageMetadata)
+                                          .getAsJsonString (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED);
+    if (SimpleFileIO.writeFile (aFile, sJson, StandardCharsets.UTF_8).isFailure ())
+      LOGGER.error ("Failed to write metadata to '" + aFile.getAbsolutePath () + "'");
   }
 
   // --- IAS4IncomingDumper ---
@@ -152,6 +166,9 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
       final String sDirName = FilenameHelper.getAsSecureValidASCIIFilename (aMessageMetadata.getIncomingUniqueID ());
       final File aDir = new File (_getDateDir (aMessageMetadata.getIncomingDT ()), sDirName);
       FileOperationManager.INSTANCE.createDirRecursiveIfNotExisting (aDir);
+
+      // Remember for metadata writing in onEndRequest
+      m_aInboundDirs.put (aMessageMetadata.getIncomingUniqueID (), aDir);
 
       return _openAndWriteHeaders (new File (aDir, "usermessage.as4in"), aHttpHeaderMap);
     }
@@ -180,11 +197,16 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
   public void onEndRequest (@NonNull final IAS4IncomingMessageMetadata aMessageMetadata,
                             @Nullable final Exception aCaughtException)
   {
-    if (aMessageMetadata.getMode ().isResponse ())
+    if (aMessageMetadata.getMode ().isRequest ())
     {
-      // Response mode
-
-      // Cleanup the outbound directory mapping
+      // Request mode — write metadata JSON for incoming UserMessage (scenario a)
+      final File aDir = m_aInboundDirs.remove (aMessageMetadata.getIncomingUniqueID ());
+      if (aDir != null)
+        _writeMetadataJson (aDir, aMessageMetadata);
+    }
+    else
+    {
+      // Response mode — cleanup the outbound directory mapping
       final String sRequestMsgID = aMessageMetadata.getRequestMessageID ();
       if (StringHelper.isNotEmpty (sRequestMsgID))
         m_aOutboundDirs.remove (sRequestMsgID);

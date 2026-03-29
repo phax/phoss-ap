@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.concurrent.Immutable;
+import com.helger.annotation.style.VisibleForTesting;
 import com.helger.base.string.StringHelper;
 import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
@@ -76,7 +77,8 @@ public final class DirectoryFileProcessor
    * @return The moved file, or <code>null</code> if the move failed.
    */
   @Nullable
-  private static File _moveFileToDir (@NonNull final File aFile, @NonNull final File aTargetDir)
+  @VisibleForTesting
+  static File _moveFileToDir (@NonNull final File aFile, @NonNull final File aTargetDir)
   {
     final String sBaseName = FilenameHelper.getBaseName (aFile.getName ());
     final String sExtension = FilenameHelper.getExtension (aFile.getName ());
@@ -107,9 +109,10 @@ public final class DirectoryFileProcessor
    * @param aJson
    *        The JSON object to write. May not be <code>null</code>.
    */
-  private static void _writeResultJson (@NonNull final File aTargetDir,
-                                        @NonNull final String sTargetFilename,
-                                        @NonNull final IJsonObject aJson)
+  @VisibleForTesting
+  static void _writeResultJson (@NonNull final File aTargetDir,
+                                @NonNull final String sTargetFilename,
+                                @NonNull final IJsonObject aJson)
   {
     final File aJsonFile = new File (aTargetDir, sTargetFilename);
     final String sJson = new JsonWriter (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED).writeAsString (aJson);
@@ -126,7 +129,8 @@ public final class DirectoryFileProcessor
    * @return The SBDH Instance Identifier, or <code>null</code> if parsing failed.
    */
   @Nullable
-  private static String _parseSbdhInstanceID (@NonNull final File aFile)
+  @VisibleForTesting
+  static String _parseSbdhInstanceID (@NonNull final File aFile)
   {
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
     try (final InputStream aIS = FileHelper.getBufferedInputStream (aFile))

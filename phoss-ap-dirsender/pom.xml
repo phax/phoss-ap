@@ -46,6 +46,16 @@
     </dependency>
 
     <dependency>
+      <groupId>com.helger.peppol</groupId>
+      <artifactId>peppol-testfiles</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>

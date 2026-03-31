@@ -105,7 +105,8 @@ public final class MlsHandler
                    " (FAILURE_ONLY, outcome=" +
                    eResponseCode.getID () +
                    ")");
-      return aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, null);
+      final String sMlsOutboundTransactionID = null;
+      return aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsOutboundTransactionID);
     }
 
     LOGGER.info ("Creating MLS response (" +

@@ -24,12 +24,15 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Test;
 
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
+
+import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
 /**
  * Test class for class {@link MlsOutcome}.
@@ -112,6 +115,14 @@ public final class MlsOutcomeTest
     final MlsOutcome a = MlsOutcome.rejection ("Failed", aIssue);
     final PeppolMLSBuilder aBuilder = a.getAsMLSBuilder ();
     assertNotNull (aBuilder);
+
+    final ApplicationResponseType aMls = aBuilder.randomID ()
+                                                 .issueDateTimeNow ()
+                                                 .senderParticipantID ("9915:phoss-ap-test-sender")
+                                                 .receiverParticipantID ("0242:123456")
+                                                 .referenceId (UUID.randomUUID ().toString ())
+                                                 .build ();
+    assertNotNull (aMls);
   }
 
   @Test

@@ -211,7 +211,8 @@ public interface IInboundTransaction extends IHasID <String>
 
   /**
    * @return The MLS_TO target participant ID (from SBDH extension), or <code>null</code> if not
-   *         set. Only present if the MLS_TO was valid and according to the rules.
+   *         set. Only present if the MLS_TO was valid and according to the rules. Contains the
+   *         meta-scheme, scheme and value if present.
    */
   @Nullable
   String getMlsTo ();

@@ -19,6 +19,7 @@ package com.helger.phoss.ap.basic.mgr;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -139,6 +140,12 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
 
     final S3ClientBuilder aBuilder = S3Client.builder ().region (aRegion);
 
+    final String sEndpoint = APBasicConfig.getStorageS3Endpoint ();
+    if (StringHelper.isNotEmpty (sEndpoint))
+      aBuilder.endpointOverride (URI.create (sEndpoint));
+    if (APBasicConfig.isStorageS3PathStyleAccess ())
+      aBuilder.forcePathStyle (Boolean.TRUE);
+
     final String sAccessKeyID = APBasicConfig.getStorageS3AccessKeyID ();
     final String sSecretAccessKey = APBasicConfig.getStorageS3SecretAccessKey ();
     if (StringHelper.isNotEmpty (sAccessKeyID) && StringHelper.isNotEmpty (sSecretAccessKey))
@@ -148,7 +155,8 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     }
 
     m_aS3Client = aBuilder.build ();
-    LOGGER.info ("S3 DocumentPayloadManager initialized with region '" + sRegion + "' and bucket '" + m_sBucket + "'");
+    LOGGER.info ("S3 DocumentPayloadManager initialized with region '" + sRegion + "' and bucket '" + m_sBucket + "'" +
+                 (sEndpoint != null ? " (endpoint: " + sEndpoint + ")" : ""));
   }
 
   public void verifyConfiguration ()

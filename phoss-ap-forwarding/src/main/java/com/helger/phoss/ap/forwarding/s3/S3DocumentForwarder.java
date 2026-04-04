@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.forwarding.s3;
 
+import java.net.URI;
+
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,8 @@ public class S3DocumentForwarder implements IDocumentForwarder
   private String m_sAccessKeyId;
   private String m_sSecretAccessKey;
   private String m_sKeyPrefix;
+  private String m_sEndpoint;
+  private boolean m_bPathStyleAccess;
 
   /** {@inheritDoc} */
   @NonNull
@@ -76,6 +80,9 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
     m_sAccessKeyId = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_ACCESS_KEY_ID);
     m_sSecretAccessKey = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_SECRET_ACCESS_KEY);
+    m_sEndpoint = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_ENDPOINT);
+    m_bPathStyleAccess = aConfig.getAsBoolean (APConfigurationProperties.FORWARDING_S3_PATH_STYLE_ACCESS,
+                                                APConfigurationProperties.FORWARDING_S3_PATH_STYLE_ACCESS_DEFAULT);
 
     m_sKeyPrefix = aConfig.getAsString (APConfigurationProperties.FORWARDING_S3_KEY_PREFIX);
     if (StringHelper.isNotEmpty (m_sKeyPrefix))
@@ -97,6 +104,10 @@ public class S3DocumentForwarder implements IDocumentForwarder
     try
     {
       final S3ClientBuilder aBuilder = S3Client.builder ().region (m_aRegion);
+      if (StringHelper.isNotEmpty (m_sEndpoint))
+        aBuilder.endpointOverride (URI.create (m_sEndpoint));
+      if (m_bPathStyleAccess)
+        aBuilder.forcePathStyle (Boolean.TRUE);
       if (StringHelper.isNotEmpty (m_sAccessKeyId) && StringHelper.isNotEmpty (m_sSecretAccessKey))
       {
         aBuilder.credentialsProvider (StaticCredentialsProvider.create (AwsBasicCredentials.create (m_sAccessKeyId,

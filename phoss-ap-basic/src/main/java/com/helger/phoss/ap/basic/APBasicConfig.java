@@ -129,6 +129,26 @@ public final class APBasicConfig
   }
 
   /**
+   * @return The optional custom S3 endpoint URL for S3-compatible providers (e.g. MinIO,
+   *         Garage). May be <code>null</code> for standard AWS S3.
+   */
+  @Nullable
+  public static String getStorageS3Endpoint ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_S3_ENDPOINT);
+  }
+
+  /**
+   * @return <code>true</code> if S3 path-style access should be used instead of virtual-hosted
+   *         style. Required by most S3-compatible providers.
+   */
+  public static boolean isStorageS3PathStyleAccess ()
+  {
+    return _getConfig ().getAsBoolean (APConfigurationProperties.STORAGE_S3_PATH_STYLE_ACCESS,
+                                       APConfigurationProperties.STORAGE_S3_PATH_STYLE_ACCESS_DEFAULT);
+  }
+
+  /**
    * @return The configured Peppol identifier mode (strict or lax). Never <code>null</code>.
    */
   @NonNull

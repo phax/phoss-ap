@@ -17,6 +17,7 @@
 package com.helger.phoss.ap.webapp.controller;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
@@ -545,6 +546,11 @@ public class OutboundController
     // Build S3 client for the sender's bucket
 
     final S3ClientBuilder aS3Builder = S3Client.builder ().region (aRegion);
+    final String sOutboundEndpoint = APCoreConfig.getOutboundS3Endpoint ();
+    if (StringHelper.isNotEmpty (sOutboundEndpoint))
+      aS3Builder.endpointOverride (URI.create (sOutboundEndpoint));
+    if (APCoreConfig.isOutboundS3PathStyleAccess ())
+      aS3Builder.forcePathStyle (Boolean.TRUE);
     final String sAccessKeyID = APCoreConfig.getOutboundS3AccessKeyID ();
     final String sSecretAccessKey = APCoreConfig.getOutboundS3SecretAccessKey ();
     if (StringHelper.isNotEmpty (sAccessKeyID) && StringHelper.isNotEmpty (sSecretAccessKey))

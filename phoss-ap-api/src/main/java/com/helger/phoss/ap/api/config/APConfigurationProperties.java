@@ -77,6 +77,9 @@ public final class APConfigurationProperties
   public static final String FORWARDING_S3_ACCESS_KEY_ID = "forwarding.s3.access-key-id";
   public static final String FORWARDING_S3_SECRET_ACCESS_KEY = "forwarding.s3.secret-access-key";
   public static final String FORWARDING_S3_KEY_PREFIX = "forwarding.s3.key-prefix";
+  public static final String FORWARDING_S3_ENDPOINT = "forwarding.s3.endpoint";
+  public static final String FORWARDING_S3_PATH_STYLE_ACCESS = "forwarding.s3.path-style-access";
+  public static final boolean FORWARDING_S3_PATH_STYLE_ACCESS_DEFAULT = false;
 
   // Forwarding - Filesystem (since 0.2.0)
   public static final String FORWARDING_FILESYSTEM_DIRECTORY = "forwarding.filesystem.directory";
@@ -164,6 +167,9 @@ public final class APConfigurationProperties
   public static final String STORAGE_S3_BUCKET = "storage.s3.bucket";
   public static final String STORAGE_S3_ACCESS_KEY_ID = "storage.s3.access-key-id";
   public static final String STORAGE_S3_SECRET_ACCESS_KEY = "storage.s3.secret-access-key";
+  public static final String STORAGE_S3_ENDPOINT = "storage.s3.endpoint";
+  public static final String STORAGE_S3_PATH_STYLE_ACCESS = "storage.s3.path-style-access";
+  public static final boolean STORAGE_S3_PATH_STYLE_ACCESS_DEFAULT = false;
 
   // Outbound S3 submission (sender uploads to S3, AP fetches) (since 0.1.1)
   public static final String OUTBOUND_S3_ENABLED = "outbound.s3.enabled";
@@ -172,6 +178,9 @@ public final class APConfigurationProperties
   public static final String OUTBOUND_S3_BUCKET = "outbound.s3.bucket";
   public static final String OUTBOUND_S3_ACCESS_KEY_ID = "outbound.s3.access-key-id";
   public static final String OUTBOUND_S3_SECRET_ACCESS_KEY = "outbound.s3.secret-access-key";
+  public static final String OUTBOUND_S3_ENDPOINT = "outbound.s3.endpoint";
+  public static final String OUTBOUND_S3_PATH_STYLE_ACCESS = "outbound.s3.path-style-access";
+  public static final boolean OUTBOUND_S3_PATH_STYLE_ACCESS_DEFAULT = false;
 
   // Directory sender (since 0.2.0)
   public static final String DIRSENDER_ENABLED = "dirsender.enabled";

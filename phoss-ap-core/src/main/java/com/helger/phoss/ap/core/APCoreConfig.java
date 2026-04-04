@@ -397,6 +397,26 @@ public final class APCoreConfig
   }
 
   /**
+   * @return The optional custom S3 endpoint URL for the outbound sender bucket. May be
+   *         <code>null</code> for standard AWS S3.
+   */
+  @Nullable
+  public static String getOutboundS3Endpoint ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_S3_ENDPOINT);
+  }
+
+  /**
+   * @return <code>true</code> if S3 path-style access should be used for the outbound sender
+   *         bucket.
+   */
+  public static boolean isOutboundS3PathStyleAccess ()
+  {
+    return _getConfig ().getAsBoolean (APConfigurationProperties.OUTBOUND_S3_PATH_STYLE_ACCESS,
+                                       APConfigurationProperties.OUTBOUND_S3_PATH_STYLE_ACCESS_DEFAULT);
+  }
+
+  /**
    * @return {@code true} if outbound document verification via SPI is enabled.
    */
   public static boolean isVerificationOutboundEnabled ()

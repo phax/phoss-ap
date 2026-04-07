@@ -45,13 +45,14 @@ public final class APJdbcConfigurationTest
   {
     final APJdbcConfiguration aJdbcConfig = new APJdbcConfiguration (APConfigProvider.getConfig ());
 
-    // Values from test application.properties
-    assertSame (EDatabaseSystemType.POSTGRESQL, aJdbcConfig.getJdbcDatabaseSystemType ());
-    assertEquals ("org.postgresql.Driver", aJdbcConfig.getJdbcDriver ());
-    assertEquals ("jdbc:postgresql://localhost:5432/phoss-ap", aJdbcConfig.getJdbcUrl ());
-    assertEquals ("peppol", aJdbcConfig.getJdbcUser ());
-    assertEquals ("peppol", aJdbcConfig.getJdbcPassword ());
-    assertEquals ("ap-test", aJdbcConfig.getJdbcSchema ());
+    // Values from test application.properties (in-memory H2)
+    assertSame (EDatabaseSystemType.H2, aJdbcConfig.getJdbcDatabaseSystemType ());
+    assertEquals ("org.h2.Driver", aJdbcConfig.getJdbcDriver ());
+    assertEquals ("jdbc:h2:mem:phoss_ap_test;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1",
+                  aJdbcConfig.getJdbcUrl ());
+    assertEquals ("sa", aJdbcConfig.getJdbcUser ());
+    assertEquals ("", aJdbcConfig.getJdbcPassword ());
+    assertEquals ("ap_test", aJdbcConfig.getJdbcSchema ());
 
     // Boolean / numeric properties return their defined defaults (not set in
     // test properties)

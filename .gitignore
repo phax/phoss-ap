@@ -9,3 +9,4 @@ application-private.properties
 zz
 
 *.p12
+.idea/

@@ -52,8 +52,9 @@ import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.scope.mock.ScopeTestRule;
 
 /**
- * Integration tests for all JDBC managers. Uses a real PostgreSQL database. All tests share a
- * single scope/connection to avoid issues with the static DataSourceProvider in APDBExecutor.
+ * Integration tests for all JDBC managers. Uses in-memory H2 with {@code db/migrate-h2} (kept in
+ * sync with {@code db/migrate-postgresql}). All tests share a single scope/connection to avoid
+ * issues with the static DataSourceProvider in APDBExecutor.
  *
  * @author Philip Helger
  */

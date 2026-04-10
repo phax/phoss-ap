@@ -52,14 +52,15 @@
     <maven.compiler.release>21</maven.compiler.release>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.42.29</awssdk.version>
+    <awssdk.version>2.42.30</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
     <flyway.version>12.3.0</flyway.version>
     <h2.version>2.4.240</h2.version>
-    <jackson.version>3.1.0</jackson.version>
-    <jaxb-impl.version>4.0.7</jaxb-impl.version>
+    <jackson.version>3.1.1</jackson.version>
+    <!-- 4.0.7 has a regression -->
+    <jaxb-impl.version>4.0.6</jaxb-impl.version>
     <log4j.version>2.25.4</log4j.version>
     <mysql.version>9.6.0</mysql.version>
     <postgres.version>42.7.10</postgres.version>
@@ -70,10 +71,10 @@
     <ph-db.version>8.1.3</ph-db.version>
     <ph-web.version>11.2.5</ph-web.version>
     <ph-oton.version>10.2.2</ph-oton.version>
-    <peppol-commons.version>12.4.0</peppol-commons.version>
+    <peppol-commons.version>12.4.1</peppol-commons.version>
     <phive.version>12.0.2</phive.version>
     <phase4.version>4.4.2</phase4.version>
-    <ddd.version>0.8.3</ddd.version>
+    <ddd.version>0.8.5</ddd.version>
     <peppol-reporting.version>4.1.2</peppol-reporting.version>
     <peppol-ap-support.version>2.1.2</peppol-ap-support.version>
   </properties>

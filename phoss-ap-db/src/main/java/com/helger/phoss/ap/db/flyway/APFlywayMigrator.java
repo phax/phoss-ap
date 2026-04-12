@@ -115,6 +115,11 @@ public final class APFlywayMigrator
 
     aFlywayConfig.createSchemas (aFlywayCfg.isFlywaySchemaCreate ());
 
+    // Custom history table name?
+    final String sHistoryTable = aFlywayCfg.getFlywayHistoryTable ();
+    if (StringHelper.isNotEmpty (sHistoryTable))
+      aFlywayConfig.table (sHistoryTable);
+
     final Flyway aFlyway = aFlywayConfig.load ();
     aFlyway.migrate ();
 

@@ -49,6 +49,10 @@
       <artifactId>ph-db-jdbc</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.helger.db</groupId>
+      <artifactId>ph-db-flyway</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.helger.phoss.ap</groupId>
       <artifactId>phoss-ap-api</artifactId>
     </dependency>

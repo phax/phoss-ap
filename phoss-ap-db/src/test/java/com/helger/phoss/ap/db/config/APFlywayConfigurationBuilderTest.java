@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.helger.db.api.flyway.FlywayConfiguration;
+import com.helger.db.flyway.FlywayConfiguration;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.scope.mock.ScopeTestRule;
 

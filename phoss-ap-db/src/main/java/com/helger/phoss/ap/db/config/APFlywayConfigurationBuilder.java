@@ -21,7 +21,7 @@ import org.jspecify.annotations.NonNull;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.config.IConfig;
 import com.helger.db.api.config.IJdbcConfiguration;
-import com.helger.db.api.flyway.FlywayConfigurationBuilderConfig;
+import com.helger.db.flyway.FlywayConfigurationBuilderConfig;
 
 /**
  * The specific Flyway Configuration builder for phoss AP.

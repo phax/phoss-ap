@@ -16,24 +16,15 @@
  */
 package com.helger.phoss.ap.db.flyway;
 
-import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.MigrationInfo;
-import org.flywaydb.core.api.callback.BaseCallback;
 import org.flywaydb.core.api.callback.Callback;
-import org.flywaydb.core.api.callback.Context;
-import org.flywaydb.core.api.callback.Event;
-import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.flywaydb.core.api.resolver.ResolvedMigration;
-import org.flywaydb.core.internal.info.MigrationInfoImpl;
-import org.flywaydb.core.internal.jdbc.DriverDataSource;
+import org.flywaydb.core.api.migration.JavaMigration;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.helger.base.string.StringHelper;
 import com.helger.db.api.config.IJdbcConfiguration;
-import com.helger.db.api.flyway.IFlywayConfiguration;
+import com.helger.db.flyway.FlywayMigrationRunner;
+import com.helger.db.flyway.IFlywayConfiguration;
 
 /**
  * Utility class for running Flyway database migrations for the AP.
@@ -65,64 +56,10 @@ public final class APFlywayMigrator
       return;
     }
 
-    LOGGER.info ("Starting Flyway migration for " + aJdbcConfig.getJdbcDatabaseSystemType ().getDisplayName ());
-
-    final Callback aCallbackLogging = new BaseCallback ()
-    {
-      @Override
-      public boolean supports (@NonNull final Event aEvent, @Nullable final Context aContext)
-      {
-        // Deprecated by Flyway itself - just to avoid warnings
-        if (aEvent == Event.CREATE_SCHEMA)
-          return false;
-        return super.supports (aEvent, aContext);
-      }
-
-      public void handle (@NonNull final Event aEvent, @Nullable final Context aContext)
-      {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Flyway: Event " + aEvent.getId ());
-
-        if (aEvent == Event.AFTER_EACH_MIGRATE && aContext != null)
-        {
-          final MigrationInfo aMI = aContext.getMigrationInfo ();
-          if (aMI instanceof final MigrationInfoImpl aMII)
-          {
-            final ResolvedMigration aRM = aMII.getResolvedMigration ();
-            if (aRM != null)
-              LOGGER.info ("  Performed migration: " + aRM);
-          }
-        }
-      }
-    };
-
-    final FluentConfiguration aFlywayConfig = Flyway.configure ()
-                                                    .dataSource (new DriverDataSource (APFlywayMigrator.class.getClassLoader (),
-                                                                                       aJdbcConfig.getJdbcDriver (),
-                                                                                       aFlywayCfg.getFlywayJdbcUrl (),
-                                                                                       aFlywayCfg.getFlywayJdbcUser (),
-                                                                                       aFlywayCfg.getFlywayJdbcPassword ()));
-
-    aFlywayConfig.baselineOnMigrate (true);
-    aFlywayConfig.validateOnMigrate (false);
-    aFlywayConfig.baselineVersion (Integer.toString (aFlywayCfg.getFlywayBaselineVersion ()));
-    aFlywayConfig.locations ("db/migrate-" + aJdbcConfig.getJdbcDatabaseSystemType ().getID ());
-    aFlywayConfig.callbacks (aCallbackLogging);
-
-    final String sSchema = aJdbcConfig.getJdbcSchema ();
-    if (StringHelper.isNotEmpty (sSchema))
-      aFlywayConfig.schemas (sSchema);
-
-    aFlywayConfig.createSchemas (aFlywayCfg.isFlywaySchemaCreate ());
-
-    // Custom history table name?
-    final String sHistoryTable = aFlywayCfg.getFlywayHistoryTable ();
-    if (StringHelper.isNotEmpty (sHistoryTable))
-      aFlywayConfig.table (sHistoryTable);
-
-    final Flyway aFlyway = aFlywayConfig.load ();
-    aFlyway.migrate ();
-
-    LOGGER.info ("Finished Flyway migration");
+    FlywayMigrationRunner.runFlyway (aJdbcConfig,
+                                     aFlywayCfg,
+                                     "db/phoss-ap-flyway-" + aJdbcConfig.getJdbcDatabaseSystemType ().getID (),
+                                     (JavaMigration []) null,
+                                     (Callback []) null);
   }
 }

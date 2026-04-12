@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.helger.phoss.ap</groupId>
     <artifactId>phoss-ap-parent-pom</artifactId>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>0.2.2</version>
   </parent>
   <artifactId>phoss-ap-validation</artifactId>
   <packaging>jar</packaging>

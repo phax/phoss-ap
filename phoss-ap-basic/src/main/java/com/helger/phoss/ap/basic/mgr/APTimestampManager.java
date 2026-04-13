@@ -33,14 +33,6 @@ public class APTimestampManager implements IAPTimestampManager
 {
   /** {@inheritDoc} */
   @NonNull
-  public OffsetDateTime getCurrentDateTime ()
-  {
-    // Use maximum precision
-    return PDTFactory.getCurrentOffsetDateTime ();
-  }
-
-  /** {@inheritDoc} */
-  @NonNull
   public OffsetDateTime getCurrentDateTimeUTC ()
   {
     // Use maximum precision

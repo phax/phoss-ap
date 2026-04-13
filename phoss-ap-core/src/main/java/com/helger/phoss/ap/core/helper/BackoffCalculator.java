@@ -59,6 +59,6 @@ public final class BackoffCalculator
     for (int i = 1; i < nAttemptCount; i++)
       nBackoffMs = (long) (nBackoffMs * dMultiplier);
     nBackoffMs = Math.min (nBackoffMs, nMaxBackoffMs);
-    return APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ().plusNanos (nBackoffMs * 1_000_000L);
+    return APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ().plusNanos (nBackoffMs * 1_000_000L);
   }
 }

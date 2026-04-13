@@ -33,18 +33,6 @@ import com.helger.base.concurrent.ThreadHelper;
 public final class APTimestampManagerTest
 {
   @Test
-  public void testGetCurrentDateTime ()
-  {
-    final var aTimestampMgr = new APTimestampManager ();
-    final OffsetDateTime aDT1 = aTimestampMgr.getCurrentDateTime ();
-    assertNotNull (aDT1);
-    ThreadHelper.sleep (10);
-    final OffsetDateTime aDT2 = aTimestampMgr.getCurrentDateTime ();
-    assertNotNull (aDT2);
-    assertTrue (aDT2.isAfter (aDT1));
-  }
-
-  @Test
   public void testGetCurrentDateTimeUTC ()
   {
     final var aTimestampMgr = new APTimestampManager ();

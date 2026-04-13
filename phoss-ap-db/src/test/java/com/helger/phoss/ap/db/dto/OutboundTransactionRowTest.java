@@ -49,7 +49,7 @@ public final class OutboundTransactionRowTest
   @NonNull
   private static DBResultRow _createValidRow ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     // 24 columns, matching OutboundTransactionRow constructor order
     // 0 id
@@ -153,7 +153,7 @@ public final class OutboundTransactionRowTest
   @Test
   public void testAllFieldsPopulated ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
     final OffsetDateTime aCompleted = aNow.plusMinutes (5);
     final OffsetDateTime aMlsReceived = aNow.plusMinutes (10);
 

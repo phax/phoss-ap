@@ -28,12 +28,6 @@ import org.jspecify.annotations.NonNull;
 public interface IAPTimestampManager
 {
   /**
-   * @return The current date in time in the current time zone. Never <code>null</code>.
-   */
-  @NonNull
-  OffsetDateTime getCurrentDateTime ();
-
-  /**
    * @return The current date in time in UTC. Never <code>null</code>.
    */
   @NonNull

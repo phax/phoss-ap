@@ -69,7 +69,7 @@ public final class StartupRecovery
         aOutboundMgr.updateStatusAndRetry (aTx.getID (),
                                            EOutboundStatus.FAILED,
                                            aTx.getAttemptCount (),
-                                           aTimestampMgr.getCurrentDateTime (),
+                                           aTimestampMgr.getCurrentDateTimeUTC (),
                                            "Recovered from unclean shutdown");
         nOutboundRecovered++;
       }
@@ -85,7 +85,7 @@ public final class StartupRecovery
         aInboundMgr.updateStatusAndRetry (aTx.getID (),
                                           EInboundStatus.FORWARD_FAILED,
                                           aTx.getAttemptCount (),
-                                          aTimestampMgr.getCurrentDateTime (),
+                                          aTimestampMgr.getCurrentDateTimeUTC (),
                                           "Recovered from unclean shutdown");
         nInboundRecovered++;
       }

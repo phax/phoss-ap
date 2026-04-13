@@ -44,7 +44,7 @@ public final class InboundForwardingAttemptRowTest
   @Test
   public void testAllFieldsMapped ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     // 6 columns matching InboundForwardingAttemptRow constructor order
     // 0 id
@@ -67,7 +67,7 @@ public final class InboundForwardingAttemptRowTest
   @Test
   public void testWithErrorDetails ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     final DBResultRow aRow = DBResultRowHelper.createRow ("fwd-002",
                                                           "ib-002",

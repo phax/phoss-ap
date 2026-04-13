@@ -51,6 +51,6 @@ public abstract class AbstractAPJdbcManager extends AbstractJDBCEnabledManager
   @NonNull
   protected final OffsetDateTime now ()
   {
-    return m_aTimestampMgr.getCurrentDateTime ();
+    return m_aTimestampMgr.getCurrentDateTimeUTC ();
   }
 }

@@ -31,7 +31,6 @@ import com.helger.base.timing.StopWatch;
 import com.helger.base.wrapper.Wrapper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
-import com.helger.datetime.helper.PDTFactory;
 import com.helger.peppol.reporting.api.CPeppolReporting;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
@@ -87,7 +86,7 @@ public final class APPeppolReportHelper
     final int nRealYear = Math.max (nYear, 2024);
     final int nRealMonth = Math.min (Math.max (nMonth, 1), 12);
 
-    final LocalDate aNow = PDTFactory.getCurrentLocalDate ();
+    final LocalDate aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ().toLocalDate ();
     if (nRealYear > aNow.getYear ())
       throw new IllegalArgumentException ("The year value " + nRealYear + " is in the future");
     if (nRealYear == aNow.getYear () && nRealMonth > aNow.getMonthValue ())

@@ -49,7 +49,7 @@ public final class InboundTransactionRowTest
   @NonNull
   private static DBResultRow _createValidRow ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     // 30 columns, matching InboundTransactionRow constructor order
     // 0 id
@@ -161,7 +161,7 @@ public final class InboundTransactionRowTest
   @Test
   public void testDuplicateFlags ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     final DBResultRow aRow = DBResultRowHelper.createRow ("ib-dup",
                                                           "inc-dup",

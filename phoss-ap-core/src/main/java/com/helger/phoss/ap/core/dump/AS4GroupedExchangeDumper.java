@@ -246,7 +246,7 @@ public class AS4GroupedExchangeDumper implements IAS4IncomingDumper, IAS4Outgoin
     // Scenario b) — outgoing UserMessage
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final String sDirName = FilenameHelper.getAsSecureValidASCIIFilename (sMessageID);
-    final File aDir = new File (_getDateDir (aTimestampMgr.getCurrentDateTime ()), sDirName);
+    final File aDir = new File (_getDateDir (aTimestampMgr.getCurrentDateTimeUTC ()), sDirName);
     FileOperationManager.INSTANCE.createDirRecursiveIfNotExisting (aDir);
 
     // Store for later correlation when the SignalMessage response arrives

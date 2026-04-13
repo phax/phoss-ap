@@ -44,7 +44,7 @@ public final class OutboundSendingAttemptRowTest
   @Test
   public void testAllFieldsMapped ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     // 9 columns matching OutboundSendingAttemptRow constructor order
     // 0 id
@@ -83,7 +83,7 @@ public final class OutboundSendingAttemptRowTest
   @Test
   public void testNullableFieldsReturnNull ()
   {
-    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ();
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
     final DBResultRow aRow = DBResultRowHelper.createRow ("att-002",
                                                           "tx-002",

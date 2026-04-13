@@ -166,7 +166,7 @@ public final class DirectoryFileProcessor
                             .add ("transactionID", aTx.getID ())
                             .add ("status", aTx.getStatus ().getID ())
                             .add ("processedDT",
-                                  APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ().toString ());
+                                  APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ().toString ());
   }
 
   @NonNull
@@ -184,7 +184,7 @@ public final class DirectoryFileProcessor
     if (sStatus != null)
       ret.add ("status", sStatus);
     ret.add ("errorDetails", sErrorDetails);
-    ret.add ("processedDT", APBasicMetaManager.getTimestampMgr ().getCurrentDateTime ().toString ());
+    ret.add ("processedDT", APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ().toString ());
     return ret;
   }
 

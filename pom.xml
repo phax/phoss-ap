@@ -52,7 +52,7 @@
     <maven.compiler.release>21</maven.compiler.release>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.42.37</awssdk.version>
+    <awssdk.version>2.42.41</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
@@ -62,10 +62,10 @@
     <!-- 4.0.7 has a regression -->
     <jaxb-impl.version>4.0.6</jaxb-impl.version>
     <log4j.version>2.25.4</log4j.version>
-    <mysql.version>9.6.0</mysql.version>
+    <mysql.version>9.7.0</mysql.version>
     <postgres.version>42.7.10</postgres.version>
-    <sentry.version>8.39.0</sentry.version>
-    <spring-boot.version>4.0.5</spring-boot.version>
+    <sentry.version>8.40.0</sentry.version>
+    <spring-boot.version>4.0.6</spring-boot.version>
 
     <ph-commons.version>12.2.1</ph-commons.version>
     <ph-db.version>8.2.1</ph-db.version>

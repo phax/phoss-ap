@@ -67,6 +67,7 @@ import com.helger.phoss.ap.core.dump.AS4GroupedExchangeDumper;
 import com.helger.phoss.ap.core.dump.AS4IncomingDumperWithMetadata;
 import com.helger.phoss.ap.core.job.ArchivalScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
+import com.helger.phoss.ap.core.phase4.APAS4ManagerFactory;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.WebFileIO;
 import com.helger.security.certificate.ECertificateCheckResult;
@@ -168,6 +169,11 @@ public class APServletInit
     // This is the programmatic way to enforce exactly this one profile
     // In a multi-profile environment, that will not work
     AS4ProfileSelector.setCustomDefaultAS4ProfileID (AS4PeppolProfileRegistarSPI.AS4_PROFILE_ID);
+
+    // Install the manager factory that wires the phase4 AS4 duplicate manager
+    // to the JDBC-backed implementation. Must happen before MetaAS4Manager is
+    // first instantiated by AS4ServerInitializer.initAS4Server() below.
+    MetaAS4Manager.setFactory (new APAS4ManagerFactory ());
 
     AS4ServerInitializer.initAS4Server ();
 
@@ -367,12 +373,17 @@ public class APServletInit
 
     WebScopeManager.onGlobalBegin (aSC);
     _initGlobalSettings (aSC);
+
+    // JDBC managers must be initialized before _initAS4() because the AS4
+    // duplicate manager (provided by APAS4ManagerFactory) is JDBC-backed and
+    // requires APJdbcMetaManager to be ready.
+    APBasicMetaManager.getInstance ();
+    APJdbcMetaManager.getInstance ();
+
     _initAS4 ();
     _initPeppolAS4 ();
 
-    // Initialize all managers
-    APBasicMetaManager.getInstance ();
-    APJdbcMetaManager.getInstance ();
+    // Initialize remaining managers
     APCoreMetaManager.init ();
 
     // This is e.g. the Identifier Factory that is used in the Peppol Receiving

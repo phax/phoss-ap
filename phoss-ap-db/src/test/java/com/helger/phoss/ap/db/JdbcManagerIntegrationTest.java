@@ -29,7 +29,11 @@ import org.jspecify.annotations.NonNull;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import com.helger.base.state.EChange;
+import com.helger.base.state.EContinue;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.phase4.duplicate.IAS4DuplicateItem;
+import com.helger.phase4.duplicate.IAS4DuplicateManager;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.IArchivalManager;
@@ -1043,5 +1047,97 @@ public final class JdbcManagerIntegrationTest
 
     assertNull (aTxMgr.getByID (sTxID));
     assertTrue (aAttemptMgr.getByTransactionID (sTxID).isEmpty ());
+  }
+
+  // --- AS4DuplicateManagerJdbc ---
+
+  @Test
+  public void testAS4DuplicateRegisterAndCheck ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    final String sMessageID = _uniqueID ();
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (sMessageID, "profile-1", "pmode-1"));
+    // Second call with same ID must return BREAK
+    assertEquals (EContinue.BREAK, aMgr.registerAndCheck (sMessageID, "profile-1", "pmode-1"));
+
+    final IAS4DuplicateItem aItem = aMgr.getItemOfMessageID (sMessageID);
+    assertNotNull (aItem);
+    assertEquals (sMessageID, aItem.getMessageID ());
+    assertEquals ("profile-1", aItem.getProfileID ());
+    assertEquals ("pmode-1", aItem.getPModeID ());
+    assertNotNull (aItem.getDateTime ());
+  }
+
+  @Test
+  public void testAS4DuplicateNullOrEmptyMessageID ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    // Null/empty must NOT be persisted and must always return CONTINUE
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (null, "p", "m"));
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck ("", "p", "m"));
+    assertNull (aMgr.getItemOfMessageID (null));
+    assertNull (aMgr.getItemOfMessageID (""));
+  }
+
+  @Test
+  public void testAS4DuplicateNullProfileAndPMode ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    final String sMessageID = _uniqueID ();
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (sMessageID, null, null));
+
+    final IAS4DuplicateItem aItem = aMgr.getItemOfMessageID (sMessageID);
+    assertNotNull (aItem);
+    assertNull (aItem.getProfileID ());
+    assertNull (aItem.getPModeID ());
+  }
+
+  @Test
+  public void testAS4DuplicateEvictAllItemsBefore ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    final String sMessageID = _uniqueID ();
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (sMessageID, null, null));
+    assertNotNull (aMgr.getItemOfMessageID (sMessageID));
+
+    // Evict everything strictly older than "far future" - must include our row
+    final OffsetDateTime aFarFuture = _now ().plusDays (1);
+    final ICommonsList <String> aEvicted = aMgr.evictAllItemsBefore (aFarFuture);
+    assertTrue (aEvicted.contains (sMessageID));
+    assertNull (aMgr.getItemOfMessageID (sMessageID));
+  }
+
+  @Test
+  public void testAS4DuplicateEvictKeepsRecent ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    final String sMessageID = _uniqueID ();
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (sMessageID, null, null));
+
+    // Evict items older than 1 day ago - the row we just inserted must survive
+    final OffsetDateTime aFarPast = _now ().minusDays (1);
+    final ICommonsList <String> aEvicted = aMgr.evictAllItemsBefore (aFarPast);
+    assertFalse (aEvicted.contains (sMessageID));
+    assertNotNull (aMgr.getItemOfMessageID (sMessageID));
+  }
+
+  @Test
+  public void testAS4DuplicateClearCache ()
+  {
+    final IAS4DuplicateManager aMgr = APJdbcMetaManager.getAS4DuplicateMgr ();
+
+    final String sMessageID = _uniqueID ();
+    assertEquals (EContinue.CONTINUE, aMgr.registerAndCheck (sMessageID, null, null));
+    assertFalse (aMgr.isEmpty ());
+
+    assertEquals (EChange.CHANGED, aMgr.clearCache ());
+    assertTrue (aMgr.isEmpty ());
+    // A second clear on an empty table must be UNCHANGED
+    assertEquals (EChange.UNCHANGED, aMgr.clearCache ());
   }
 }

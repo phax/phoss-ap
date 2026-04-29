@@ -31,6 +31,7 @@ import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.api.helper.DBSystemHelper;
 import com.helger.db.flyway.FlywayConfiguration;
 import com.helger.db.jdbc.DataSourceProviderFromJdbcConfiguration;
+import com.helger.phase4.duplicate.IAS4DuplicateManager;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
@@ -64,6 +65,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   private IInboundForwardingAttemptManager m_aInboundAttemptMgr;
   private IArchivalManager m_aArchivalMgr;
   private MlsMetricsManagerJdbc m_aMlsMetricsMgr;
+  private AS4DuplicateManagerJdbc m_aAS4DuplicateMgr;
 
   /**
    * @deprecated Only called via reflection
@@ -122,6 +124,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aMlsMetricsMgr = new MlsMetricsManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aAS4DuplicateMgr = new AS4DuplicateManagerJdbc (aTimestampMgr, sTableNamePrefix);
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }
@@ -209,5 +212,14 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   public static MlsMetricsManagerJdbc getMlsMetricsMgr ()
   {
     return getInstance ().m_aMlsMetricsMgr;
+  }
+
+  /**
+   * @return The AS4 incoming duplicate manager. Never <code>null</code>.
+   */
+  @NonNull
+  public static IAS4DuplicateManager getAS4DuplicateMgr ()
+  {
+    return getInstance ().m_aAS4DuplicateMgr;
   }
 }

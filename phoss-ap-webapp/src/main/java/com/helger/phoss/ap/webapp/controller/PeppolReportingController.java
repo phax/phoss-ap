@@ -169,7 +169,7 @@ public class PeppolReportingController
     // Check parameters
     final YearMonth aYearMonth = APPeppolReportHelper.getValidYearMonthInAPI (nYear, nMonth);
     if (APPeppolReportHelper.createAndSendPeppolReports (aYearMonth).isSuccess ())
-      ResponseEntity.ok ("Done - check report storage");
+      return ResponseEntity.ok ("Done - check report storage");
     return ResponseEntity.internalServerError ().body ("Error creating or sending Peppol Reports");
   }
 }

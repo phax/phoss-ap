@@ -16,8 +16,12 @@
  */
 package com.helger.phoss.ap.core;
 
+import java.time.Duration;
+
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.CheckForSigned;
 import com.helger.annotation.Nonnegative;
@@ -26,6 +30,7 @@ import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.CommonsLinkedHashSet;
 import com.helger.collection.commons.ICommonsOrderedSet;
 import com.helger.config.fallback.IConfigWithFallback;
+import com.helger.config.value.parser.ConfigDurationParser;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.phoss.ap.api.CPhossAP;
@@ -47,6 +52,8 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 @Immutable
 public final class APCoreConfig
 {
+  private static final Logger LOGGER = LoggerFactory.getLogger (APCoreConfig.class);
+
   private APCoreConfig ()
   {}
 
@@ -522,6 +529,70 @@ public final class APCoreConfig
   {
     return _getConfig ().getAsInt (APConfigurationProperties.ARCHIVAL_SCHEDULER_BATCH_SIZE,
                                    APConfigurationProperties.ARCHIVAL_SCHEDULER_BATCH_SIZE_DEFAULT);
+  }
+
+  /**
+   * @return {@code true} if the cleanup scheduler that deletes archived transactions older than the
+   *         configured retention is enabled. Defaults to {@code false}.
+   * @since 0.2.4
+   */
+  public static boolean isCleanupSchedulerEnabled ()
+  {
+    return _getConfig ().getAsBoolean (APConfigurationProperties.CLEANUP_SCHEDULER_ENABLED,
+                                       APConfigurationProperties.CLEANUP_SCHEDULER_ENABLED_DEFAULT);
+  }
+
+  /**
+   * @return The interval at which the cleanup scheduler runs. Configured as a duration string (e.g.
+   *         {@code "24h"}, {@code "2d 12h"}). Defaults to
+   *         {@link APConfigurationProperties#CLEANUP_SCHEDULER_INTERVAL_DEFAULT}. Never
+   *         <code>null</code>.
+   * @since 0.2.4
+   */
+  @NonNull
+  public static Duration getCleanupSchedulerInterval ()
+  {
+    final Duration aRet = _getConfig ().getAsConfigDuration (APConfigurationProperties.CLEANUP_SCHEDULER_INTERVAL,
+                                                             sErr -> LOGGER.warn ("Invalid value for '" +
+                                                                                  APConfigurationProperties.CLEANUP_SCHEDULER_INTERVAL +
+                                                                                  "': " +
+                                                                                  sErr));
+    if (aRet != null)
+      return aRet;
+    return ConfigDurationParser.parseDuration (APConfigurationProperties.CLEANUP_SCHEDULER_INTERVAL_DEFAULT);
+  }
+
+  /**
+   * @return The retention duration: archived transactions whose {@code completed_dt} is older than
+   *         this value are eligible for cleanup. Configured as a duration string (e.g. {@code "90d"},
+   *         {@code "26w"} not supported — use {@code "182d"}). Defaults to
+   *         {@link APConfigurationProperties#CLEANUP_SCHEDULER_RETENTION_DEFAULT}. Never
+   *         <code>null</code>.
+   * @since 0.2.4
+   */
+  @NonNull
+  public static Duration getCleanupSchedulerRetention ()
+  {
+    final Duration aRet = _getConfig ().getAsConfigDuration (APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION,
+                                                             sErr -> LOGGER.warn ("Invalid value for '" +
+                                                                                  APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION +
+                                                                                  "': " +
+                                                                                  sErr));
+    if (aRet != null)
+      return aRet;
+    return ConfigDurationParser.parseDuration (APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION_DEFAULT);
+  }
+
+  /**
+   * @return The number of archived transactions to clean up per scheduler cycle. Default is
+   *         {@code 100}.
+   * @since 0.2.4
+   */
+  @Nonnegative
+  public static int getCleanupSchedulerBatchSize ()
+  {
+    return _getConfig ().getAsInt (APConfigurationProperties.CLEANUP_SCHEDULER_BATCH_SIZE,
+                                   APConfigurationProperties.CLEANUP_SCHEDULER_BATCH_SIZE_DEFAULT);
   }
 
   /**

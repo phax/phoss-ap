@@ -16,16 +16,22 @@
  */
 package com.helger.phoss.ap.db;
 
+import java.time.OffsetDateTime;
+import java.util.function.Predicate;
+
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonempty;
+import com.helger.annotation.Nonnegative;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
+import com.helger.db.jdbc.executor.DBResultRow;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 
@@ -130,6 +136,122 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
 
       LOGGER.info ("Archived inbound transaction '" + sID + "'");
     });
+  }
+
+  /** {@inheritDoc} */
+  @Nonnegative
+  public int cleanupOutbound (@NonNull final OffsetDateTime aCutoff,
+                              @Nonnegative final int nBatchSize,
+                              @NonNull final Predicate <String> aDocumentDeleter)
+  {
+    ValueEnforcer.notNull (aCutoff, "Cutoff");
+    ValueEnforcer.isGT0 (nBatchSize, "BatchSize");
+    ValueEnforcer.notNull (aDocumentDeleter, "DocumentDeleter");
+
+    final DBExecutor aExecutor = newExecutor ();
+    final ICommonsList <DBResultRow> aRows = aExecutor.queryAll ("SELECT id, document_path FROM " +
+                                                                 m_sTableNamePrefix +
+                                                                 "outbound_transaction_archive" +
+                                                                 " WHERE completed_dt < ?" +
+                                                                 " ORDER BY completed_dt" +
+                                                                 " LIMIT " +
+                                                                 nBatchSize +
+                                                                 " FOR UPDATE SKIP LOCKED",
+                                                                 new ConstantPreparedStatementDataProvider (aCutoff));
+    if (aRows == null || aRows.isEmpty ())
+      return 0;
+
+    int nDeleted = 0;
+    for (final DBResultRow aRow : aRows)
+    {
+      final String sID = aRow.getAsString (0);
+      final String sDocumentPath = aRow.getAsString (1);
+
+      if (!aDocumentDeleter.test (sDocumentPath))
+        continue;
+
+      final ESuccess eSuccess = aExecutor.performInTransaction ( () -> {
+        aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                          m_sTableNamePrefix +
+                                          "outbound_sending_attempt_archive" +
+                                          " WHERE outbound_transaction_id=?",
+                                          new ConstantPreparedStatementDataProvider (sID));
+        aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                          m_sTableNamePrefix +
+                                          "outbound_transaction_archive" +
+                                          " WHERE id=?",
+                                          new ConstantPreparedStatementDataProvider (sID));
+      });
+      if (eSuccess.isSuccess ())
+      {
+        nDeleted++;
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Cleaned up archived outbound transaction '" + sID + "'");
+      }
+      else
+      {
+        LOGGER.warn ("Failed to cleanup archived outbound transaction '" + sID + "'");
+      }
+    }
+    return nDeleted;
+  }
+
+  /** {@inheritDoc} */
+  @Nonnegative
+  public int cleanupInbound (@NonNull final OffsetDateTime aCutoff,
+                             @Nonnegative final int nBatchSize,
+                             @NonNull final Predicate <String> aDocumentDeleter)
+  {
+    ValueEnforcer.notNull (aCutoff, "Cutoff");
+    ValueEnforcer.isGT0 (nBatchSize, "BatchSize");
+    ValueEnforcer.notNull (aDocumentDeleter, "DocumentDeleter");
+
+    final DBExecutor aExecutor = newExecutor ();
+    final ICommonsList <DBResultRow> aRows = aExecutor.queryAll ("SELECT id, document_path FROM " +
+                                                                 m_sTableNamePrefix +
+                                                                 "inbound_transaction_archive" +
+                                                                 " WHERE completed_dt < ?" +
+                                                                 " ORDER BY completed_dt" +
+                                                                 " LIMIT " +
+                                                                 nBatchSize +
+                                                                 " FOR UPDATE SKIP LOCKED",
+                                                                 new ConstantPreparedStatementDataProvider (aCutoff));
+    if (aRows == null || aRows.isEmpty ())
+      return 0;
+
+    int nDeleted = 0;
+    for (final DBResultRow aRow : aRows)
+    {
+      final String sID = aRow.getAsString (0);
+      final String sDocumentPath = aRow.getAsString (1);
+
+      if (!aDocumentDeleter.test (sDocumentPath))
+        continue;
+
+      final ESuccess eSuccess = aExecutor.performInTransaction ( () -> {
+        aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                          m_sTableNamePrefix +
+                                          "inbound_forwarding_attempt_archive" +
+                                          " WHERE inbound_transaction_id=?",
+                                          new ConstantPreparedStatementDataProvider (sID));
+        aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
+                                          m_sTableNamePrefix +
+                                          "inbound_transaction_archive" +
+                                          " WHERE id=?",
+                                          new ConstantPreparedStatementDataProvider (sID));
+      });
+      if (eSuccess.isSuccess ())
+      {
+        nDeleted++;
+        if (LOGGER.isDebugEnabled ())
+          LOGGER.debug ("Cleaned up archived inbound transaction '" + sID + "'");
+      }
+      else
+      {
+        LOGGER.warn ("Failed to cleanup archived inbound transaction '" + sID + "'");
+      }
+    }
+    return nDeleted;
   }
 
   @Override

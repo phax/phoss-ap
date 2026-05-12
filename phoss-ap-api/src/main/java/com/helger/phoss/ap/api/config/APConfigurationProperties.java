@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.api.config;
 
+import java.time.Duration;
+
 import com.helger.annotation.concurrent.Immutable;
 
 /**
@@ -157,6 +159,17 @@ public final class APConfigurationProperties
   public static final long ARCHIVAL_SCHEDULER_INTERVAL_MS_DEFAULT = 3_600_000L;
   public static final String ARCHIVAL_SCHEDULER_BATCH_SIZE = "archival.scheduler.batch-size";
   public static final int ARCHIVAL_SCHEDULER_BATCH_SIZE_DEFAULT = 100;
+
+  // Cleanup of archived transactions (since 0.2.4)
+  public static final String CLEANUP_SCHEDULER_ENABLED = "cleanup.scheduler.enabled";
+  public static final boolean CLEANUP_SCHEDULER_ENABLED_DEFAULT = false;
+  public static final String CLEANUP_SCHEDULER_INTERVAL = "cleanup.scheduler.interval";
+  public static final String CLEANUP_SCHEDULER_INTERVAL_DEFAULT = "24h";
+  public static final String CLEANUP_SCHEDULER_RETENTION = "cleanup.scheduler.retention";
+  public static final String CLEANUP_SCHEDULER_RETENTION_DEFAULT = "90d";
+  public static final Duration CLEANUP_SCHEDULER_RETENTION_MIN = Duration.ofDays (2);
+  public static final String CLEANUP_SCHEDULER_BATCH_SIZE = "cleanup.scheduler.batch-size";
+  public static final int CLEANUP_SCHEDULER_BATCH_SIZE_DEFAULT = 100;
 
   // Document storage
   public static final String STORAGE_MODE = "storage.mode";

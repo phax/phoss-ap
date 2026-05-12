@@ -16,8 +16,12 @@
  */
 package com.helger.phoss.ap.api;
 
+import java.time.OffsetDateTime;
+import java.util.function.Predicate;
+
 import org.jspecify.annotations.NonNull;
 
+import com.helger.annotation.Nonnegative;
 import com.helger.base.state.ESuccess;
 
 /**
@@ -48,4 +52,47 @@ public interface IArchivalManager
    */
   @NonNull
   ESuccess archiveInboundTransaction (@NonNull String sID);
+
+  /**
+   * Run a single cleanup pass on archived outbound transactions whose {@code completed_dt} is older
+   * than the cutoff. For each candidate, the {@code aDocumentDeleter} predicate is invoked with the
+   * absolute document path; if it returns <code>true</code>, the archive row and its associated
+   * sending-attempt rows are deleted in a single transaction. If it returns <code>false</code>, the
+   * row is left for the next cycle (so a transient storage error does not produce orphan files).
+   *
+   * @param aCutoff
+   *        Cutoff timestamp; rows older than this are eligible for cleanup. May not be
+   *        <code>null</code>.
+   * @param nBatchSize
+   *        Maximum number of rows to consider in this pass. Must be &gt;= 1.
+   * @param aDocumentDeleter
+   *        Predicate invoked with the absolute document path; returns <code>true</code> when row
+   *        deletion should proceed. May not be <code>null</code>.
+   * @return The number of archive rows successfully deleted.
+   * @since 0.2.4
+   */
+  @Nonnegative
+  int cleanupOutbound (@NonNull OffsetDateTime aCutoff,
+                       @Nonnegative int nBatchSize,
+                       @NonNull Predicate <String> aDocumentDeleter);
+
+  /**
+   * Run a single cleanup pass on archived inbound transactions. Symmetric to
+   * {@link #cleanupOutbound(OffsetDateTime, int, Predicate)}.
+   *
+   * @param aCutoff
+   *        Cutoff timestamp; rows older than this are eligible for cleanup. May not be
+   *        <code>null</code>.
+   * @param nBatchSize
+   *        Maximum number of rows to consider in this pass. Must be &gt;= 1.
+   * @param aDocumentDeleter
+   *        Predicate invoked with the absolute document path; returns <code>true</code> when row
+   *        deletion should proceed. May not be <code>null</code>.
+   * @return The number of archive rows successfully deleted.
+   * @since 0.2.4
+   */
+  @Nonnegative
+  int cleanupInbound (@NonNull OffsetDateTime aCutoff,
+                      @Nonnegative int nBatchSize,
+                      @NonNull Predicate <String> aDocumentDeleter);
 }

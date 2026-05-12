@@ -66,6 +66,7 @@ import com.helger.phoss.ap.core.StartupRecovery;
 import com.helger.phoss.ap.core.dump.AS4GroupedExchangeDumper;
 import com.helger.phoss.ap.core.dump.AS4IncomingDumperWithMetadata;
 import com.helger.phoss.ap.core.job.ArchivalScheduler;
+import com.helger.phoss.ap.core.job.CleanupScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
 import com.helger.phoss.ap.core.phase4.APAS4ManagerFactory;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -401,6 +402,7 @@ public class APServletInit
     // Start background schedulers
     RetryScheduler.start ();
     ArchivalScheduler.start ();
+    CleanupScheduler.start ();
 
     s_aStartupDT = OffsetDateTime.now ();
     LOGGER.info ("phoss AP initialized successfully");
@@ -414,6 +416,7 @@ public class APServletInit
   {
     LOGGER.info ("Shutting down phoss AP");
 
+    CleanupScheduler.stop ();
     RetryScheduler.stop ();
     ArchivalScheduler.stop ();
     APCoreMetaManager.shutdown ();

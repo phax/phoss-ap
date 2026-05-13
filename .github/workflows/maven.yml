@@ -71,14 +71,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-#    - name: Start PostgreSQL
-#      uses: ikalnytskyi/action-setup-postgres@v6
-#      with:
-#        username: peppol
-#        password: peppol
-#        database: phoss-ap
-#        port: 5432
-#      id: postgres
+    - name: Start PostgreSQL
+      uses: ikalnytskyi/action-setup-postgres@v6
+      with:
+        username: peppol
+        password: peppol
+        database: phoss-ap
+        port: 5432
+      id: postgres
 
     - name: Build and deploy with Maven
       run: mvn --batch-mode --update-snapshots -P release-snapshot deploy

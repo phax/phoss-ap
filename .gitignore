@@ -1,4 +1,5 @@
 .claude/
+.idea/
 .settings/
 generated/
 target/
@@ -9,4 +10,3 @@ application-private.properties
 zz
 
 *.p12
-.idea/

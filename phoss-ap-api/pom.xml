@@ -64,13 +64,6 @@
       <groupId>com.helger.peppol</groupId>
       <artifactId>peppol-mls</artifactId>
     </dependency>
-    <!-- OpenTelemetry API is safe to use without the SDK: GlobalOpenTelemetry.get() falls back to
-         a no-op implementation that turns span/counter operations into very cheap no-ops. The SDK
-         itself lives in phoss-ap-otel. -->
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-api</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>

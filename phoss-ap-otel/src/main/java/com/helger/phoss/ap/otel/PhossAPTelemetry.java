@@ -14,9 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.api.otel;
-
-import java.util.function.Supplier;
+package com.helger.phoss.ap.otel;
 
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
@@ -25,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.helger.annotation.concurrent.ThreadSafe;
 import com.helger.base.concurrent.SimpleReadWriteLock;
 import com.helger.phoss.ap.api.CPhossAPVersion;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -32,18 +31,15 @@ import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Scope;
 
 /**
- * Central access point for the OpenTelemetry {@link Tracer} and {@link Meter} used by the phoss AP.
+ * Central access point for the OpenTelemetry {@link Meter} and its cached instruments used by the
+ * phoss AP. Tracing goes through the {@code com.helger.phoss.ap.api.trace} abstraction, not this
+ * class.
  * <p>
- * By default, this class resolves the globally configured {@link OpenTelemetry} instance — which is
- * populated by the OTel SDK autoconfigure module when the application starts. For tests, a custom
- * {@link OpenTelemetry} may be installed via {@link #install(OpenTelemetry)}.
+ * By default, this class resolves the globally configured {@link OpenTelemetry} instance — which
+ * is populated by the OTel SDK autoconfigure module when the application starts. For tests, a
+ * custom {@link OpenTelemetry} may be installed via {@link #install(OpenTelemetry)}.
  * <p>
  * All instruments are created lazily on first access and cached for the lifetime of the JVM. Cache
  * reads use volatile, lock-free; cache population and {@link #install(OpenTelemetry)} go through a
@@ -62,7 +58,6 @@ public final class PhossAPTelemetry
   private static final SimpleReadWriteLock RW_LOCK = new SimpleReadWriteLock ();
 
   private static volatile OpenTelemetry s_aOpenTelemetry;
-  private static volatile Tracer s_aTracer;
   private static volatile Meter s_aMeter;
 
   // === Inbound ===
@@ -112,7 +107,6 @@ public final class PhossAPTelemetry
   {
     RW_LOCK.writeLocked ( () -> {
       s_aOpenTelemetry = aOpenTelemetry;
-      s_aTracer = null;
       s_aMeter = null;
 
       // Inbound
@@ -161,30 +155,6 @@ public final class PhossAPTelemetry
   }
 
   /**
-   * @return The phoss AP {@link Tracer}. Never <code>null</code>.
-   */
-  @NonNull
-  public static Tracer tracer ()
-  {
-    final Tracer aFast = s_aTracer;
-    if (aFast != null)
-      return aFast;
-
-    return RW_LOCK.writeLockedGet ( () -> {
-      Tracer aRet = s_aTracer;
-      if (aRet == null)
-      {
-        aRet = _getOpenTelemetry ().getTracerProvider ()
-                                   .tracerBuilder (CPhossAPOtel.INSTRUMENTATION_SCOPE_NAME)
-                                   .setInstrumentationVersion (CPhossAPVersion.BUILD_VERSION)
-                                   .build ();
-        s_aTracer = aRet;
-      }
-      return aRet;
-    });
-  }
-
-  /**
    * @return The phoss AP {@link Meter}. Never <code>null</code>.
    */
   @NonNull
@@ -206,44 +176,6 @@ public final class PhossAPTelemetry
       }
       return aRet;
     });
-  }
-
-  /**
-   * Execute the given body while a fresh OpenTelemetry span is active. The span is started from
-   * the provided {@link SpanBuilder}, made the current context via {@link Span#makeCurrent()} for
-   * the duration of {@code aBody}, and ended afterwards in a {@code finally} block.
-   * <p>
-   * Unhandled runtime exceptions are recorded via {@link Span#recordException(Throwable)} and the
-   * span is marked with {@link StatusCode#ERROR}; the exception is then re-thrown to the caller.
-   * Normal completion leaves the status as {@code UNSET} — most observability backends treat that
-   * as success. The body can call {@code Span.current().setStatus(...)} if it wants to mark a
-   * non-exception failure (e.g. a {@code FAILURE} business outcome).
-   *
-   * @param aBuilder
-   *        Pre-configured span builder (name, kind, initial attributes). Never <code>null</code>.
-   * @param aBody
-   *        The body to execute. Never <code>null</code>.
-   * @param <T>
-   *        Return type of the body.
-   * @return The value returned by the body.
-   */
-  public static <T> T withSpan (@NonNull final SpanBuilder aBuilder, @NonNull final Supplier <T> aBody)
-  {
-    final Span aSpan = aBuilder.startSpan ();
-    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
-    {
-      return aBody.get ();
-    }
-    catch (final RuntimeException ex)
-    {
-      aSpan.recordException (ex);
-      aSpan.setStatus (StatusCode.ERROR, ex.getMessage ());
-      throw ex;
-    }
-    finally
-    {
-      aSpan.end ();
-    }
   }
 
   // === Inbound ===

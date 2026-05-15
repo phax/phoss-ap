@@ -47,10 +47,9 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
-
-import io.opentelemetry.api.trace.SpanKind;
 
 /**
  * Implementation of {@link IDocumentForwarder} for using HTTP.
@@ -126,13 +125,11 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
-    return PhossAPTelemetry.withSpan (PhossAPTelemetry.tracer ()
-                                                      .spanBuilder (CPhossAPOtel.SPAN_FORWARDER_DISPATCH)
-                                                      .setSpanKind (SpanKind.CLIENT)
-                                                      .setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "http")
-                                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID,
-                                                                     aTransaction.getID ()),
-                                      () -> _doForwardDocument (aTransaction));
+    return APTrace.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, EAPSpanKind.CLIENT, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "http")
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
+      return _doForwardDocument (aTransaction);
+    });
   }
 
   @NonNull

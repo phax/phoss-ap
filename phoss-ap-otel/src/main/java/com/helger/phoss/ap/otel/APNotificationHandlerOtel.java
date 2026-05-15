@@ -23,7 +23,6 @@ import org.jspecify.annotations.Nullable;
 
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
 import io.opentelemetry.api.common.Attributes;
@@ -62,7 +61,7 @@ public class APNotificationHandlerOtel implements IAPNotificationHandlerSPI
                                                @Nullable final String sErrorDetails)
   {
     PhossAPTelemetry.outboundVerificationRejections ()
-                    .add (1, Attributes.of (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID));
+                    .add (1, Attributes.builder ().put (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID).build ());
   }
 
   /** {@inheritDoc} */
@@ -118,7 +117,7 @@ public class APNotificationHandlerOtel implements IAPNotificationHandlerSPI
   {
     final Attributes aAttrs = Attributes.builder ()
                                         .put (CPhossAPOtel.ATTR_TRANSACTION_ID, sTransactionID)
-                                        .put (CPhossAPOtel.ATTR_IS_RETRY, Boolean.valueOf (bIsRetry))
+                                        .put (CPhossAPOtel.ATTR_IS_RETRY, bIsRetry)
                                         .build ();
     PhossAPTelemetry.inboundForwardingErrors ().add (1, aAttrs);
   }

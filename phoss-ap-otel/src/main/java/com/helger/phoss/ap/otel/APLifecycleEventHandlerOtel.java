@@ -25,7 +25,6 @@ import org.jspecify.annotations.Nullable;
 import com.helger.annotation.Nonnegative;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 
 import io.opentelemetry.api.common.Attributes;
@@ -60,10 +59,10 @@ public class APLifecycleEventHandlerOtel implements IAPLifecycleEventSPI
                                          final boolean bIsDuplicateAS4,
                                          final boolean bIsDuplicateSBDH)
   {
-    final Attributes aAttrs = Attributes.of (CPhossAPOtel.ATTR_IS_DUPLICATE_AS4,
-                                             Boolean.valueOf (bIsDuplicateAS4),
-                                             CPhossAPOtel.ATTR_IS_DUPLICATE_SBDH,
-                                             Boolean.valueOf (bIsDuplicateSBDH));
+    final Attributes aAttrs = Attributes.builder ()
+                                        .put (CPhossAPOtel.ATTR_IS_DUPLICATE_AS4, bIsDuplicateAS4)
+                                        .put (CPhossAPOtel.ATTR_IS_DUPLICATE_SBDH, bIsDuplicateSBDH)
+                                        .build ();
     PhossAPTelemetry.inboundReceived ().add (1, aAttrs);
   }
 
@@ -86,7 +85,9 @@ public class APLifecycleEventHandlerOtel implements IAPLifecycleEventSPI
                                       @NonNull final EPeppolMLSResponseCode eMlsResponseCode,
                                       @Nullable final Duration aRoundTrip)
   {
-    final Attributes aAttrs = Attributes.of (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE, eMlsResponseCode.getID ());
+    final Attributes aAttrs = Attributes.builder ()
+                                        .put (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE, eMlsResponseCode.getID ())
+                                        .build ();
     PhossAPTelemetry.inboundMLSCorrelated ().add (1, aAttrs);
     if (aRoundTrip != null)
       PhossAPTelemetry.mlsRoundtripDuration ().record (_toSeconds (aRoundTrip), aAttrs);
@@ -98,7 +99,7 @@ public class APLifecycleEventHandlerOtel implements IAPLifecycleEventSPI
                                           @Nullable final Duration aForwardingDuration,
                                           final boolean bIsRetry)
   {
-    final Attributes aAttrs = Attributes.of (CPhossAPOtel.ATTR_IS_RETRY, Boolean.valueOf (bIsRetry));
+    final Attributes aAttrs = Attributes.builder ().put (CPhossAPOtel.ATTR_IS_RETRY, bIsRetry).build ();
     PhossAPTelemetry.inboundForwarded ().add (1, aAttrs);
     if (aForwardingDuration != null)
       PhossAPTelemetry.inboundForwardingDuration ().record (_toSeconds (aForwardingDuration), aAttrs);
@@ -130,13 +131,15 @@ public class APLifecycleEventHandlerOtel implements IAPLifecycleEventSPI
   /** {@inheritDoc} */
   public void onPeppolReportingTSRSuccess (@NonNull final YearMonth aYearMonth)
   {
-    PhossAPTelemetry.reportingSuccess ().add (1, Attributes.of (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR"));
+    PhossAPTelemetry.reportingSuccess ()
+                    .add (1, Attributes.builder ().put (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR").build ());
   }
 
   /** {@inheritDoc} */
   public void onPeppolReportingEUSRSuccess (@NonNull final YearMonth aYearMonth)
   {
-    PhossAPTelemetry.reportingSuccess ().add (1, Attributes.of (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR"));
+    PhossAPTelemetry.reportingSuccess ()
+                    .add (1, Attributes.builder ().put (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR").build ());
   }
 
   private static void _recordSchedulerCycle (@NonNull final String sSchedulerName,
@@ -144,10 +147,10 @@ public class APLifecycleEventHandlerOtel implements IAPLifecycleEventSPI
                                              @Nonnegative final int nItems,
                                              @NonNull final Duration aCycleDuration)
   {
-    final Attributes aAttrs = Attributes.of (CPhossAPOtel.ATTR_SCHEDULER_NAME,
-                                             sSchedulerName,
-                                             CPhossAPOtel.ATTR_IS_OUTBOUND,
-                                             Boolean.valueOf (bIsOutbound));
+    final Attributes aAttrs = Attributes.builder ()
+                                        .put (CPhossAPOtel.ATTR_SCHEDULER_NAME, sSchedulerName)
+                                        .put (CPhossAPOtel.ATTR_IS_OUTBOUND, bIsOutbound)
+                                        .build ();
     PhossAPTelemetry.schedulerCycleDuration ().record (_toSeconds (aCycleDuration), aAttrs);
     PhossAPTelemetry.schedulerCycleItems ().record (nItems, aAttrs);
   }

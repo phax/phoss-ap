@@ -33,15 +33,13 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
-
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.context.Scope;
 
 /**
  * Background scheduler that periodically deletes archived inbound and outbound transactions whose
@@ -90,15 +88,12 @@ public final class CleanupScheduler
   {
     final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-    final Span aSpan = PhossAPTelemetry.tracer ()
-                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
-                                       .setSpanKind (SpanKind.INTERNAL)
-                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
-                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.TRUE)
-                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nDeleted = 0;
-    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true))
     {
       try
       {
@@ -118,11 +113,10 @@ public final class CleanupScheduler
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onUnexpectedException ("CleanupScheduler._cleanupOutbound", "Error in outbound cleanup cycle", ex);
       }
-    }
-    finally
-    {
-      aSpan.setAttribute ("phoss.ap.scheduler.items", nDeleted);
-      aSpan.end ();
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nDeleted);
+      }
     }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();
@@ -134,15 +128,12 @@ public final class CleanupScheduler
   {
     final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-    final Span aSpan = PhossAPTelemetry.tracer ()
-                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
-                                       .setSpanKind (SpanKind.INTERNAL)
-                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
-                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.FALSE)
-                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nDeleted = 0;
-    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false))
     {
       try
       {
@@ -160,11 +151,10 @@ public final class CleanupScheduler
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onUnexpectedException ("CleanupScheduler._cleanupInbound", "Error in inbound cleanup cycle", ex);
       }
-    }
-    finally
-    {
-      aSpan.setAttribute ("phoss.ap.scheduler.items", nDeleted);
-      aSpan.end ();
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nDeleted);
+      }
     }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();

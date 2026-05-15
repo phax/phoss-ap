@@ -61,9 +61,11 @@ import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
@@ -73,11 +75,6 @@ import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.PhotonWorkerPool;
 import com.helger.security.certificate.CertificateHelper;
-
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.context.Scope;
 
 import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
@@ -111,11 +108,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     final String sLogPrefix = "[" + aMessageMetadata.getIncomingUniqueID () + "] ";
     Phase4LogCustomizer.setThreadLocalLogPrefix (sLogPrefix);
 
-    final Span aSpan = PhossAPTelemetry.tracer ()
-                                       .spanBuilder (CPhossAPOtel.SPAN_INBOUND_RECEIVE)
-                                       .setSpanKind (SpanKind.CONSUMER)
-                                       .startSpan ();
-    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_INBOUND_RECEIVE, EAPSpanKind.CONSUMER))
     {
       try
       {
@@ -434,20 +427,15 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
           }
         }
       }
+      catch (final Exception ex)
+      {
+        aSpan.recordException (ex).setStatusError (ex.getMessage ());
+        throw ex;
+      }
       finally
       {
         Phase4LogCustomizer.clearThreadLocals ();
       }
-    }
-    catch (final Exception ex)
-    {
-      aSpan.recordException (ex);
-      aSpan.setStatus (StatusCode.ERROR, ex.getMessage ());
-      throw ex;
-    }
-    finally
-    {
-      aSpan.end ();
     }
   }
 

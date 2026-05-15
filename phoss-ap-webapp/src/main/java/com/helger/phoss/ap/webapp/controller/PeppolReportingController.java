@@ -18,7 +18,6 @@ package com.helger.phoss.ap.webapp.controller;
 
 import java.time.YearMonth;
 
-import org.slf4j.Logger;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,20 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.helger.collection.commons.CommonsArrayList;
-import com.helger.collection.commons.ICommonsList;
-import com.helger.peppol.reporting.api.PeppolReportingItem;
-import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
-import com.helger.peppol.reporting.api.backend.PeppolReportingBackendException;
-import com.helger.peppol.reporting.eusr.EndUserStatisticsReport;
-import com.helger.peppol.reporting.jaxb.eusr.EndUserStatisticsReport110Marshaller;
-import com.helger.peppol.reporting.jaxb.eusr.v110.EndUserStatisticsReportType;
-import com.helger.peppol.reporting.jaxb.tsr.TransactionStatisticsReport101Marshaller;
-import com.helger.peppol.reporting.jaxb.tsr.v101.TransactionStatisticsReportType;
-import com.helger.peppol.reporting.tsr.TransactionStatisticsReport;
-import com.helger.phase4.logging.Phase4LoggerFactory;
-import com.helger.phoss.ap.api.config.APConfigProvider;
-import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.reporting.APPeppolReportHelper;
 
 /**
@@ -52,8 +37,6 @@ import com.helger.phoss.ap.core.reporting.APPeppolReportHelper;
 @RequestMapping ("/api/reporting")
 public class PeppolReportingController
 {
-  private static final Logger LOGGER = Phase4LoggerFactory.getLogger (PeppolReportingController.class);
-
   /**
    * This API creates a TSR report from the provided year and month
    *
@@ -69,37 +52,11 @@ public class PeppolReportingController
                                                            @PathVariable (name = "month",
                                                                           required = true) final int nMonth)
   {
-    // Check parameters
     final YearMonth aYearMonth = APPeppolReportHelper.getValidYearMonthInAPI (nYear, nMonth);
-
-    LOGGER.info ("Trying to create Peppol Reporting TSR for " + aYearMonth);
-
-    try
-    {
-      // Now get all items from data storage and store them in a list (we start
-      // with an initial size of 1K to avoid too many copy operations)
-      final ICommonsList <PeppolReportingItem> aReportingItems = new CommonsArrayList <> (1024);
-      if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                                aBackend -> aBackend.forEachReportingItem (aYearMonth,
-                                                                                           aReportingItems::add))
-                                .isSuccess ())
-      {
-        // Create report with the read transactions
-        final TransactionStatisticsReportType aReport = TransactionStatisticsReport.builder ()
-                                                                                   .monthOf (aYearMonth)
-                                                                                   .reportingServiceProviderID (APCoreConfig.getPeppolOwnerSeatID ())
-                                                                                   .reportingItemList (aReportingItems)
-                                                                                   .build ();
-        return ResponseEntity.ok (new TransactionStatisticsReport101Marshaller ().getAsString (aReport));
-      }
-      return ResponseEntity.internalServerError ().body ("Failed to read Peppol Reporting backend data");
-    }
-    catch (final PeppolReportingBackendException ex)
-    {
-      LOGGER.error ("Failed to read Peppol Reporting Items", ex);
-      return ResponseEntity.internalServerError ()
-                           .body ("Failed to read Peppol Reporting backend data: " + ex.getMessage ());
-    }
+    final String sReport = APPeppolReportHelper.createTSRAsString (aYearMonth);
+    if (sReport != null)
+      return ResponseEntity.ok (sReport);
+    return ResponseEntity.internalServerError ().body ("Failed to read Peppol Reporting backend data");
   }
 
   /**
@@ -117,37 +74,11 @@ public class PeppolReportingController
                                                             @PathVariable (name = "month",
                                                                            required = true) final int nMonth)
   {
-    // Check parameters
     final YearMonth aYearMonth = APPeppolReportHelper.getValidYearMonthInAPI (nYear, nMonth);
-
-    LOGGER.info ("Trying to create Peppol Reporting EUSR for " + aYearMonth);
-
-    try
-    {
-      // Now get all items from data storage and store them in a list (we start
-      // with an initial size of 1K to avoid too many copy operations)
-      final ICommonsList <PeppolReportingItem> aReportingItems = new CommonsArrayList <> (1024);
-      if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                                aBackend -> aBackend.forEachReportingItem (aYearMonth,
-                                                                                           aReportingItems::add))
-                                .isSuccess ())
-      {
-        // Create report with the read transactions
-        final EndUserStatisticsReportType aReport = EndUserStatisticsReport.builder ()
-                                                                           .monthOf (aYearMonth)
-                                                                           .reportingServiceProviderID (APCoreConfig.getPeppolOwnerSeatID ())
-                                                                           .reportingItemList (aReportingItems)
-                                                                           .build ();
-        return ResponseEntity.ok (new EndUserStatisticsReport110Marshaller ().getAsString (aReport));
-      }
-      return ResponseEntity.internalServerError ().body ("Failed to read Peppol Reporting backend data");
-    }
-    catch (final PeppolReportingBackendException ex)
-    {
-      LOGGER.error ("Failed to read Peppol Reporting Items", ex);
-      return ResponseEntity.internalServerError ()
-                           .body ("Failed to read Peppol Reporting backend data: " + ex.getMessage ());
-    }
+    final String sReport = APPeppolReportHelper.createEUSRAsString (aYearMonth);
+    if (sReport != null)
+      return ResponseEntity.ok (sReport);
+    return ResponseEntity.internalServerError ().body ("Failed to read Peppol Reporting backend data");
   }
 
   /**
@@ -166,7 +97,6 @@ public class PeppolReportingController
                                                              @PathVariable (name = "month",
                                                                             required = true) final int nMonth)
   {
-    // Check parameters
     final YearMonth aYearMonth = APPeppolReportHelper.getValidYearMonthInAPI (nYear, nMonth);
     if (APPeppolReportHelper.createAndSendPeppolReports (aYearMonth).isSuccess ())
       return ResponseEntity.ok ("Done - check report storage");

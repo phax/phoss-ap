@@ -61,6 +61,16 @@
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporter-otlp</artifactId>
     </dependency>
+    <!-- okhttp 5.x splits its artifact via Kotlin Multiplatform: the plain
+         "okhttp" jar pulled transitively is an empty stub, and Maven (unlike
+         Gradle) does not resolve the JVM variant. Add okhttp-jvm explicitly
+         so okhttp3.RequestBody is on the classpath for the OTLP sender. -->
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp-jvm</artifactId>
+      <version>5.1.0</version>
+      <scope>runtime</scope>
+    </dependency>
     <dependency>
       <groupId>io.opentelemetry.instrumentation</groupId>
       <artifactId>opentelemetry-instrumentation-annotations</artifactId>

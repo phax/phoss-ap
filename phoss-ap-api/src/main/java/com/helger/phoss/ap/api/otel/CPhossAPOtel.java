@@ -91,6 +91,7 @@ public final class CPhossAPOtel
   public static final String ATTR_MLS_RESPONSE_CODE = "phoss.ap.mls.response_code";
   public static final String ATTR_REPORT_TYPE = "phoss.ap.report.type";
   public static final String ATTR_REPORT_YEAR_MONTH = "phoss.ap.report.year_month";
+  public static final String ATTR_REPORT_ITEM_COUNT = "phoss.ap.report.item_count";
   public static final String ATTR_IS_RETRY = "phoss.ap.is_retry";
   public static final String ATTR_IS_OUTBOUND = "phoss.ap.is_outbound";
   public static final String ATTR_IS_DUPLICATE_AS4 = "phoss.ap.is_duplicate_as4";

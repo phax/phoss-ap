@@ -141,10 +141,7 @@ public final class ArchivalScheduler
 
     final Duration aInterval = APCoreConfig.getArchivalSchedulerInterval ();
     final long nIntervalMs = aInterval.toMillis ();
-    LOGGER.info ("Starting phoss AP archival scheduler with interval " +
-                 aInterval +
-                 " and batch size " +
-                 nBatchSize);
+    LOGGER.info ("Starting phoss AP archival scheduler with interval " + aInterval + " and batch size " + nBatchSize);
 
     s_aTimer = new Timer ("phoss-ap-archival-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()

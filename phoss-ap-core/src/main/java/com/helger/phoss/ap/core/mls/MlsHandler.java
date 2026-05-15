@@ -299,8 +299,8 @@ public final class MlsHandler
 
     // Compute round-trip duration if the original outbound send completion timestamp is known
     final OffsetDateTime aOutboundCompletedDT = aTx.getCompletedDT ();
-    final Duration aRoundTrip = aOutboundCompletedDT != null ? Duration.between (aOutboundCompletedDT, aMlsAS4ReceivedDT)
-                                                             : null;
+    final Duration aRoundTrip = aOutboundCompletedDT != null ? Duration.between (aOutboundCompletedDT,
+                                                                                 aMlsAS4ReceivedDT) : null;
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onInboundMLSCorrelated (sMlsInboundTransactionID, sSbdhInstanceID, eResponseCode, aRoundTrip);
 

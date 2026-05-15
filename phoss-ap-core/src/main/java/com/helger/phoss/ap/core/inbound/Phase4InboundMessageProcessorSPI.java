@@ -117,326 +117,327 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                        .startSpan ();
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
-      final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
-      final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-      final Locale aDisplayLocale = CPhossAP.DEFAULT_LOCALE;
-
-      final String sIncomingID = aMessageMetadata.getIncomingUniqueID ();
-      final String sAS4MessageID = aIncomingState.getMessageID ();
-      final String sSenderID = aPeppolSBD.getSenderURIEncoded ();
-      final String sReceiverID = aPeppolSBD.getReceiverURIEncoded ();
-      final IDocumentTypeIdentifier aDocTypeID = aPeppolSBD.getDocumentTypeAsIdentifier ();
-      final String sDocTypeID = aDocTypeID.getURIEncoded ();
-      final IProcessIdentifier aProcessID = aPeppolSBD.getProcessAsIdentifier ();
-      final String sProcessID = aProcessID.getURIEncoded ();
-      final String sSbdhInstanceID = aPeppolSBD.getInstanceIdentifier ();
-      aSpan.setAttribute (CPhossAPOtel.ATTR_SENDER_ID, sSenderID);
-      aSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, sReceiverID);
-      aSpan.setAttribute (CPhossAPOtel.ATTR_DOCTYPE_ID, sDocTypeID);
-      aSpan.setAttribute (CPhossAPOtel.ATTR_PROCESS_ID, sProcessID);
-      aSpan.setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID);
-
-      String sC1CountryCode = aPeppolSBD.getCountryC1 ();
-      if (StringHelper.isEmpty (sC1CountryCode))
+      try
       {
-        // Fallback to ZZ to make sure the reporting item can be created
-        sC1CountryCode = CPeppolReporting.REPLACEMENT_COUNTRY_CODE;
-      }
-      final String sC2ID = CertificateHelper.getSubjectCN (aIncomingState.getSigningCertificate ());
-      if (!CPhossAP.isPeppolSeatID (sC2ID))
-        LOGGER.error ("Received C2 ID '" + sC2ID + "' does not seem to be a valid Peppol Seat ID");
-      final String sC3ID = APCoreConfig.getPeppolOwnerSeatID ();
+        final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+        final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+        final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
+        final Locale aDisplayLocale = CPhossAP.DEFAULT_LOCALE;
 
-      LOGGER.info (sLogPrefix +
-                   "Received inbound SBD - SBDH ID '" +
-                   sSbdhInstanceID +
-                   "'; AS4 ID '" +
-                   sAS4MessageID +
-                   "'");
+        final String sIncomingID = aMessageMetadata.getIncomingUniqueID ();
+        final String sAS4MessageID = aIncomingState.getMessageID ();
+        final String sSenderID = aPeppolSBD.getSenderURIEncoded ();
+        final String sReceiverID = aPeppolSBD.getReceiverURIEncoded ();
+        final IDocumentTypeIdentifier aDocTypeID = aPeppolSBD.getDocumentTypeAsIdentifier ();
+        final String sDocTypeID = aDocTypeID.getURIEncoded ();
+        final IProcessIdentifier aProcessID = aPeppolSBD.getProcessAsIdentifier ();
+        final String sProcessID = aProcessID.getURIEncoded ();
+        final String sSbdhInstanceID = aPeppolSBD.getInstanceIdentifier ();
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SENDER_ID, sSenderID);
+        aSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, sReceiverID);
+        aSpan.setAttribute (CPhossAPOtel.ATTR_DOCTYPE_ID, sDocTypeID);
+        aSpan.setAttribute (CPhossAPOtel.ATTR_PROCESS_ID, sProcessID);
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID);
 
-      // Signing certificate CN
-      String sSigningCertCN = "";
-      final X509Certificate aSigningCert = aIncomingState.getSigningCertificate ();
-      if (aSigningCert != null)
-        sSigningCertCN = aSigningCert.getSubjectX500Principal ().getName ();
-
-      // Duplicate detection
-      boolean bIsDuplicateAS4 = false;
-      boolean bIsDuplicateSBDH = false;
-
-      if (aInboundMgr.containsByAS4MessageID (sAS4MessageID))
-      {
-        bIsDuplicateAS4 = true;
-        if (APCoreConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
+        String sC1CountryCode = aPeppolSBD.getCountryC1 ();
+        if (StringHelper.isEmpty (sC1CountryCode))
         {
-          final String sMsg = "Rejecting duplicate AS4 message '" + sAS4MessageID + "'";
-          LOGGER.error (sLogPrefix + sMsg);
-          aProcessingErrorMessages.add (AS4Error.builder ()
-                                                .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                                                 .refToMessageInError (aIncomingState.getMessageID ())
-                                                                                 .errorDetail (sMsg))
-                                                .build ());
-          return;
+          // Fallback to ZZ to make sure the reporting item can be created
+          sC1CountryCode = CPeppolReporting.REPLACEMENT_COUNTRY_CODE;
         }
+        final String sC2ID = CertificateHelper.getSubjectCN (aIncomingState.getSigningCertificate ());
+        if (!CPhossAP.isPeppolSeatID (sC2ID))
+          LOGGER.error ("Received C2 ID '" + sC2ID + "' does not seem to be a valid Peppol Seat ID");
+        final String sC3ID = APCoreConfig.getPeppolOwnerSeatID ();
 
-        final String sMsg = "Found duplicate AS4 message '" + sAS4MessageID + "' - processing it anyway";
-        LOGGER.error (sLogPrefix + sMsg);
-      }
+        LOGGER.info (sLogPrefix +
+                     "Received inbound SBD - SBDH ID '" +
+                     sSbdhInstanceID +
+                     "'; AS4 ID '" +
+                     sAS4MessageID +
+                     "'");
 
-      if (aInboundMgr.containsBySbdhInstanceID (sSbdhInstanceID))
-      {
-        bIsDuplicateSBDH = true;
-        if (APCoreConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
+        // Signing certificate CN
+        String sSigningCertCN = "";
+        final X509Certificate aSigningCert = aIncomingState.getSigningCertificate ();
+        if (aSigningCert != null)
+          sSigningCertCN = aSigningCert.getSubjectX500Principal ().getName ();
+
+        // Duplicate detection
+        boolean bIsDuplicateAS4 = false;
+        boolean bIsDuplicateSBDH = false;
+
+        if (aInboundMgr.containsByAS4MessageID (sAS4MessageID))
         {
-          final String sMsg = "Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'";
-          LOGGER.error (sLogPrefix + sMsg);
-          aProcessingErrorMessages.add (AS4Error.builder ()
-                                                .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                                                 .refToMessageInError (aIncomingState.getMessageID ())
-                                                                                 .errorDetail (sMsg))
-                                                .build ());
-          return;
-        }
-
-        final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
-        LOGGER.error (sLogPrefix + sMsg);
-      }
-
-      // Receiver check
-      for (final IPeppolReceiverCheckSPI aReceiverCheck : APCoreMetaManager.getAllPeppolReceiverChecks ())
-      {
-        if (!aReceiverCheck.isReceiverServiced (sReceiverID, sDocTypeID, sProcessID))
-        {
-          LOGGER.error (sLogPrefix + "Receiver not serviced '" + sReceiverID + "'");
-          aProcessingErrorMessages.add (AS4Error.builder ()
-                                                .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                                                 .refToMessageInError (aIncomingState.getMessageID ())
-                                                                                 .errorDetail ("PEPPOL:NOT_SERVICED"))
-                                                .build ());
-
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onInboundReceiverNotServiced (sSenderID, sReceiverID, sDocTypeID, sProcessID, sSbdhInstanceID);
-          return;
-        }
-      }
-
-      // Create SBDH hash
-      final String sSbdhHash = HashHelper.sha256Hex (aSBDBytes);
-
-      // Resilient way to get AS4 timestamp
-      final OffsetDateTime aAS4Timestamp;
-      if (aIncomingState.getMessageTimestamp () != null)
-      {
-        // Was an offset provided?
-        if (aIncomingState.getMessageTimestamp ().getOffset () != null)
-        {
-          // Use provided timezone offset
-          aAS4Timestamp = aIncomingState.getMessageTimestamp ().toOffsetDateTime ();
-        }
-        else
-        {
-          // Default to UTC as per AS4 specification
-          aAS4Timestamp = OffsetDateTime.of (aIncomingState.getMessageTimestamp ().toLocalDateTime (), ZoneOffset.UTC);
-        }
-      }
-      else
-      {
-        // Get current time stamp in UTC
-        aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
-        LOGGER.warn (sLogPrefix +
-                     "The incoming AS4 message has not AS4 message timestamp - using the current date time instead");
-      }
-
-      // Find MLS receiver
-      String sValidMlsTo = null;
-      {
-        final String sScheme = aPeppolSBD.getMLSToScheme ();
-        final String sValue = aPeppolSBD.getMLSToValue ();
-        if (PeppolIdentifierHelper.PARTICIPANT_SCHEME_ISO6523_ACTORID_UPIS.equals (sScheme))
-        {
-          // Scheme is valid
-          if (sValue != null &&
-            sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
-            sValue.length () > 5 &&
-            RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
+          bIsDuplicateAS4 = true;
+          if (APCoreConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
           {
-            // Value is valid as well - use it
-            sValidMlsTo = CIdentifier.getURIEncoded (sScheme, sValue);
+            final String sMsg = "Rejecting duplicate AS4 message '" + sAS4MessageID + "'";
+            LOGGER.error (sLogPrefix + sMsg);
+            aProcessingErrorMessages.add (AS4Error.builder ()
+                                                  .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                                   .refToMessageInError (aIncomingState.getMessageID ())
+                                                                                   .errorDetail (sMsg))
+                                                  .build ());
+            return;
           }
+
+          final String sMsg = "Found duplicate AS4 message '" + sAS4MessageID + "' - processing it anyway";
+          LOGGER.error (sLogPrefix + sMsg);
         }
 
-        if (sValidMlsTo == null && (sScheme != null || sValue != null))
+        if (aInboundMgr.containsBySbdhInstanceID (sSbdhInstanceID))
         {
-          LOGGER.warn (sLogPrefix +
-                       "Some MLS_TO parts were provided ('" +
-                       sScheme +
-                       "' and '" +
-                       sValue +
-                       "') but they were ignored because they are invalid");
-        }
-      }
-
-      // Store document to disk
-      final String sDocumentPath = aDocPayloadMgr.storeDocument (APBasicConfig.getStorageInboundPath (),
-                                                                 aAS4Timestamp,
-                                                                 sSbdhInstanceID + ".sbd",
-                                                                 aSBDBytes);
-
-      // Store in DB
-      final String sTxID = aInboundMgr.create (sIncomingID,
-                                               sC2ID,
-                                               sC3ID,
-                                               sSigningCertCN,
-                                               sSenderID,
-                                               sReceiverID,
-                                               sDocTypeID,
-                                               sProcessID,
-                                               sDocumentPath,
-                                               aSBDBytes.length,
-                                               sSbdhHash,
-                                               sAS4MessageID,
-                                               aAS4Timestamp,
-                                               sSbdhInstanceID,
-                                               sC1CountryCode,
-                                               bIsDuplicateAS4,
-                                               bIsDuplicateSBDH,
-                                               sValidMlsTo,
-                                               APCoreConfig.getMlsType ());
-      final IInboundTransaction aInboundTx = aInboundMgr.getByID (sTxID);
-      if (aInboundTx == null)
-        throw new IllegalStateException ("Failed to store incoming transaction");
-
-      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-        aHandler.onInboundDocumentReceived (sTxID,
-                                            sSenderID,
-                                            sReceiverID,
-                                            sDocTypeID,
-                                            sProcessID,
-                                            sSbdhInstanceID,
-                                            bIsDuplicateAS4,
-                                            bIsDuplicateSBDH);
-
-      // Optional verification
-      if (APCoreConfig.isVerificationInboundEnabled ())
-      {
-        for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
-        {
-          if (aVerifier.verifyInboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+          bIsDuplicateSBDH = true;
+          if (APCoreConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
           {
-            LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
-            aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
+            final String sMsg = "Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'";
+            LOGGER.error (sLogPrefix + sMsg);
+            aProcessingErrorMessages.add (AS4Error.builder ()
+                                                  .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                                   .refToMessageInError (aIncomingState.getMessageID ())
+                                                                                   .errorDetail (sMsg))
+                                                  .build ());
+            return;
+          }
 
-            // Dop't send MLS as response to MLS
-            if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
-            {
-              // Send asynchronously
-              PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-                // Send negative MLS (RE) back to C2
-                final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
-                                                                  MlsOutcomeIssue.businessRuleViolation ("NA",
-                                                                                                         "Inbound document verification failed"));
-                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
-              });
-            }
+          final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
+          LOGGER.error (sLogPrefix + sMsg);
+        }
 
-            // No processing error - MLS
+        // Receiver check
+        for (final IPeppolReceiverCheckSPI aReceiverCheck : APCoreMetaManager.getAllPeppolReceiverChecks ())
+        {
+          if (!aReceiverCheck.isReceiverServiced (sReceiverID, sDocTypeID, sProcessID))
+          {
+            LOGGER.error (sLogPrefix + "Receiver not serviced '" + sReceiverID + "'");
+            aProcessingErrorMessages.add (AS4Error.builder ()
+                                                  .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                                   .refToMessageInError (aIncomingState.getMessageID ())
+                                                                                   .errorDetail ("PEPPOL:NOT_SERVICED"))
+                                                  .build ());
 
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
+              aHandler.onInboundReceiverNotServiced (sSenderID, sReceiverID, sDocTypeID, sProcessID, sSbdhInstanceID);
             return;
           }
         }
 
-        // All verifiers accepted
+        // Create SBDH hash
+        final String sSbdhHash = HashHelper.sha256Hex (aSBDBytes);
+
+        // Resilient way to get AS4 timestamp
+        final OffsetDateTime aAS4Timestamp;
+        if (aIncomingState.getMessageTimestamp () != null)
+        {
+          // Was an offset provided?
+          if (aIncomingState.getMessageTimestamp ().getOffset () != null)
+          {
+            // Use provided timezone offset
+            aAS4Timestamp = aIncomingState.getMessageTimestamp ().toOffsetDateTime ();
+          }
+          else
+          {
+            // Default to UTC as per AS4 specification
+            aAS4Timestamp = OffsetDateTime.of (aIncomingState.getMessageTimestamp ().toLocalDateTime (),
+                                               ZoneOffset.UTC);
+          }
+        }
+        else
+        {
+          // Get current time stamp in UTC
+          aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
+          LOGGER.warn (sLogPrefix +
+                       "The incoming AS4 message has not AS4 message timestamp - using the current date time instead");
+        }
+
+        // Find MLS receiver
+        String sValidMlsTo = null;
+        {
+          final String sScheme = aPeppolSBD.getMLSToScheme ();
+          final String sValue = aPeppolSBD.getMLSToValue ();
+          if (PeppolIdentifierHelper.PARTICIPANT_SCHEME_ISO6523_ACTORID_UPIS.equals (sScheme))
+          {
+            // Scheme is valid
+            if (sValue != null &&
+              sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
+              sValue.length () > 5 &&
+              RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
+            {
+              // Value is valid as well - use it
+              sValidMlsTo = CIdentifier.getURIEncoded (sScheme, sValue);
+            }
+          }
+
+          if (sValidMlsTo == null && (sScheme != null || sValue != null))
+          {
+            LOGGER.warn (sLogPrefix +
+                         "Some MLS_TO parts were provided ('" +
+                         sScheme +
+                         "' and '" +
+                         sValue +
+                         "') but they were ignored because they are invalid");
+          }
+        }
+
+        // Store document to disk
+        final String sDocumentPath = aDocPayloadMgr.storeDocument (APBasicConfig.getStorageInboundPath (),
+                                                                   aAS4Timestamp,
+                                                                   sSbdhInstanceID + ".sbd",
+                                                                   aSBDBytes);
+
+        // Store in DB
+        final String sTxID = aInboundMgr.create (sIncomingID,
+                                                 sC2ID,
+                                                 sC3ID,
+                                                 sSigningCertCN,
+                                                 sSenderID,
+                                                 sReceiverID,
+                                                 sDocTypeID,
+                                                 sProcessID,
+                                                 sDocumentPath,
+                                                 aSBDBytes.length,
+                                                 sSbdhHash,
+                                                 sAS4MessageID,
+                                                 aAS4Timestamp,
+                                                 sSbdhInstanceID,
+                                                 sC1CountryCode,
+                                                 bIsDuplicateAS4,
+                                                 bIsDuplicateSBDH,
+                                                 sValidMlsTo,
+                                                 APCoreConfig.getMlsType ());
+        final IInboundTransaction aInboundTx = aInboundMgr.getByID (sTxID);
+        if (aInboundTx == null)
+          throw new IllegalStateException ("Failed to store incoming transaction");
+
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-          aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
-      }
+          aHandler.onInboundDocumentReceived (sTxID,
+                                              sSenderID,
+                                              sReceiverID,
+                                              sDocTypeID,
+                                              sProcessID,
+                                              sSbdhInstanceID,
+                                              bIsDuplicateAS4,
+                                              bIsDuplicateSBDH);
 
-      if (CPhossAP.isMLS (aDocTypeID, aProcessID))
-      {
-        LOGGER.info (sLogPrefix + "Handling incoming MLS message");
-        final ErrorList aXSDErrors = new ErrorList ();
-        final ApplicationResponseType aMLS = new PeppolMLSMarshaller ().setCollectErrors (aXSDErrors)
-                                                                       .read (aPeppolSBD.getBusinessMessageNoClone ());
-        if (aMLS == null)
+        // Optional verification
+        if (APCoreConfig.isVerificationInboundEnabled ())
         {
-          LOGGER.error (sLogPrefix + "Failed to parse incoming MLS");
-          // Add all XSD errors to the output
-          for (final IError aError : aXSDErrors)
+          for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
           {
-            final String sDetails = "Peppol MLS XSD Issue: " + aError.getAsString (aDisplayLocale);
-            aProcessingErrorMessages.add (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                               .refToMessageInError (sAS4MessageID)
-                                                               .errorDetail (sDetails)
-                                                               .build ());
+            if (aVerifier.verifyInboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+            {
+              LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
+              aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
+
+              // Dop't send MLS as response to MLS
+              if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+              {
+                // Send asynchronously
+                PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                  // Send negative MLS (RE) back to C2
+                  final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
+                                                                    MlsOutcomeIssue.businessRuleViolation ("NA",
+                                                                                                           "Inbound document verification failed"));
+                  MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+                });
+              }
+
+              // No processing error - MLS
+
+              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
+              return;
+            }
           }
-          return;
+
+          // All verifiers accepted
+          for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+            aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
         }
 
-        final PeppolMLSBuilder aBuilder = PeppolMLSBuilder.createForApplicationResponse (aMLS);
-
-        // The reference ID in the MLS is the SBDH Instance ID of the original
-        // outbound business
-        // document
-        final String sReferencedSbdhInstanceID = aBuilder.referenceId ();
-        if (StringHelper.isEmpty (sReferencedSbdhInstanceID))
+        if (CPhossAP.isMLS (aDocTypeID, aProcessID))
         {
-          LOGGER.error (sLogPrefix + "MLS message '" + sSbdhInstanceID + "' has no reference ID - cannot correlate");
-          aInboundMgr.updateStatus (sTxID, EInboundStatus.PERMANENTLY_FAILED);
-          return;
+          LOGGER.info (sLogPrefix + "Handling incoming MLS message");
+          final ErrorList aXSDErrors = new ErrorList ();
+          final ApplicationResponseType aMLS = new PeppolMLSMarshaller ().setCollectErrors (aXSDErrors)
+                                                                         .read (aPeppolSBD.getBusinessMessageNoClone ());
+          if (aMLS == null)
+          {
+            LOGGER.error (sLogPrefix + "Failed to parse incoming MLS");
+            // Add all XSD errors to the output
+            for (final IError aError : aXSDErrors)
+            {
+              final String sDetails = "Peppol MLS XSD Issue: " + aError.getAsString (aDisplayLocale);
+              aProcessingErrorMessages.add (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                 .refToMessageInError (sAS4MessageID)
+                                                                 .errorDetail (sDetails)
+                                                                 .build ());
+            }
+            return;
+          }
+
+          final PeppolMLSBuilder aBuilder = PeppolMLSBuilder.createForApplicationResponse (aMLS);
+
+          // The reference ID in the MLS is the SBDH Instance ID of the original
+          // outbound business
+          // document
+          final String sReferencedSbdhInstanceID = aBuilder.referenceId ();
+          if (StringHelper.isEmpty (sReferencedSbdhInstanceID))
+          {
+            LOGGER.error (sLogPrefix + "MLS message '" + sSbdhInstanceID + "' has no reference ID - cannot correlate");
+            aInboundMgr.updateStatus (sTxID, EInboundStatus.PERMANENTLY_FAILED);
+            return;
+          }
+
+          // Correlate with the original outbound transaction and update its MLS
+          // status
+          if (MlsHandler.handleIncomingMls (sLogPrefix,
+                                            sReferencedSbdhInstanceID,
+                                            aBuilder.responseCode (),
+                                            aAS4Timestamp,
+                                            aBuilder.id (),
+                                            sTxID).isFailure ())
+          {
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onInboundMLSCorrelationError (sTxID, sReferencedSbdhInstanceID, aBuilder.responseCode ());
+          }
         }
 
-        // Correlate with the original outbound transaction and update its MLS
-        // status
-        if (MlsHandler.handleIncomingMls (sLogPrefix,
-                                          sReferencedSbdhInstanceID,
-                                          aBuilder.responseCode (),
-                                          aAS4Timestamp,
-                                          aBuilder.id (),
-                                          sTxID).isFailure ())
+        // Forward - Business Document and MLS
+        if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
         {
+          // Forwarding failed
+
           for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onInboundMLSCorrelationError (sTxID, sReferencedSbdhInstanceID, aBuilder.responseCode ());
+            aHandler.onInboundForwardingError (sTxID, false);
         }
-      }
-
-      // Forward - Business Document and MLS
-      if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
-      {
-        // Forwarding failed
-
-        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onInboundForwardingError (sTxID, false);
-      }
-      else
-      {
-        // Forwarding success
-        if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
+        else
         {
-          // Try to send back positive MLS
-          // Don't send MLS as response to MLS
-          if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+          // Forwarding success
+          if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
           {
-            // Send asynchronously
-            PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-              // AP for HTTP (delivery with confirmation), AB for SFTP/S3
-              // (without confirmation)
-              final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
-                                                                                                               ? MlsOutcome.acceptance ()
-                                                                                                               : MlsOutcome.acknowledging ();
-              MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
-            });
+            // Try to send back positive MLS
+            // Don't send MLS as response to MLS
+            if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+            {
+              // Send asynchronously
+              PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                // AP for HTTP (delivery with confirmation), AB for SFTP/S3
+                // (without confirmation)
+                final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
+                                                                                                                 ? MlsOutcome.acceptance ()
+                                                                                                                 : MlsOutcome.acknowledging ();
+                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+              });
+            }
           }
         }
       }
-    }
-    finally
-    {
-      Phase4LogCustomizer.clearThreadLocals ();
-    }
+      finally
+      {
+        Phase4LogCustomizer.clearThreadLocals ();
+      }
     }
     catch (final Exception ex)
     {

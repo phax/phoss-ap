@@ -353,7 +353,15 @@ public final class APPeppolReportHelper
             return Boolean.FALSE;
           }
           final Wrapper <String> aTSRString = new Wrapper <> ();
-          if (aPRS.validateAndStorePeppolTSR10 (aTSR, aTSRString::set).isFailure ())
+          if (APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_TSR_VALIDATE_STORE,
+                                EAPSpanKind.INTERNAL,
+                                aChildSpan -> {
+                                  aChildSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR")
+                                            .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
+                                                           aYearMonth.toString ());
+                                  return aPRS.validateAndStorePeppolTSR10 (aTSR, aTSRString::set);
+                                })
+                     .isFailure ())
           {
             LOGGER.error ("Failed to validate and store TSR for " + aYearMonth);
             return Boolean.FALSE;
@@ -404,7 +412,15 @@ public final class APPeppolReportHelper
             return Boolean.FALSE;
           }
           final Wrapper <String> aEUSRString = new Wrapper <> ();
-          if (aPRS.validateAndStorePeppolEUSR11 (aEUSR, aEUSRString::set).isFailure ())
+          if (APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_EUSR_VALIDATE_STORE,
+                                EAPSpanKind.INTERNAL,
+                                aChildSpan -> {
+                                  aChildSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR")
+                                            .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
+                                                           aYearMonth.toString ());
+                                  return aPRS.validateAndStorePeppolEUSR11 (aEUSR, aEUSRString::set);
+                                })
+                     .isFailure ())
           {
             LOGGER.error ("Failed to validate and store EUSR for " + aYearMonth);
             return Boolean.FALSE;

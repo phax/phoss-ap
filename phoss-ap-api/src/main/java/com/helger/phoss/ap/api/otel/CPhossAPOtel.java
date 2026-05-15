@@ -77,6 +77,8 @@ public final class CPhossAPOtel
   public static final String SPAN_VERIFICATION = "phoss.ap.verification";
   public static final String SPAN_REPORTING_TSR = "phoss.ap.reporting.tsr";
   public static final String SPAN_REPORTING_EUSR = "phoss.ap.reporting.eusr";
+  public static final String SPAN_REPORTING_TSR_VALIDATE_STORE = "phoss.ap.reporting.tsr.validate_store";
+  public static final String SPAN_REPORTING_EUSR_VALIDATE_STORE = "phoss.ap.reporting.eusr.validate_store";
   public static final String SPAN_ARCHIVAL = "phoss.ap.archival";
   public static final String SPAN_FORWARDER_DISPATCH = "phoss.ap.forwarder.dispatch";
   public static final String SPAN_SCHEDULER_CYCLE = "phoss.ap.scheduler.cycle";

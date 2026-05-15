@@ -79,6 +79,8 @@ public final class CPhossAPOtel
   public static final String SPAN_REPORTING_TSR = "phoss.ap.reporting.tsr";
   public static final String SPAN_REPORTING_EUSR = "phoss.ap.reporting.eusr";
   public static final String SPAN_ARCHIVAL = "phoss.ap.archival";
+  public static final String SPAN_FORWARDER_DISPATCH = "phoss.ap.forwarder.dispatch";
+  public static final String SPAN_SCHEDULER_CYCLE = "phoss.ap.scheduler.cycle";
 
   // === Attribute keys ===
   public static final AttributeKey <String> ATTR_TRANSACTION_ID = AttributeKey.stringKey ("phoss.ap.transaction.id");
@@ -95,6 +97,7 @@ public final class CPhossAPOtel
   public static final AttributeKey <Boolean> ATTR_IS_DUPLICATE_AS4 = AttributeKey.booleanKey ("phoss.ap.is_duplicate_as4");
   public static final AttributeKey <Boolean> ATTR_IS_DUPLICATE_SBDH = AttributeKey.booleanKey ("phoss.ap.is_duplicate_sbdh");
   public static final AttributeKey <String> ATTR_SCHEDULER_NAME = AttributeKey.stringKey ("phoss.ap.scheduler.name");
+  public static final AttributeKey <String> ATTR_FORWARDER_TYPE = AttributeKey.stringKey ("phoss.ap.forwarder.type");
   public static final AttributeKey <String> ATTR_EXCEPTION_CONTEXT = AttributeKey.stringKey ("phoss.ap.exception.context");
   public static final AttributeKey <String> ATTR_EXCEPTION_CLASS = AttributeKey.stringKey ("phoss.ap.exception.class");
 

@@ -518,6 +518,19 @@ public final class OutboundOrchestrator
         // Avoid message is taken by another thread
         aTxMgr.updateStatus (sTxID, EOutboundStatus.SENDING);
 
+        // Hoisted out of the SMP span scope so the AS4 send section can read them
+        X509Certificate aReceiverCertOut = null;
+        String sReceiverAPURLOut = null;
+        String sReceiverTechnicalContactOut = null;
+
+        final Span aSmpSpan = PhossAPTelemetry.tracer ()
+                                              .spanBuilder (CPhossAPOtel.SPAN_SMP_LOOKUP)
+                                              .setSpanKind (SpanKind.CLIENT)
+                                              .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, aTx.getReceiverID ())
+                                              .startSpan ();
+        boolean bSmpLookupSuccess = false;
+        try (final Scope aIgnoredSmpScope = aSmpSpan.makeCurrent ())
+        {
         // SMP lookup to find endpoint URL
         // Try to resolve SMP host - performs NAPTR lookup
         final StopWatch aLookupSW = StopWatch.createdStarted ();
@@ -529,6 +542,7 @@ public final class OutboundOrchestrator
 
           // Remember the host URL from NAPTR lookup
           aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
+          aSmpSpan.setAttribute ("phoss.ap.smp.url", String.valueOf (aSMPClient.getSMPHostURI ()));
         }
         catch (final SMPDNSResolutionException ex)
         {
@@ -548,9 +562,6 @@ public final class OutboundOrchestrator
         }
 
         // Perform SMP lookup
-        final X509Certificate aReceiverCert;
-        final String sReceiverAPURL;
-        String sReceiverTechnicalContact;
         final String sCircuitBreakerKeySMP = "smp$" + aSMPClient.getSMPHostURI ();
         if (!CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
         {
@@ -567,14 +578,14 @@ public final class OutboundOrchestrator
           // Throws an exception in case of error
           aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
           aLookupSW.stop ();
-          aReceiverCert = aEndpointDetails.getReceiverAPCertificate ();
-          sReceiverAPURL = aEndpointDetails.getReceiverAPEndpointURL ();
-          sReceiverTechnicalContact = aEndpointDetails.getReceiverTechnicalContact ();
+          aReceiverCertOut = aEndpointDetails.getReceiverAPCertificate ();
+          sReceiverAPURLOut = aEndpointDetails.getReceiverAPEndpointURL ();
+          sReceiverTechnicalContactOut = aEndpointDetails.getReceiverTechnicalContact ();
 
           // Updated sending report
-          aSendingReport.setC3Cert (aReceiverCert);
-          aSendingReport.setC3EndpointURL (sReceiverAPURL);
-          aSendingReport.setC3TechnicalContact (sReceiverTechnicalContact);
+          aSendingReport.setC3Cert (aReceiverCertOut);
+          aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
+          aSendingReport.setC3TechnicalContact (sReceiverTechnicalContactOut);
           aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
 
           CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
@@ -602,6 +613,26 @@ public final class OutboundOrchestrator
             onPermanentFailure.accept (ex.getMessage ());
           return aSendingReport;
         }
+
+        bSmpLookupSuccess = true;
+        }
+        catch (final RuntimeException ex)
+        {
+          aSmpSpan.recordException (ex);
+          throw ex;
+        }
+        finally
+        {
+          aSmpSpan.setStatus (bSmpLookupSuccess ? StatusCode.OK : StatusCode.ERROR);
+          aSmpSpan.end ();
+        }
+
+        // Final aliases — the SMP scope hoisted these as nullable locals so they remain visible
+        // here; at this point they are guaranteed non-null because every failure path inside the
+        // SMP scope returns out of the method.
+        final X509Certificate aReceiverCert = aReceiverCertOut;
+        final String sReceiverAPURL = sReceiverAPURLOut;
+        final String sReceiverTechnicalContact = sReceiverTechnicalContactOut;
 
         final StopWatch aSendingSW = StopWatch.createdStarted ();
         final String sCircuitBreakerKeyAP = "ap$" + sReceiverAPURL;

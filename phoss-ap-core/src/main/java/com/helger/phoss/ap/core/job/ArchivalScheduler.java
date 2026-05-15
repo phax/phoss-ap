@@ -29,9 +29,15 @@ import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Scope;
 
 /**
  * Background scheduler that periodically archives completed inbound and outbound transactions.
@@ -51,9 +57,16 @@ public final class ArchivalScheduler
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
+                                       .setSpanKind (SpanKind.INTERNAL)
+                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "archival")
+                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.TRUE)
+                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nArchived = 0;
-
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     try
     {
       final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
@@ -79,6 +92,12 @@ public final class ArchivalScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
     }
+    }
+    finally
+    {
+      aSpan.setAttribute ("phoss.ap.scheduler.items", nArchived);
+      aSpan.end ();
+    }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
@@ -89,9 +108,16 @@ public final class ArchivalScheduler
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
+                                       .setSpanKind (SpanKind.INTERNAL)
+                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "archival")
+                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.FALSE)
+                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nArchived = 0;
-
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     try
     {
       final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
@@ -116,6 +142,12 @@ public final class ArchivalScheduler
 
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
+    }
+    }
+    finally
+    {
+      aSpan.setAttribute ("phoss.ap.scheduler.items", nArchived);
+      aSpan.end ();
     }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();

@@ -37,6 +37,8 @@ import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.photon.connect.sftp.AbstractChannelSftpRunnable;
 import com.helger.photon.connect.sftp.ISftpSettings;
@@ -46,6 +48,8 @@ import com.helger.photon.connect.sftp.progress.CountingSftpProgressMonitor;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+
+import io.opentelemetry.api.trace.SpanKind;
 
 /**
  * Implementation of {@link IDocumentForwarder} for using SFTP.
@@ -192,6 +196,18 @@ public class SftpDocumentForwarder implements IDocumentForwarder
   /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  {
+    return PhossAPTelemetry.withSpan (PhossAPTelemetry.tracer ()
+                                                      .spanBuilder (CPhossAPOtel.SPAN_FORWARDER_DISPATCH)
+                                                      .setSpanKind (SpanKind.CLIENT)
+                                                      .setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "sftp")
+                                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID,
+                                                                     aTransaction.getID ()),
+                                      () -> _doForwardDocument (aTransaction));
+  }
+
+  @NonNull
+  private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
     try
     {

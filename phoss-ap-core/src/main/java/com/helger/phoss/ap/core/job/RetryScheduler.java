@@ -29,11 +29,17 @@ import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.inbound.InboundOrchestrator;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Scope;
 
 /**
  * This class makes sure the inbound and outbound transactions are automatically retried.
@@ -52,9 +58,16 @@ public final class RetryScheduler
   private static void _retryOutbound (@Nonnegative final int nBatchSize)
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
+                                       .setSpanKind (SpanKind.INTERNAL)
+                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "retry")
+                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.TRUE)
+                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nProcessed = 0;
-
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     try
     {
       final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForRetry (nBatchSize);
@@ -95,6 +108,12 @@ public final class RetryScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("RetryScheduler._retryOutbound", "Internal error in outbound retry cycle", ex);
     }
+    }
+    finally
+    {
+      aSpan.setAttribute ("phoss.ap.scheduler.items", nProcessed);
+      aSpan.end ();
+    }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
@@ -104,9 +123,16 @@ public final class RetryScheduler
   private static void _retryInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_SCHEDULER_CYCLE)
+                                       .setSpanKind (SpanKind.INTERNAL)
+                                       .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "retry")
+                                       .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, Boolean.FALSE)
+                                       .startSpan ();
     final StopWatch aSW = StopWatch.createdStarted ();
     int nProcessed = 0;
-
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     try
     {
       final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForRetry (nBatchSize);
@@ -139,6 +165,12 @@ public final class RetryScheduler
 
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
+    }
+    }
+    finally
+    {
+      aSpan.setAttribute ("phoss.ap.scheduler.items", nProcessed);
+      aSpan.end ();
     }
 
     final Duration aCycleDuration = aSW.stopAndGetDuration ();

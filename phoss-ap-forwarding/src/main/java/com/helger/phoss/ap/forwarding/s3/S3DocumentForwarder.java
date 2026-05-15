@@ -32,8 +32,11 @@ import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 
+import io.opentelemetry.api.trace.SpanKind;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -98,6 +101,18 @@ public class S3DocumentForwarder implements IDocumentForwarder
   /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  {
+    return PhossAPTelemetry.withSpan (PhossAPTelemetry.tracer ()
+                                                      .spanBuilder (CPhossAPOtel.SPAN_FORWARDER_DISPATCH)
+                                                      .setSpanKind (SpanKind.CLIENT)
+                                                      .setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "s3")
+                                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID,
+                                                                     aTransaction.getID ()),
+                                      () -> _doForwardDocument (aTransaction));
+  }
+
+  @NonNull
+  private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
 

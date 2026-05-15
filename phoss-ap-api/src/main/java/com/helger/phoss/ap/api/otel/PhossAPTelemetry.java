@@ -16,6 +16,8 @@
  */
 package com.helger.phoss.ap.api.otel;
 
+import java.util.function.Supplier;
+
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,11 @@ import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 
 /**
  * Central access point for the OpenTelemetry {@link Tracer} and {@link Meter} used by the phoss AP.
@@ -200,6 +206,44 @@ public final class PhossAPTelemetry
       }
       return aRet;
     });
+  }
+
+  /**
+   * Execute the given body while a fresh OpenTelemetry span is active. The span is started from
+   * the provided {@link SpanBuilder}, made the current context via {@link Span#makeCurrent()} for
+   * the duration of {@code aBody}, and ended afterwards in a {@code finally} block.
+   * <p>
+   * Unhandled runtime exceptions are recorded via {@link Span#recordException(Throwable)} and the
+   * span is marked with {@link StatusCode#ERROR}; the exception is then re-thrown to the caller.
+   * Normal completion leaves the status as {@code UNSET} — most observability backends treat that
+   * as success. The body can call {@code Span.current().setStatus(...)} if it wants to mark a
+   * non-exception failure (e.g. a {@code FAILURE} business outcome).
+   *
+   * @param aBuilder
+   *        Pre-configured span builder (name, kind, initial attributes). Never <code>null</code>.
+   * @param aBody
+   *        The body to execute. Never <code>null</code>.
+   * @param <T>
+   *        Return type of the body.
+   * @return The value returned by the body.
+   */
+  public static <T> T withSpan (@NonNull final SpanBuilder aBuilder, @NonNull final Supplier <T> aBody)
+  {
+    final Span aSpan = aBuilder.startSpan ();
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
+      return aBody.get ();
+    }
+    catch (final RuntimeException ex)
+    {
+      aSpan.recordException (ex);
+      aSpan.setStatus (StatusCode.ERROR, ex.getMessage ());
+      throw ex;
+    }
+    finally
+    {
+      aSpan.end ();
+    }
   }
 
   // === Inbound ===

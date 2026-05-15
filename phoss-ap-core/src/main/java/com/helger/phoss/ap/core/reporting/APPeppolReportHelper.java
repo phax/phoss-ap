@@ -265,11 +265,15 @@ public final class APPeppolReportHelper
       }
 
       if (bTSRSuccess)
+      {
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
           aHandler.onPeppolReportingTSRSuccess (aYearMonth);
+      }
       else
+      {
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingTSRFailure (aYearMonth);
+      }
 
       // Handle EUSR
       try
@@ -309,11 +313,15 @@ public final class APPeppolReportHelper
       }
 
       if (bEUSRSuccess)
+      {
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
           aHandler.onPeppolReportingEUSRSuccess (aYearMonth);
+      }
       else
+      {
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingEUSRFailure (aYearMonth);
+      }
     }
 
     aSW.stop ();

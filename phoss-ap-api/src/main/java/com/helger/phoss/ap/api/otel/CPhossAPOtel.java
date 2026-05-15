@@ -70,10 +70,15 @@ public final class CPhossAPOtel
 
   // === Span names (used by manual instrumentation in caller modules) ===
   public static final String SPAN_INBOUND_RECEIVE = "phoss.ap.inbound.receive";
+  public static final String SPAN_INBOUND_DUPLICATE_CHECK = "phoss.ap.inbound.duplicate_check";
   public static final String SPAN_INBOUND_FORWARD = "phoss.ap.inbound.forward";
+  public static final String SPAN_INBOUND_C4_RESOLVE = "phoss.ap.inbound.c4_resolve";
   public static final String SPAN_OUTBOUND_SEND = "phoss.ap.outbound.send";
+  public static final String SPAN_OUTBOUND_AS4_SEND = "phoss.ap.outbound.as4_send";
+  public static final String SPAN_OUTBOUND_SBDH_READ = "phoss.ap.outbound.sbdh_read";
   public static final String SPAN_SMP_LOOKUP = "phoss.ap.smp.lookup";
   public static final String SPAN_MLS_CORRELATE = "phoss.ap.mls.correlate";
+  public static final String SPAN_MLS_SEND = "phoss.ap.mls.send";
   public static final String SPAN_VERIFICATION = "phoss.ap.verification";
   public static final String SPAN_REPORTING_TSR = "phoss.ap.reporting.tsr";
   public static final String SPAN_REPORTING_EUSR = "phoss.ap.reporting.eusr";

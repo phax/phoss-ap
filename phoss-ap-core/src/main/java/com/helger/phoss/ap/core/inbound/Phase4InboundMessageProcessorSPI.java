@@ -159,43 +159,48 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         // Duplicate detection
         boolean bIsDuplicateAS4 = false;
         boolean bIsDuplicateSBDH = false;
-
-        if (aInboundMgr.containsByAS4MessageID (sAS4MessageID))
+        try (final IAPSpan aDupSpan = APTrace.startSpan (CPhossAPOtel.SPAN_INBOUND_DUPLICATE_CHECK,
+                                                         EAPSpanKind.INTERNAL))
         {
-          bIsDuplicateAS4 = true;
-          if (APCoreConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
+          if (aInboundMgr.containsByAS4MessageID (sAS4MessageID))
           {
-            final String sMsg = "Rejecting duplicate AS4 message '" + sAS4MessageID + "'";
+            bIsDuplicateAS4 = true;
+            aDupSpan.setAttribute (CPhossAPOtel.ATTR_IS_DUPLICATE_AS4, true);
+            if (APCoreConfig.getDuplicateDetectionAS4Mode () == EDuplicateDetectionMode.REJECT)
+            {
+              final String sMsg = "Rejecting duplicate AS4 message '" + sAS4MessageID + "'";
+              LOGGER.error (sLogPrefix + sMsg);
+              aProcessingErrorMessages.add (AS4Error.builder ()
+                                                    .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                                     .refToMessageInError (aIncomingState.getMessageID ())
+                                                                                     .errorDetail (sMsg))
+                                                    .build ());
+              return;
+            }
+
+            final String sMsg = "Found duplicate AS4 message '" + sAS4MessageID + "' - processing it anyway";
             LOGGER.error (sLogPrefix + sMsg);
-            aProcessingErrorMessages.add (AS4Error.builder ()
-                                                  .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                                                   .refToMessageInError (aIncomingState.getMessageID ())
-                                                                                   .errorDetail (sMsg))
-                                                  .build ());
-            return;
           }
 
-          final String sMsg = "Found duplicate AS4 message '" + sAS4MessageID + "' - processing it anyway";
-          LOGGER.error (sLogPrefix + sMsg);
-        }
-
-        if (aInboundMgr.containsBySbdhInstanceID (sSbdhInstanceID))
-        {
-          bIsDuplicateSBDH = true;
-          if (APCoreConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
+          if (aInboundMgr.containsBySbdhInstanceID (sSbdhInstanceID))
           {
-            final String sMsg = "Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'";
-            LOGGER.error (sLogPrefix + sMsg);
-            aProcessingErrorMessages.add (AS4Error.builder ()
-                                                  .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
-                                                                                   .refToMessageInError (aIncomingState.getMessageID ())
-                                                                                   .errorDetail (sMsg))
-                                                  .build ());
-            return;
-          }
+            bIsDuplicateSBDH = true;
+            aDupSpan.setAttribute (CPhossAPOtel.ATTR_IS_DUPLICATE_SBDH, true);
+            if (APCoreConfig.getDuplicateDetectionSBDHMode () == EDuplicateDetectionMode.REJECT)
+            {
+              final String sMsg = "Rejecting duplicate SBDH instance '" + sSbdhInstanceID + "'";
+              LOGGER.error (sLogPrefix + sMsg);
+              aProcessingErrorMessages.add (AS4Error.builder ()
+                                                    .ebmsError (EEbmsError.EBMS_OTHER.errorBuilder (aDisplayLocale)
+                                                                                     .refToMessageInError (aIncomingState.getMessageID ())
+                                                                                     .errorDetail (sMsg))
+                                                    .build ());
+              return;
+            }
 
-          final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
-          LOGGER.error (sLogPrefix + sMsg);
+            final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
+            LOGGER.error (sLogPrefix + sMsg);
+          }
         }
 
         // Receiver check
@@ -316,37 +321,44 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
         // Optional verification
         if (APCoreConfig.isVerificationInboundEnabled ())
         {
-          for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
+          try (final IAPSpan aVerifySpan = APTrace.startSpan (CPhossAPOtel.SPAN_VERIFICATION, EAPSpanKind.INTERNAL)
+                                                  .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false)
+                                                  .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID)
+                                                  .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID))
           {
-            if (aVerifier.verifyInboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+            for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
             {
-              LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
-              aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
-
-              // Dop't send MLS as response to MLS
-              if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+              if (aVerifier.verifyInboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
               {
-                // Send asynchronously
-                PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-                  // Send negative MLS (RE) back to C2
-                  final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
-                                                                    MlsOutcomeIssue.businessRuleViolation ("NA",
-                                                                                                           "Inbound document verification failed"));
-                  MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
-                });
+                aVerifySpan.setStatusError ("Inbound verification failed");
+                LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
+                aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
+
+                // Dop't send MLS as response to MLS
+                if (!CPhossAP.isMLS (aDocTypeID, aProcessID))
+                {
+                  // Send asynchronously
+                  PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                    // Send negative MLS (RE) back to C2
+                    final MlsOutcome aOutcome = MlsOutcome.rejection ("Document validation failed",
+                                                                      MlsOutcomeIssue.businessRuleViolation ("NA",
+                                                                                                             "Inbound document verification failed"));
+                    MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
+                  });
+                }
+
+                // No processing error - MLS
+
+                for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                  aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
+                return;
               }
-
-              // No processing error - MLS
-
-              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-                aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
-              return;
             }
-          }
 
-          // All verifiers accepted
-          for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-            aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
+            // All verifiers accepted
+            for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+              aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
+          }
         }
 
         if (CPhossAP.isMLS (aDocTypeID, aProcessID))
@@ -385,12 +397,17 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
 
           // Correlate with the original outbound transaction and update its MLS
           // status
-          if (MlsHandler.handleIncomingMls (sLogPrefix,
-                                            sReferencedSbdhInstanceID,
-                                            aBuilder.responseCode (),
-                                            aAS4Timestamp,
-                                            aBuilder.id (),
-                                            sTxID).isFailure ())
+          if (APTrace.withSpan (CPhossAPOtel.SPAN_MLS_CORRELATE, EAPSpanKind.INTERNAL, aCorrelateSpan -> {
+            aCorrelateSpan.setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID)
+                          .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID)
+                          .setAttribute (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE, aBuilder.responseCode ().getID ());
+            return MlsHandler.handleIncomingMls (sLogPrefix,
+                                                 sReferencedSbdhInstanceID,
+                                                 aBuilder.responseCode (),
+                                                 aAS4Timestamp,
+                                                 aBuilder.id (),
+                                                 sTxID);
+          }).isFailure ())
           {
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
               aHandler.onInboundMLSCorrelationError (sTxID, sReferencedSbdhInstanceID, aBuilder.responseCode ());

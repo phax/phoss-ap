@@ -145,10 +145,12 @@ public final class InboundOrchestrator
                                                                      : null;
             final boolean bIsRetry = aInboundTx.getAttemptCount () > 0;
             for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+            {
               aHandler.onInboundDocumentForwarded (aInboundTx.getID (),
                                                    aInboundTx.getSbdhInstanceID (),
                                                    aForwardingDuration,
                                                    bIsRetry);
+            }
 
             bForwardSuccess = true;
 
@@ -156,7 +158,17 @@ public final class InboundOrchestrator
             // modes
             String sC4CountryCode = aResult.getCountryCodeC4 ();
             if (sC4CountryCode == null)
-              sC4CountryCode = C4CountryCodeResolver.resolve (aInboundTx);
+            {
+              sC4CountryCode = APTrace.withSpan (CPhossAPOtel.SPAN_INBOUND_C4_RESOLVE,
+                                                 EAPSpanKind.INTERNAL,
+                                                 aResolveSpan -> {
+                                                   aResolveSpan.setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID,
+                                                                              aInboundTx.getID ())
+                                                               .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                              aInboundTx.getReceiverID ());
+                                                   return C4CountryCodeResolver.resolve (aInboundTx);
+                                                 });
+            }
 
             if (sC4CountryCode != null)
             {

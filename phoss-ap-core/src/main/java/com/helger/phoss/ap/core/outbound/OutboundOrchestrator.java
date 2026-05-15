@@ -218,18 +218,24 @@ public final class OutboundOrchestrator
     // Optional verification
     if (APCoreConfig.isVerificationOutboundEnabled ())
     {
-      for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-        if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-        {
-          LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
-          return null;
-        }
+      try (final IAPSpan aVerifySpan = APTrace.startSpan (CPhossAPOtel.SPAN_VERIFICATION, EAPSpanKind.INTERNAL)
+                                              .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true)
+                                              .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID))
+      {
+        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
+          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+          {
+            aVerifySpan.setStatusError ("Outbound verification failed");
+            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
+            return null;
+          }
 
-      // All verifiers accepted
-      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-        aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+        // All verifiers accepted
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+      }
     }
 
     // Create in pending state
@@ -342,18 +348,24 @@ public final class OutboundOrchestrator
     {
       final IDocumentTypeIdentifier aDocTypeID = aSbdData.getDocumentTypeAsIdentifier ();
       final IProcessIdentifier aProcessID = aSbdData.getProcessAsIdentifier ();
-      for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-        if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-        {
-          LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
-          return null;
-        }
+      try (final IAPSpan aVerifySpan = APTrace.startSpan (CPhossAPOtel.SPAN_VERIFICATION, EAPSpanKind.INTERNAL)
+                                              .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true)
+                                              .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID))
+      {
+        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
+          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+          {
+            aVerifySpan.setStatusError ("Outbound verification failed");
+            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
+            return null;
+          }
 
-      // All verifiers accepted
-      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-        aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+        // All verifiers accepted
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+      }
     }
 
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
@@ -738,7 +750,13 @@ public final class OutboundOrchestrator
                   aBuilder.payload (HasInputStream.multiple ( () -> aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ())));
                 }
 
-                eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                eResult = APTrace.withSpan (CPhossAPOtel.SPAN_OUTBOUND_AS4_SEND,
+                                            EAPSpanKind.CLIENT,
+                                            aSendSpan -> {
+                                              aSendSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                      aTx.getReceiverID ());
+                                              return aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                                            });
                 aSendingReport.setAS4SendingResult (eResult);
                 LOGGER.info (sRealLogPrefix + "Peppol SBDH-building client send result: " + eResult);
 
@@ -749,35 +767,52 @@ public final class OutboundOrchestrator
               {
                 final PeppolSBDHData aSbdData;
                 final MessageDigest aMD = HashHelper.createMessageDigest ();
-                try (final InputStream aFileIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
-                     final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
-                     final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
+                try (final IAPSpan aSbdhSpan = APTrace.startSpan (CPhossAPOtel.SPAN_OUTBOUND_SBDH_READ,
+                                                                  EAPSpanKind.INTERNAL)
+                                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID))
                 {
-                  aSbdData = new PeppolSBDHDataReader (aIF).extractData (aDigestIS);
-                  if (aSbdData == null)
-                    throw new IllegalStateException ("Failed to read SBDH from file '" + aTx.getDocumentPath () + "'");
+                  boolean bSbdhReadSuccess = false;
+                  try
+                  {
+                    try (final InputStream aFileIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
+                         final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
+                         final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
+                    {
+                      aSbdData = new PeppolSBDHDataReader (aIF).extractData (aDigestIS);
+                      if (aSbdData == null)
+                        throw new IllegalStateException ("Failed to read SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "'");
 
-                  // Check if the read size matches the stored size
-                  final long nReadByteCount = aCountingIS.getBytesRead ();
-                  if (nReadByteCount != aTx.getDocumentSize ())
-                    throw new IllegalStateException ("The size of the SBDH from file '" +
-                                                     aTx.getDocumentPath () +
-                                                     "' was stored to be " +
-                                                     aTx.getDocumentSize () +
-                                                     " but " +
-                                                     nReadByteCount +
-                                                     " bytes were read now");
+                      // Check if the read size matches the stored size
+                      final long nReadByteCount = aCountingIS.getBytesRead ();
+                      if (nReadByteCount != aTx.getDocumentSize ())
+                        throw new IllegalStateException ("The size of the SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "' was stored to be " +
+                                                         aTx.getDocumentSize () +
+                                                         " but " +
+                                                         nReadByteCount +
+                                                         " bytes were read now");
 
-                  // Check if the read digest matches the stored digest
-                  final String sReadHash = HashHelper.getDigestHex (aMD);
-                  if (!sReadHash.equals (aTx.getDocumentHash ()))
-                    throw new IllegalStateException ("The hash of the SBDH from file '" +
-                                                     aTx.getDocumentPath () +
-                                                     "' was stored to be '" +
-                                                     aTx.getDocumentHash () +
-                                                     "' but the re-read document now creates the hash '" +
-                                                     sReadHash +
-                                                     "'");
+                      // Check if the read digest matches the stored digest
+                      final String sReadHash = HashHelper.getDigestHex (aMD);
+                      if (!sReadHash.equals (aTx.getDocumentHash ()))
+                        throw new IllegalStateException ("The hash of the SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "' was stored to be '" +
+                                                         aTx.getDocumentHash () +
+                                                         "' but the re-read document now creates the hash '" +
+                                                         sReadHash +
+                                                         "'");
+                    }
+                    bSbdhReadSuccess = true;
+                  }
+                  finally
+                  {
+                    if (!bSbdhReadSuccess)
+                      aSbdhSpan.setStatusError (null);
+                  }
                 }
 
                 // Start the main builder
@@ -808,7 +843,13 @@ public final class OutboundOrchestrator
                                              .signalMsgConsumer ( (aSignalMsg, aMessageMetadata, aState) -> {
                                                aSendingReport.setAS4ReceivedSignalMsg (aSignalMsg);
                                              });
-                eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                eResult = APTrace.withSpan (CPhossAPOtel.SPAN_OUTBOUND_AS4_SEND,
+                                            EAPSpanKind.CLIENT,
+                                            aSendSpan -> {
+                                              aSendSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                      aTx.getReceiverID ());
+                                              return aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                                            });
                 aSendingReport.setAS4SendingResult (eResult);
                 LOGGER.info (sRealLogPrefix + "Peppol Prebuilt-SBDH client send result: " + eResult);
 

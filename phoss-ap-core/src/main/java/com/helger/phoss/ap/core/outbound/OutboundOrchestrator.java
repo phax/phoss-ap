@@ -70,6 +70,8 @@ import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
@@ -86,6 +88,11 @@ import com.helger.smpclient.peppol.CachingSMPClientReadOnly;
 import com.helger.smpclient.peppol.SMPClientReadOnly;
 import com.helger.smpclient.url.PeppolNaptrURLProvider;
 import com.helger.smpclient.url.SMPDNSResolutionException;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Scope;
 
 /**
  * Main class to handle outbound transactions.
@@ -429,6 +436,18 @@ public final class OutboundOrchestrator
     LOGGER.info (sRealLogPrefix + "Processing outbound transaction");
     Phase4LogCustomizer.setThreadLocalLogPrefix (sRealLogPrefix);
 
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_OUTBOUND_SEND)
+                                       .setSpanKind (SpanKind.PRODUCER)
+                                       .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID)
+                                       .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, aTx.getSbdhInstanceID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_SENDER_ID, aTx.getSenderID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, aTx.getReceiverID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_DOCTYPE_ID, aTx.getDocTypeID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_PROCESS_ID, aTx.getProcessID ())
+                                       .startSpan ();
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     // try-catch for overall duration only
     try
     {
@@ -901,6 +920,19 @@ public final class OutboundOrchestrator
 
       // Don't forget to clean up
       Phase4LogCustomizer.clearThreadLocals ();
+    }
+    }
+    catch (final RuntimeException ex)
+    {
+      // Catch-all so the span captures unexpected runtime errors that bypass the inner handlers
+      aSpan.recordException (ex);
+      aSendingReport.setOverallSuccess (false);
+      throw ex;
+    }
+    finally
+    {
+      aSpan.setStatus (aSendingReport.isOverallSuccess () ? StatusCode.OK : StatusCode.ERROR);
+      aSpan.end ();
     }
 
     return aSendingReport;

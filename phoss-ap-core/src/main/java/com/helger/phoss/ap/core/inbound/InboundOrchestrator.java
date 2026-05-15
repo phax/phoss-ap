@@ -35,6 +35,8 @@ import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
@@ -44,6 +46,11 @@ import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.core.reporting.APPeppolReportingHelper;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.PhotonWorkerPool;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Scope;
 
 /**
  * Internal orchestrator to handle messages received via the Peppol Network
@@ -77,6 +84,18 @@ public final class InboundOrchestrator
     final IInboundForwardingAttemptManager aAttemptMgr = APJdbcMetaManager.getInboundForwardingAttemptMgr ();
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
 
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_INBOUND_FORWARD)
+                                       .setSpanKind (SpanKind.PRODUCER)
+                                       .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aInboundTx.getID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
+                                                      aInboundTx.getSbdhInstanceID ())
+                                       .setAttribute (CPhossAPOtel.ATTR_IS_RETRY,
+                                                      Boolean.valueOf (aInboundTx.getAttemptCount () > 0))
+                                       .startSpan ();
+    boolean bForwardSuccess = false;
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     final String sCircuitBreakerID = "phoss-ap-forwarder";
     if (CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerID))
     {
@@ -136,6 +155,8 @@ public final class InboundOrchestrator
                                                aInboundTx.getSbdhInstanceID (),
                                                aForwardingDuration,
                                                bIsRetry);
+
+        bForwardSuccess = true;
 
         // Determine C4 country code: either from sync response or via configured resolution modes
         String sC4CountryCode = aResult.getCountryCodeC4 ();
@@ -214,7 +235,18 @@ public final class InboundOrchestrator
                                      aResult.getErrorDetails ());
       }
     }
+    }
+    catch (final RuntimeException ex)
+    {
+      aSpan.recordException (ex);
+      throw ex;
+    }
+    finally
+    {
+      aSpan.setStatus (bForwardSuccess ? StatusCode.OK : StatusCode.ERROR);
+      aSpan.end ();
+    }
 
-    return ESuccess.FAILURE;
+    return bForwardSuccess ? ESuccess.SUCCESS : ESuccess.FAILURE;
   }
 }

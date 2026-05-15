@@ -14,16 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.otel;
+package com.helger.phoss.ap.api.otel;
 
 import com.helger.annotation.concurrent.Immutable;
 
 import io.opentelemetry.api.common.AttributeKey;
 
 /**
- * Constants for the phoss AP OpenTelemetry integration: instrumentation scope, metric names and
- * attribute keys. Metric names follow OpenTelemetry semantic conventions (lowercase dotted
- * namespace) and use the <code>phoss.ap.*</code> prefix for AP-specific signals.
+ * Constants for the phoss AP OpenTelemetry integration: instrumentation scope, metric names,
+ * span names and attribute keys. Metric names follow OpenTelemetry semantic conventions (lowercase
+ * dotted namespace) and use the <code>phoss.ap.*</code> prefix for AP-specific signals.
+ * <p>
+ * This class lives in <code>phoss-ap-api</code> so any module can record spans / instruments
+ * without taking a compile-time dependency on <code>phoss-ap-otel</code>. The OTel SDK itself is
+ * still wired in <code>phoss-ap-otel</code>.
  *
  * @author Philip Helger
  */

@@ -60,6 +60,8 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.otel.PhossAPTelemetry;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
@@ -71,6 +73,11 @@ import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.PhotonWorkerPool;
 import com.helger.security.certificate.CertificateHelper;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Scope;
 
 import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
@@ -104,6 +111,12 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     final String sLogPrefix = "[" + aMessageMetadata.getIncomingUniqueID () + "] ";
     Phase4LogCustomizer.setThreadLocalLogPrefix (sLogPrefix);
 
+    final Span aSpan = PhossAPTelemetry.tracer ()
+                                       .spanBuilder (CPhossAPOtel.SPAN_INBOUND_RECEIVE)
+                                       .setSpanKind (SpanKind.CONSUMER)
+                                       .startSpan ();
+    try (final Scope aIgnoredScope = aSpan.makeCurrent ())
+    {
     try
     {
       final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
@@ -120,6 +133,12 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       final IProcessIdentifier aProcessID = aPeppolSBD.getProcessAsIdentifier ();
       final String sProcessID = aProcessID.getURIEncoded ();
       final String sSbdhInstanceID = aPeppolSBD.getInstanceIdentifier ();
+      aSpan.setAttribute (CPhossAPOtel.ATTR_SENDER_ID, sSenderID);
+      aSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, sReceiverID);
+      aSpan.setAttribute (CPhossAPOtel.ATTR_DOCTYPE_ID, sDocTypeID);
+      aSpan.setAttribute (CPhossAPOtel.ATTR_PROCESS_ID, sProcessID);
+      aSpan.setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID);
+
       String sC1CountryCode = aPeppolSBD.getCountryC1 ();
       if (StringHelper.isEmpty (sC1CountryCode))
       {
@@ -417,6 +436,17 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
     finally
     {
       Phase4LogCustomizer.clearThreadLocals ();
+    }
+    }
+    catch (final Exception ex)
+    {
+      aSpan.recordException (ex);
+      aSpan.setStatus (StatusCode.ERROR, ex.getMessage ());
+      throw ex;
+    }
+    finally
+    {
+      aSpan.end ();
     }
   }
 

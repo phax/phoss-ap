@@ -68,46 +68,48 @@ public final class RetryScheduler
     int nProcessed = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForRetry (nBatchSize);
-
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
-        final String sLogPrefix = "[RetryOutbound] ";
+        final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForRetry (nBatchSize);
 
-        for (final IOutboundTransaction aTx : aTransactions)
+        if (aTransactions.isNotEmpty ())
         {
-          nProcessed++;
-          try
-          {
-            OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
-          }
-          catch (final Exception ex)
-          {
-            LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
+          LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
+          final String sLogPrefix = "[RetryOutbound] ";
 
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
-                                              "Error retrying outbound transaction '" + aTx.getID () + "'",
-                                              ex);
+          for (final IOutboundTransaction aTx : aTransactions)
+          {
+            nProcessed++;
+            try
+            {
+              OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
+            }
+            catch (final Exception ex)
+            {
+              LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
+
+              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
+                                                "Error retrying outbound transaction '" + aTx.getID () + "'",
+                                                ex);
+            }
           }
         }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no outbound transactions for retry");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no outbound transactions for retry");
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error in outbound retry cycle", ex);
+        LOGGER.error ("Internal error in outbound retry cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("RetryScheduler._retryOutbound", "Internal error in outbound retry cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
+                                          "Internal error in outbound retry cycle",
+                                          ex);
+      }
     }
     finally
     {
@@ -133,39 +135,39 @@ public final class RetryScheduler
     int nProcessed = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForRetry (nBatchSize);
-
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
-        final String sLogPrefix = "[RetryInbound] ";
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForRetry (nBatchSize);
 
-        for (final IInboundTransaction aInboundTx : aTransactions)
+        if (aTransactions.isNotEmpty ())
         {
-          nProcessed++;
-          // Re-forward using the original InboundOrchestrator logic
-          if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+          LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
+          final String sLogPrefix = "[RetryInbound] ";
+
+          for (final IInboundTransaction aInboundTx : aTransactions)
           {
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            nProcessed++;
+            // Re-forward using the original InboundOrchestrator logic
+            if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+            {
+              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            }
           }
         }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no inbound transactions for retry");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no inbound transactions for retry");
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error in inbound retry cycle", ex);
+        LOGGER.error ("Internal error in inbound retry cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
+      }
     }
     finally
     {

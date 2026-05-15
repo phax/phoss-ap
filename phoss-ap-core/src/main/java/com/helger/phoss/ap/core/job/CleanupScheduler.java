@@ -100,22 +100,24 @@ public final class CleanupScheduler
     int nDeleted = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      nDeleted = aArchivalMgr.cleanupOutbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupOutbound] "));
-      if (nDeleted > 0)
-        LOGGER.info ("Cleaned up " + nDeleted + " archived outbound transactions");
-      else
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no archived outbound transactions for cleanup");
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in outbound cleanup cycle", ex);
+      try
+      {
+        nDeleted = aArchivalMgr.cleanupOutbound (aCutoff,
+                                                 nBatchSize,
+                                                 _docDeleter (aDocPayloadMgr, "[CleanupOutbound] "));
+        if (nDeleted > 0)
+          LOGGER.info ("Cleaned up " + nDeleted + " archived outbound transactions");
+        else
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no archived outbound transactions for cleanup");
+      }
+      catch (final Exception ex)
+      {
+        LOGGER.error ("Error in outbound cleanup cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("CleanupScheduler._cleanupOutbound", "Error in outbound cleanup cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("CleanupScheduler._cleanupOutbound", "Error in outbound cleanup cycle", ex);
+      }
     }
     finally
     {
@@ -142,22 +144,22 @@ public final class CleanupScheduler
     int nDeleted = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      nDeleted = aArchivalMgr.cleanupInbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupInbound] "));
-      if (nDeleted > 0)
-        LOGGER.info ("Cleaned up " + nDeleted + " archived inbound transactions");
-      else
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no archived inbound transactions for cleanup");
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in inbound cleanup cycle", ex);
+      try
+      {
+        nDeleted = aArchivalMgr.cleanupInbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupInbound] "));
+        if (nDeleted > 0)
+          LOGGER.info ("Cleaned up " + nDeleted + " archived inbound transactions");
+        else
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no archived inbound transactions for cleanup");
+      }
+      catch (final Exception ex)
+      {
+        LOGGER.error ("Error in inbound cleanup cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("CleanupScheduler._cleanupInbound", "Error in inbound cleanup cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("CleanupScheduler._cleanupInbound", "Error in inbound cleanup cycle", ex);
+      }
     }
     finally
     {

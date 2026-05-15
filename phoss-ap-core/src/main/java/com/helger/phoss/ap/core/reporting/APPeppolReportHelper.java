@@ -237,52 +237,54 @@ public final class APPeppolReportHelper
                                                                .setSpanKind (SpanKind.PRODUCER)
                                                                .setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR")
                                                                .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
-                                                                              aYearMonth.toString ()),
-                                               () -> {
-                                                 try
-                                                 {
-                                                   final TransactionStatisticsReportType aTSR = createTSR (aYearMonth);
-                                                   if (aTSR == null)
-                                                   {
-                                                     LOGGER.error ("Failed to create TSR for " + aYearMonth);
-                                                     return Boolean.FALSE;
-                                                   }
-                                                   final Wrapper <String> aTSRString = new Wrapper <> ();
-                                                   if (aPRS.validateAndStorePeppolTSR10 (aTSR, aTSRString::set)
-                                                           .isFailure ())
-                                                   {
-                                                     LOGGER.error ("Failed to validate and store TSR for " +
-                                                                   aYearMonth);
-                                                     return Boolean.FALSE;
-                                                   }
-                                                   if (aPRS.sendPeppolReport (aYearMonth,
-                                                                              EPeppolReportType.TSR_V10,
-                                                                              aTSRString.get (),
-                                                                              aPeppolSender)
-                                                           .isFailure ())
-                                                   {
-                                                     LOGGER.error ("Failed to send TSR for " +
-                                                                   aYearMonth +
-                                                                   " to OpenPeppol");
-                                                     return Boolean.FALSE;
-                                                   }
-                                                   LOGGER.info ("Successfully sent TSR for " +
-                                                                aYearMonth +
-                                                                " to OpenPeppol");
-                                                   return Boolean.TRUE;
-                                                 }
-                                                 catch (final Exception ex)
-                                                 {
-                                                   LOGGER.error ("Failed to create TSR for " + aYearMonth, ex);
-                                                   for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-                                                     aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
-                                                                                     "Failed to create TSR for " +
-                                                                                       aYearMonth,
-                                                                                     ex);
-                                                   return Boolean.FALSE;
-                                                 }
-                                               })
-                                              .booleanValue ();
+                                                                              aYearMonth.toString ()), () -> {
+                                                                                try
+                                                                                {
+                                                                                  final TransactionStatisticsReportType aTSR = createTSR (aYearMonth);
+                                                                                  if (aTSR == null)
+                                                                                  {
+                                                                                    LOGGER.error ("Failed to create TSR for " +
+                                                                                                  aYearMonth);
+                                                                                    return Boolean.FALSE;
+                                                                                  }
+                                                                                  final Wrapper <String> aTSRString = new Wrapper <> ();
+                                                                                  if (aPRS.validateAndStorePeppolTSR10 (aTSR,
+                                                                                                                        aTSRString::set)
+                                                                                          .isFailure ())
+                                                                                  {
+                                                                                    LOGGER.error ("Failed to validate and store TSR for " +
+                                                                                                  aYearMonth);
+                                                                                    return Boolean.FALSE;
+                                                                                  }
+                                                                                  if (aPRS.sendPeppolReport (aYearMonth,
+                                                                                                             EPeppolReportType.TSR_V10,
+                                                                                                             aTSRString.get (),
+                                                                                                             aPeppolSender)
+                                                                                          .isFailure ())
+                                                                                  {
+                                                                                    LOGGER.error ("Failed to send TSR for " +
+                                                                                                  aYearMonth +
+                                                                                                  " to OpenPeppol");
+                                                                                    return Boolean.FALSE;
+                                                                                  }
+                                                                                  LOGGER.info ("Successfully sent TSR for " +
+                                                                                               aYearMonth +
+                                                                                               " to OpenPeppol");
+                                                                                  return Boolean.TRUE;
+                                                                                }
+                                                                                catch (final Exception ex)
+                                                                                {
+                                                                                  LOGGER.error ("Failed to create TSR for " +
+                                                                                                aYearMonth,
+                                                                                                ex);
+                                                                                  for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                                                                                    aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
+                                                                                                                    "Failed to create TSR for " +
+                                                                                                                                                                       aYearMonth,
+                                                                                                                    ex);
+                                                                                  return Boolean.FALSE;
+                                                                                }
+                                                                              }).booleanValue ();
 
       if (bTSRSuccess)
       {
@@ -301,52 +303,54 @@ public final class APPeppolReportHelper
                                                                 .setSpanKind (SpanKind.PRODUCER)
                                                                 .setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR")
                                                                 .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
-                                                                               aYearMonth.toString ()),
-                                                () -> {
-                                                  try
-                                                  {
-                                                    final EndUserStatisticsReportType aEUSR = createEUSR (aYearMonth);
-                                                    if (aEUSR == null)
-                                                    {
-                                                      LOGGER.error ("Failed to create EUSR for " + aYearMonth);
-                                                      return Boolean.FALSE;
-                                                    }
-                                                    final Wrapper <String> aEUSRString = new Wrapper <> ();
-                                                    if (aPRS.validateAndStorePeppolEUSR11 (aEUSR, aEUSRString::set)
-                                                            .isFailure ())
-                                                    {
-                                                      LOGGER.error ("Failed to validate and store EUSR for " +
-                                                                    aYearMonth);
-                                                      return Boolean.FALSE;
-                                                    }
-                                                    if (aPRS.sendPeppolReport (aYearMonth,
-                                                                               EPeppolReportType.EUSR_V11,
-                                                                               aEUSRString.get (),
-                                                                               aPeppolSender)
-                                                            .isFailure ())
-                                                    {
-                                                      LOGGER.error ("Failed to send EUSR for " +
-                                                                    aYearMonth +
-                                                                    " to OpenPeppol");
-                                                      return Boolean.FALSE;
-                                                    }
-                                                    LOGGER.info ("Successfully sent EUSR for " +
-                                                                 aYearMonth +
-                                                                 " to OpenPeppol");
-                                                    return Boolean.TRUE;
-                                                  }
-                                                  catch (final Exception ex)
-                                                  {
-                                                    LOGGER.error ("Failed to create EUSR for " + aYearMonth, ex);
-                                                    for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-                                                      aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
-                                                                                      "Failed to create EUSR for " +
-                                                                                        aYearMonth,
-                                                                                      ex);
-                                                    return Boolean.FALSE;
-                                                  }
-                                                })
-                                               .booleanValue ();
+                                                                               aYearMonth.toString ()), () -> {
+                                                                                 try
+                                                                                 {
+                                                                                   final EndUserStatisticsReportType aEUSR = createEUSR (aYearMonth);
+                                                                                   if (aEUSR == null)
+                                                                                   {
+                                                                                     LOGGER.error ("Failed to create EUSR for " +
+                                                                                                   aYearMonth);
+                                                                                     return Boolean.FALSE;
+                                                                                   }
+                                                                                   final Wrapper <String> aEUSRString = new Wrapper <> ();
+                                                                                   if (aPRS.validateAndStorePeppolEUSR11 (aEUSR,
+                                                                                                                          aEUSRString::set)
+                                                                                           .isFailure ())
+                                                                                   {
+                                                                                     LOGGER.error ("Failed to validate and store EUSR for " +
+                                                                                                   aYearMonth);
+                                                                                     return Boolean.FALSE;
+                                                                                   }
+                                                                                   if (aPRS.sendPeppolReport (aYearMonth,
+                                                                                                              EPeppolReportType.EUSR_V11,
+                                                                                                              aEUSRString.get (),
+                                                                                                              aPeppolSender)
+                                                                                           .isFailure ())
+                                                                                   {
+                                                                                     LOGGER.error ("Failed to send EUSR for " +
+                                                                                                   aYearMonth +
+                                                                                                   " to OpenPeppol");
+                                                                                     return Boolean.FALSE;
+                                                                                   }
+                                                                                   LOGGER.info ("Successfully sent EUSR for " +
+                                                                                                aYearMonth +
+                                                                                                " to OpenPeppol");
+                                                                                   return Boolean.TRUE;
+                                                                                 }
+                                                                                 catch (final Exception ex)
+                                                                                 {
+                                                                                   LOGGER.error ("Failed to create EUSR for " +
+                                                                                                 aYearMonth,
+                                                                                                 ex);
+                                                                                   for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                                                                                     aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
+                                                                                                                     "Failed to create EUSR for " +
+                                                                                                                                                                        aYearMonth,
+                                                                                                                     ex);
+                                                                                   return Boolean.FALSE;
+                                                                                 }
+                                                                               }).booleanValue ();
 
       if (bEUSRSuccess)
       {

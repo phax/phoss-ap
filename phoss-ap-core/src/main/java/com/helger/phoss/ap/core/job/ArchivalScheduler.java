@@ -67,31 +67,31 @@ public final class ArchivalScheduler
     int nArchived = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
-        for (final IOutboundTransaction aTx : aTransactions)
+        final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
+        if (aTransactions.isNotEmpty ())
         {
-          aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
-          nArchived++;
+          LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
+          for (final IOutboundTransaction aTx : aTransactions)
+          {
+            aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
+            nArchived++;
+          }
+        }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no outbound transactions for archiving");
         }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no outbound transactions for archiving");
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in outbound archival cycle", ex);
+        LOGGER.error ("Error in outbound archival cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
+      }
     }
     finally
     {
@@ -118,31 +118,31 @@ public final class ArchivalScheduler
     int nArchived = 0;
     try (final Scope aIgnoredScope = aSpan.makeCurrent ())
     {
-    try
-    {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
-        for (final IInboundTransaction aTx : aTransactions)
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
+        if (aTransactions.isNotEmpty ())
         {
-          aArchivalMgr.archiveInboundTransaction (aTx.getID ());
-          nArchived++;
+          LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
+          for (final IInboundTransaction aTx : aTransactions)
+          {
+            aArchivalMgr.archiveInboundTransaction (aTx.getID ());
+            nArchived++;
+          }
+        }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no inbound transactions for archiving");
         }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no inbound transactions for archiving");
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in inbound archival cycle", ex);
+        LOGGER.error ("Error in inbound archival cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
-    }
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
+      }
     }
     finally
     {

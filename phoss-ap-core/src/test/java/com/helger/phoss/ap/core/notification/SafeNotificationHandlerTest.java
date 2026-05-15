@@ -43,6 +43,7 @@ public final class SafeNotificationHandlerTest
   private static final class CountingHandler implements IAPNotificationHandlerSPI
   {
     final AtomicInteger m_aInboundVerificationRejectionCount = new AtomicInteger (0);
+    final AtomicInteger m_aOutboundVerificationRejectionCount = new AtomicInteger (0);
     final AtomicInteger m_aInboundReceiverNotServicedCount = new AtomicInteger (0);
     final AtomicInteger m_aInboundMLSCorrelationErrorCount = new AtomicInteger (0);
     final AtomicInteger m_aInboundForwardingErrorCount = new AtomicInteger (0);
@@ -57,6 +58,12 @@ public final class SafeNotificationHandlerTest
                                                 @Nullable final String sErrorDetails)
     {
       m_aInboundVerificationRejectionCount.incrementAndGet ();
+    }
+
+    public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
+                                                 @Nullable final String sErrorDetails)
+    {
+      m_aOutboundVerificationRejectionCount.incrementAndGet ();
     }
 
     public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
@@ -124,6 +131,12 @@ public final class SafeNotificationHandlerTest
       throw new RuntimeException ("test-onInboundVerificationRejection");
     }
 
+    public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
+                                                 @Nullable final String sErrorDetails)
+    {
+      throw new RuntimeException ("test-onOutboundVerificationRejection");
+    }
+
     public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                               @NonNull final String sReceiverID,
                                               @NonNull final String sDocTypeID,
@@ -186,6 +199,9 @@ public final class SafeNotificationHandlerTest
     aSafe.onInboundVerificationRejection ("tx-1", "sbdh-1", "error");
     assertEquals (1, aInner.m_aInboundVerificationRejectionCount.get ());
 
+    aSafe.onOutboundVerificationRejection ("sbdh-out", "error");
+    assertEquals (1, aInner.m_aOutboundVerificationRejectionCount.get ());
+
     aSafe.onInboundReceiverNotServiced ("sender", "receiver", "doctype", "process", "sbdh-2");
     assertEquals (1, aInner.m_aInboundReceiverNotServicedCount.get ());
 
@@ -218,6 +234,7 @@ public final class SafeNotificationHandlerTest
 
     // None of these should throw
     aSafe.onInboundVerificationRejection ("tx-1", "sbdh-1", "error");
+    aSafe.onOutboundVerificationRejection ("sbdh-out", "error");
     aSafe.onInboundReceiverNotServiced ("sender", "receiver", "doctype", "process", "sbdh-2");
     aSafe.onInboundMLSCorrelationError ("tx-2", "ref-sbdh", EPeppolMLSResponseCode.REJECTION);
     aSafe.onInboundForwardingError ("tx-3", true);

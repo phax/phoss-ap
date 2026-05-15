@@ -34,7 +34,9 @@ import com.helger.peppol.commons.CPeppolCommonsVersion;
 import com.helger.phase4.CAS4Version;
 import com.helger.phoss.ap.api.CPhossAPVersion;
 import com.helger.phoss.ap.api.config.APConfigProvider;
+import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.basic.APBasicConfig;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.servlet.APServletInit;
@@ -68,7 +70,9 @@ public final class APStatusProvider
   @ReturnsMutableCopy
   public static IJsonObject getDefaultStatusData ()
   {
-    final OffsetDateTime aNow = OffsetDateTime.now ();
+    final var aConfig = APConfigProvider.getConfig ();
+    final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+    final OffsetDateTime aNow = aTimestampMgr.getCurrentDateTimeUTC ();
 
     final IJsonObject aStatusData = new JsonObject ();
 
@@ -119,7 +123,6 @@ public final class APStatusProvider
     aStatusData.add ("peppol.reporting.schedule.enabled", APCoreConfig.isPeppolReportingScheduled ());
 
     // Proxy
-    final var aConfig = APConfigProvider.getConfig ();
     aStatusData.add ("proxy.http.configured", aConfig.getAsBoolean ("http.proxy.enabled", false));
     aStatusData.add ("proxy.http.username.configured",
                      StringHelper.isNotEmpty (aConfig.getAsString ("http.proxy.username")));
@@ -129,7 +132,10 @@ public final class APStatusProvider
     aStatusData.add ("duplicate.detection.sbdh.mode", APCoreConfig.getDuplicateDetectionSBDHMode ().getID ());
 
     // Sentry configuration
-    aStatusData.add ("sentry.enabled", APConfigProvider.getConfig ().containsNonNullValue ("sentry.dsn"));
+    aStatusData.add ("sentry.enabled", aConfig.containsNonNullValue ("sentry.dsn"));
+
+    // OpenTelemetry configuration
+    aStatusData.add ("otel.enabled", aConfig.getAsBoolean ("otel.enabled", false));
 
     // DNS configuration
     aStatusData.add ("dns.config.servers", ResolverConfig.getCurrentConfig ().servers ());

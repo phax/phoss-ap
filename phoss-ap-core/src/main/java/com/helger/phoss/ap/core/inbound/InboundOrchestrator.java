@@ -16,6 +16,9 @@
  */
 package com.helger.phoss.ap.core.inbound;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
+
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +29,13 @@ import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
@@ -70,6 +75,7 @@ public final class InboundOrchestrator
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final IInboundForwardingAttemptManager aAttemptMgr = APJdbcMetaManager.getInboundForwardingAttemptMgr ();
+    final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
 
     final String sCircuitBreakerID = "phoss-ap-forwarder";
     if (CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerID))
@@ -119,6 +125,17 @@ public final class InboundOrchestrator
 
         aTxMgr.updateStatusCompleted (aInboundTx.getID (), EInboundStatus.FORWARDED);
         LOGGER.info (sLogPrefix + "Forwarding successful for transaction '" + aInboundTx.getID () + "'");
+
+        final OffsetDateTime aReceivedDT = aInboundTx.getAS4Timestamp ();
+        final Duration aForwardingDuration = aReceivedDT != null ? Duration.between (aReceivedDT,
+                                                                                     aTimestampMgr.getCurrentDateTimeUTC ())
+                                                                 : null;
+        final boolean bIsRetry = aInboundTx.getAttemptCount () > 0;
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onInboundDocumentForwarded (aInboundTx.getID (),
+                                               aInboundTx.getSbdhInstanceID (),
+                                               aForwardingDuration,
+                                               bIsRetry);
 
         // Determine C4 country code: either from sync response or via configured resolution modes
         String sC4CountryCode = aResult.getCountryCodeC4 ();

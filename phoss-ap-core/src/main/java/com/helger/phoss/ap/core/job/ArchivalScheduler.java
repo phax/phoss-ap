@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
@@ -50,6 +51,8 @@ public final class ArchivalScheduler
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nArchived = 0;
 
     try
     {
@@ -58,7 +61,10 @@ public final class ArchivalScheduler
       {
         LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
         for (final IOutboundTransaction aTx : aTransactions)
+        {
           aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
+          nArchived++;
+        }
       }
       else
       {
@@ -73,12 +79,18 @@ public final class ArchivalScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onArchivalSchedulerCycle (true, nArchived, aCycleDuration);
   }
 
   private static void _archiveInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nArchived = 0;
 
     try
     {
@@ -87,7 +99,10 @@ public final class ArchivalScheduler
       {
         LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
         for (final IInboundTransaction aTx : aTransactions)
+        {
           aArchivalMgr.archiveInboundTransaction (aTx.getID ());
+          nArchived++;
+        }
       }
       else
       {
@@ -102,6 +117,10 @@ public final class ArchivalScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onArchivalSchedulerCycle (false, nArchived, aCycleDuration);
   }
 
   /**

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
@@ -51,6 +52,8 @@ public final class RetryScheduler
   private static void _retryOutbound (@Nonnegative final int nBatchSize)
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nProcessed = 0;
 
     try
     {
@@ -63,6 +66,7 @@ public final class RetryScheduler
 
         for (final IOutboundTransaction aTx : aTransactions)
         {
+          nProcessed++;
           try
           {
             OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
@@ -91,11 +95,17 @@ public final class RetryScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("RetryScheduler._retryOutbound", "Internal error in outbound retry cycle", ex);
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onRetrySchedulerCycle (true, nProcessed, aCycleDuration);
   }
 
   private static void _retryInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nProcessed = 0;
 
     try
     {
@@ -108,6 +118,7 @@ public final class RetryScheduler
 
         for (final IInboundTransaction aInboundTx : aTransactions)
         {
+          nProcessed++;
           // Re-forward using the original InboundOrchestrator logic
           if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
           {
@@ -129,6 +140,10 @@ public final class RetryScheduler
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onRetrySchedulerCycle (false, nProcessed, aCycleDuration);
   }
 
   /**

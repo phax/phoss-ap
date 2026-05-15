@@ -264,7 +264,10 @@ public final class APPeppolReportHelper
                                           ex);
       }
 
-      if (!bTSRSuccess)
+      if (bTSRSuccess)
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onPeppolReportingTSRSuccess (aYearMonth);
+      else
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingTSRFailure (aYearMonth);
 
@@ -305,7 +308,10 @@ public final class APPeppolReportHelper
                                           ex);
       }
 
-      if (!bEUSRSuccess)
+      if (bEUSRSuccess)
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onPeppolReportingEUSRSuccess (aYearMonth);
+      else
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingEUSRFailure (aYearMonth);
     }

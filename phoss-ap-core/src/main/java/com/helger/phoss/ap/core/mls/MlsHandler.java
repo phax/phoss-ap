@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.core.mls;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 
 import org.jspecify.annotations.NonNull;
@@ -49,6 +50,7 @@ import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
+import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -294,6 +296,14 @@ public final class MlsHandler
                  "' to '" +
                  eMlsStatus.getID () +
                  "'");
+
+    // Compute round-trip duration if the original outbound send completion timestamp is known
+    final OffsetDateTime aOutboundCompletedDT = aTx.getCompletedDT ();
+    final Duration aRoundTrip = aOutboundCompletedDT != null ? Duration.between (aOutboundCompletedDT, aMlsAS4ReceivedDT)
+                                                             : null;
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onInboundMLSCorrelated (sMlsInboundTransactionID, sSbdhInstanceID, eResponseCode, aRoundTrip);
+
     return ESuccess.SUCCESS;
   }
 }

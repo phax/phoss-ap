@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -217,8 +218,14 @@ public final class OutboundOrchestrator
         if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
         {
           LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
           return null;
         }
+
+      // All verifiers accepted
+      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+        aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
     }
 
     // Create in pending state
@@ -241,6 +248,13 @@ public final class OutboundOrchestrator
                                                        sSbdhTypeVersion,
                                                        sSbdhType,
                                                        sPayloadMimeType);
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onOutboundDocumentAccepted (sTransactionID,
+                                           aSenderID.getURIEncoded (),
+                                           aReceiverID.getURIEncoded (),
+                                           aDocTypeID.getURIEncoded (),
+                                           aProcessID.getURIEncoded (),
+                                           sSbdhInstanceID);
     return aOutboundMgr.getByID (sTransactionID);
   }
 
@@ -328,8 +342,14 @@ public final class OutboundOrchestrator
         if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
         {
           LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
           return null;
         }
+
+      // All verifiers accepted
+      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+        aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
     }
 
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
@@ -360,6 +380,13 @@ public final class OutboundOrchestrator
                                                sSbdhTypeVersion,
                                                sSbdhType,
                                                sPayloadMimeType);
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onOutboundDocumentAccepted (sTransactionID,
+                                           aSbdData.getSenderURIEncoded (),
+                                           aSbdData.getReceiverURIEncoded (),
+                                           aSbdData.getDocumentTypeURIEncoded (),
+                                           aSbdData.getProcessURIEncoded (),
+                                           sSbdhInstanceID);
     return aMgr.getByID (sTransactionID);
   }
 
@@ -791,6 +818,16 @@ public final class OutboundOrchestrator
 
             // Update in DB
             aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
+
+            // Lifecycle event: outbound sent
+            {
+              final OffsetDateTime aCreatedDT = aTx.getCreatedDT ();
+              final Duration aSendingDuration = aCreatedDT != null ? Duration.between (aCreatedDT,
+                                                                                       aTimestampMgr.getCurrentDateTimeUTC ())
+                                                                   : null;
+              for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+                aHandler.onOutboundDocumentSent (sTxID, aTx.getSbdhInstanceID (), aSendingDuration, nNewAttemptCount);
+            }
 
             // Store Reporting data on success only
             final boolean bReportingItemStored;

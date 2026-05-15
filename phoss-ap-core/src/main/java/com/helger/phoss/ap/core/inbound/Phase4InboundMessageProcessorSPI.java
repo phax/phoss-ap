@@ -290,6 +290,16 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
       if (aInboundTx == null)
         throw new IllegalStateException ("Failed to store incoming transaction");
 
+      for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+        aHandler.onInboundDocumentReceived (sTxID,
+                                            sSenderID,
+                                            sReceiverID,
+                                            sDocTypeID,
+                                            sProcessID,
+                                            sSbdhInstanceID,
+                                            bIsDuplicateAS4,
+                                            bIsDuplicateSBDH);
+
       // Optional verification
       if (APCoreConfig.isVerificationInboundEnabled ())
       {
@@ -320,6 +330,10 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
             return;
           }
         }
+
+        // All verifiers accepted
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
       }
 
       if (CPhossAP.isMLS (aDocTypeID, aProcessID))

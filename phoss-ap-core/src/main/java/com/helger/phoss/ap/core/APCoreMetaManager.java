@@ -35,11 +35,13 @@ import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
+import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
+import com.helger.phoss.ap.core.notification.LifecycleEventManager;
 import com.helger.phoss.ap.core.notification.NotificationHandlerManager;
 import com.helger.phoss.ap.forwarding.filesystem.FilesystemDocumentForwarder;
 import com.helger.phoss.ap.forwarding.http.HttpDocumentForwarder;
@@ -137,6 +139,7 @@ public final class APCoreMetaManager
     }
 
     NotificationHandlerManager.initSPI ();
+    LifecycleEventManager.initSPI ();
 
     LOGGER.info ("APMetaManager initialized successfully");
   }
@@ -216,5 +219,16 @@ public final class APCoreMetaManager
   public static ICommonsList <IAPNotificationHandlerSPI> getAllNotificationHandlers ()
   {
     return NotificationHandlerManager.getAllNotificationHandlers ();
+  }
+
+  /**
+   * @return A mutable copy of all registered lifecycle event handlers. Never <code>null</code>.
+   * @since 0.9.0
+   */
+  @NonNull
+  @ReturnsMutableCopy
+  public static ICommonsList <IAPLifecycleEventSPI> getAllLifecycleHandlers ()
+  {
+    return LifecycleEventManager.getAllLifecycleHandlers ();
   }
 }

@@ -88,6 +88,10 @@
     </dependency>
     <dependency>
       <groupId>com.helger.phoss.ap</groupId>
+      <artifactId>phoss-ap-otel</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.phoss.ap</groupId>
       <artifactId>phoss-ap-validation</artifactId>
     </dependency>
     <dependency>

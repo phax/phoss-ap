@@ -404,7 +404,7 @@ public class APServletInit
     ArchivalScheduler.start ();
     CleanupScheduler.start ();
 
-    s_aStartupDT = OffsetDateTime.now ();
+    s_aStartupDT = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
     LOGGER.info ("phoss AP initialized successfully");
   }
 

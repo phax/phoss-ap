@@ -69,6 +69,20 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
   }
 
   /** {@inheritDoc} */
+  public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
+                                               @Nullable final String sErrorDetails)
+  {
+    try
+    {
+      m_aHdl.onOutboundVerificationRejection (sSbdhInstanceID, sErrorDetails);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error invoking onOutboundVerificationRejection on " + m_aHdl, ex);
+    }
+  }
+
+  /** {@inheritDoc} */
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                             @NonNull final String sReceiverID,
                                             @NonNull final String sDocTypeID,

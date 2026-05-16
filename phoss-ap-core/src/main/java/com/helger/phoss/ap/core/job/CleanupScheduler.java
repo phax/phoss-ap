@@ -27,9 +27,15 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.timing.StopWatch;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
+import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
@@ -82,44 +88,78 @@ public final class CleanupScheduler
   {
     final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nDeleted = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true))
     {
-      final int nDeleted = aArchivalMgr.cleanupOutbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupOutbound] "));
-      if (nDeleted > 0)
-        LOGGER.info ("Cleaned up " + nDeleted + " archived outbound transactions");
-      else if (LOGGER.isDebugEnabled ())
-        LOGGER.debug ("Found no archived outbound transactions for cleanup");
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in outbound cleanup cycle", ex);
+      try
+      {
+        nDeleted = aArchivalMgr.cleanupOutbound (aCutoff,
+                                                 nBatchSize,
+                                                 _docDeleter (aDocPayloadMgr, "[CleanupOutbound] "));
+        if (nDeleted > 0)
+          LOGGER.info ("Cleaned up " + nDeleted + " archived outbound transactions");
+        else
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no archived outbound transactions for cleanup");
+      }
+      catch (final Exception ex)
+      {
+        LOGGER.error ("Error in outbound cleanup cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("CleanupScheduler._cleanupOutbound", "Error in outbound cleanup cycle", ex);
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("CleanupScheduler._cleanupOutbound", "Error in outbound cleanup cycle", ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nDeleted);
+      }
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onCleanupSchedulerCycle (true, nDeleted, aCycleDuration);
   }
 
   private static void _cleanupInbound (@Nonnegative final int nBatchSize, final OffsetDateTime aCutoff)
   {
     final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nDeleted = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "cleanup")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false))
     {
-      final int nDeleted = aArchivalMgr.cleanupInbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupInbound] "));
-      if (nDeleted > 0)
-        LOGGER.info ("Cleaned up " + nDeleted + " archived inbound transactions");
-      else if (LOGGER.isDebugEnabled ())
-        LOGGER.debug ("Found no archived inbound transactions for cleanup");
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in inbound cleanup cycle", ex);
+      try
+      {
+        nDeleted = aArchivalMgr.cleanupInbound (aCutoff, nBatchSize, _docDeleter (aDocPayloadMgr, "[CleanupInbound] "));
+        if (nDeleted > 0)
+          LOGGER.info ("Cleaned up " + nDeleted + " archived inbound transactions");
+        else
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no archived inbound transactions for cleanup");
+      }
+      catch (final Exception ex)
+      {
+        LOGGER.error ("Error in inbound cleanup cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("CleanupScheduler._cleanupInbound", "Error in inbound cleanup cycle", ex);
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("CleanupScheduler._cleanupInbound", "Error in inbound cleanup cycle", ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nDeleted);
+      }
     }
+
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onCleanupSchedulerCycle (false, nDeleted, aCycleDuration);
   }
 
   /**
@@ -179,7 +219,8 @@ public final class CleanupScheduler
       @Override
       public void run ()
       {
-        final OffsetDateTime aCutoff = OffsetDateTime.now ().minus (aRetention);
+        final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+        final OffsetDateTime aCutoff = aTimestampMgr.getCurrentDateTimeUTC ().minus (aRetention);
         _cleanupOutbound (nBatchSize, aCutoff);
         _cleanupInbound (nBatchSize, aCutoff);
       }

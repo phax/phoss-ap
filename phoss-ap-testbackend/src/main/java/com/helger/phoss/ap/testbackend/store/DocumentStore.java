@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.helger.datetime.helper.PDTFactory;
 import com.helger.io.file.FilenameHelper;
 import com.helger.phoss.ap.testbackend.model.ReceivedDocument;
 
@@ -107,7 +107,7 @@ public class DocumentStore
                                                         sChannel,
                                                         sFilename,
                                                         aContent.length,
-                                                        OffsetDateTime.now (),
+                                                        PDTFactory.getCurrentOffsetDateTimeUTC (),
                                                         aTargetFile.getAbsolutePath ());
     m_aDocuments.put (sID, aDoc);
     LOGGER.info ("Stored document [" +
@@ -148,7 +148,7 @@ public class DocumentStore
                                                         sChannel,
                                                         sFilename,
                                                         nSizeBytes,
-                                                        OffsetDateTime.now (),
+                                                        PDTFactory.getCurrentOffsetDateTimeUTC (),
                                                         sAbsolutePath);
     m_aDocuments.put (sID, aDoc);
     LOGGER.info ("Registered external document [" + sChannel + "] '" + sFilename + "' (" + nSizeBytes + " bytes)");

@@ -25,9 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -50,58 +55,94 @@ public final class ArchivalScheduler
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nArchived = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "archival")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true))
     {
-      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
-        for (final IOutboundTransaction aTx : aTransactions)
-          aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
+        final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForArchival (nBatchSize);
+        if (aTransactions.isNotEmpty ())
+        {
+          LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
+          for (final IOutboundTransaction aTx : aTransactions)
+          {
+            aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
+            nArchived++;
+          }
+        }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no outbound transactions for archiving");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no outbound transactions for archiving");
+        LOGGER.error ("Error in outbound archival cycle", ex);
+
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nArchived);
       }
     }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in outbound archival cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("ArchivalScheduler._archiveOutbound", "Error in outbound archival cycle", ex);
-    }
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onArchivalSchedulerCycle (true, nArchived, aCycleDuration);
   }
 
   private static void _archiveInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final var aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nArchived = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "archival")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false))
     {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
-        for (final IInboundTransaction aTx : aTransactions)
-          aArchivalMgr.archiveInboundTransaction (aTx.getID ());
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
+        if (aTransactions.isNotEmpty ())
+        {
+          LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
+          for (final IInboundTransaction aTx : aTransactions)
+          {
+            aArchivalMgr.archiveInboundTransaction (aTx.getID ());
+            nArchived++;
+          }
+        }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no inbound transactions for archiving");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no inbound transactions for archiving");
+        LOGGER.error ("Error in inbound archival cycle", ex);
+
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nArchived);
       }
     }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Error in inbound archival cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("ArchivalScheduler._archiveInbound", "Error in inbound archival cycle", ex);
-    }
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onArchivalSchedulerCycle (false, nArchived, aCycleDuration);
   }
 
   /**
@@ -122,10 +163,7 @@ public final class ArchivalScheduler
 
     final Duration aInterval = APCoreConfig.getArchivalSchedulerInterval ();
     final long nIntervalMs = aInterval.toMillis ();
-    LOGGER.info ("Starting phoss AP archival scheduler with interval " +
-                 aInterval +
-                 " and batch size " +
-                 nBatchSize);
+    LOGGER.info ("Starting phoss AP archival scheduler with interval " + aInterval + " and batch size " + nBatchSize);
 
     s_aTimer = new Timer ("phoss-ap-archival-scheduler", true);
     s_aTimer.scheduleAtFixedRate (new TimerTask ()

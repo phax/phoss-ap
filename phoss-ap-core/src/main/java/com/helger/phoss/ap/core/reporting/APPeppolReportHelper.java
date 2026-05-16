@@ -19,6 +19,7 @@ package com.helger.phoss.ap.core.reporting;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.function.IntConsumer;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -36,7 +37,9 @@ import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackendException;
 import com.helger.peppol.reporting.eusr.EndUserStatisticsReport;
+import com.helger.peppol.reporting.jaxb.eusr.EndUserStatisticsReport110Marshaller;
 import com.helger.peppol.reporting.jaxb.eusr.v110.EndUserStatisticsReportType;
+import com.helger.peppol.reporting.jaxb.tsr.TransactionStatisticsReport101Marshaller;
 import com.helger.peppol.reporting.jaxb.tsr.v101.TransactionStatisticsReportType;
 import com.helger.peppol.reporting.tsr.TransactionStatisticsReport;
 import com.helger.peppol.reportingsupport.EPeppolReportType;
@@ -53,6 +56,9 @@ import com.helger.phase4.logging.Phase4LoggerFactory;
 import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
@@ -100,12 +106,16 @@ public final class APPeppolReportHelper
    *
    * @param aYearMonth
    *        The reporting period. May not be <code>null</code>.
+   * @param aItemCountSink
+   *        Callback invoked with the number of reporting items read from the backend before the
+   *        report is built. Only invoked when the backend read succeeded. Never <code>null</code>.
    * @return The created TSR or <code>null</code> if the reporting items could not be retrieved.
    * @throws PeppolReportingBackendException
    *         if an error occurs accessing the reporting backend.
    */
   @Nullable
-  public static TransactionStatisticsReportType createTSR (@NonNull final YearMonth aYearMonth) throws PeppolReportingBackendException
+  public static TransactionStatisticsReportType createTSR (@NonNull final YearMonth aYearMonth,
+                                                           @NonNull final IntConsumer aItemCountSink) throws PeppolReportingBackendException
   {
     LOGGER.info ("Trying to create Peppol Reporting TSR for " + aYearMonth);
 
@@ -117,6 +127,7 @@ public final class APPeppolReportHelper
                                                                                          aReportingItems::add))
                               .isSuccess ())
     {
+      aItemCountSink.accept (aReportingItems.size ());
       // Create report with the read transactions
       return TransactionStatisticsReport.builder ()
                                         .monthOf (aYearMonth)
@@ -132,12 +143,16 @@ public final class APPeppolReportHelper
    *
    * @param aYearMonth
    *        The reporting period. May not be <code>null</code>.
+   * @param aItemCountSink
+   *        Callback invoked with the number of reporting items read from the backend before the
+   *        report is built. Only invoked when the backend read succeeded. Never <code>null</code>.
    * @return The created EUSR or <code>null</code> if the reporting items could not be retrieved.
    * @throws PeppolReportingBackendException
    *         if an error occurs accessing the reporting backend.
    */
   @Nullable
-  public static EndUserStatisticsReportType createEUSR (@NonNull final YearMonth aYearMonth) throws PeppolReportingBackendException
+  public static EndUserStatisticsReportType createEUSR (@NonNull final YearMonth aYearMonth,
+                                                        @NonNull final IntConsumer aItemCountSink) throws PeppolReportingBackendException
   {
     LOGGER.info ("Trying to create Peppol Reporting EUSR for " + aYearMonth);
 
@@ -149,6 +164,7 @@ public final class APPeppolReportHelper
                                                                                          aReportingItems::add))
                               .isSuccess ())
     {
+      aItemCountSink.accept (aReportingItems.size ());
       // Create report with the read transactions
       return EndUserStatisticsReport.builder ()
                                     .monthOf (aYearMonth)
@@ -157,6 +173,101 @@ public final class APPeppolReportHelper
                                     .build ();
     }
     return null;
+  }
+
+  /**
+   * Create a Peppol Transaction Statistics Report (TSR) for the given reporting period and return
+   * its XML serialization. Exceptions and backend read failures are handled internally: registered
+   * notification handlers are invoked and <code>null</code> is returned. The operation is wrapped
+   * in a {@link CPhossAPOtel#SPAN_REPORTING_TSR} trace span.
+   *
+   * @param aYearMonth
+   *        The reporting period. May not be <code>null</code>.
+   * @return The marshalled TSR XML string, or <code>null</code> if the report could not be created.
+   */
+  @Nullable
+  public static String createTSRAsString (@NonNull final YearMonth aYearMonth)
+  {
+    ValueEnforcer.notNull (aYearMonth, "YearMonth");
+
+    return APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_TSR, EAPSpanKind.PRODUCER, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR")
+           .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH, aYearMonth.toString ());
+      try
+      {
+        final TransactionStatisticsReportType aReport = createTSR (aYearMonth,
+                                                                   nCount -> aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_ITEM_COUNT,
+                                                                                                 nCount));
+        if (aReport == null)
+        {
+          LOGGER.error ("Failed to read Peppol Reporting backend data for TSR for " + aYearMonth);
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onPeppolReportingTSRFailure (aYearMonth);
+          return null;
+        }
+        return new TransactionStatisticsReport101Marshaller ().getAsString (aReport);
+      }
+      catch (final PeppolReportingBackendException ex)
+      {
+        LOGGER.error ("Failed to read Peppol Reporting Items for TSR for " + aYearMonth, ex);
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+        {
+          aHandler.onUnexpectedException ("APPeppolReportHelper.createTSRAsString",
+                                          "Failed to read Peppol Reporting backend data for TSR for " + aYearMonth,
+                                          ex);
+          aHandler.onPeppolReportingTSRFailure (aYearMonth);
+        }
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Create a Peppol End User Statistics Report (EUSR) for the given reporting period and return its
+   * XML serialization. Exceptions and backend read failures are handled internally: registered
+   * notification handlers are invoked and <code>null</code> is returned. The operation is wrapped
+   * in a {@link CPhossAPOtel#SPAN_REPORTING_EUSR} trace span.
+   *
+   * @param aYearMonth
+   *        The reporting period. May not be <code>null</code>.
+   * @return The marshalled EUSR XML string, or <code>null</code> if the report could not be
+   *         created.
+   */
+  @Nullable
+  public static String createEUSRAsString (@NonNull final YearMonth aYearMonth)
+  {
+    ValueEnforcer.notNull (aYearMonth, "YearMonth");
+
+    return APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_EUSR, EAPSpanKind.PRODUCER, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR")
+           .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH, aYearMonth.toString ());
+      try
+      {
+        final EndUserStatisticsReportType aReport = createEUSR (aYearMonth,
+                                                                nCount -> aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_ITEM_COUNT,
+                                                                                              nCount));
+        if (aReport == null)
+        {
+          LOGGER.error ("Failed to read Peppol Reporting backend data for EUSR for " + aYearMonth);
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onPeppolReportingEUSRFailure (aYearMonth);
+          return null;
+        }
+        return new EndUserStatisticsReport110Marshaller ().getAsString (aReport);
+      }
+      catch (final PeppolReportingBackendException ex)
+      {
+        LOGGER.error ("Failed to read Peppol Reporting Items for EUSR for " + aYearMonth, ex);
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+        {
+          aHandler.onUnexpectedException ("APPeppolReportHelper.createEUSRAsString",
+                                          "Failed to read Peppol Reporting backend data for EUSR for " + aYearMonth,
+                                          ex);
+          aHandler.onPeppolReportingEUSRFailure (aYearMonth);
+        }
+        return null;
+      }
+    });
   }
 
   /**
@@ -228,86 +339,122 @@ public final class APPeppolReportHelper
       final PeppolReportingSupport aPRS = new PeppolReportingSupport (aReportingStorage);
 
       // Handle TSR
-      try
-      {
-        // Create
-        final TransactionStatisticsReportType aTSR = createTSR (aYearMonth);
-        if (aTSR != null)
+      bTSRSuccess = APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_TSR, EAPSpanKind.PRODUCER, aSpan -> {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR")
+             .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH, aYearMonth.toString ());
+        try
         {
-          // Validate and store
-          final Wrapper <String> aTSRString = new Wrapper <> ();
-          if (aPRS.validateAndStorePeppolTSR10 (aTSR, aTSRString::set).isSuccess ())
+          final TransactionStatisticsReportType aTSR = createTSR (aYearMonth,
+                                                                  nCount -> aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_ITEM_COUNT,
+                                                                                                nCount));
+          if (aTSR == null)
           {
-            // Send to OpenPeppol
-            if (aPRS.sendPeppolReport (aYearMonth, EPeppolReportType.TSR_V10, aTSRString.get (), aPeppolSender)
-                    .isSuccess ())
-            {
-              LOGGER.info ("Successfully sent TSR for " + aYearMonth + " to OpenPeppol");
-              bTSRSuccess = true;
-            }
-            else
-              LOGGER.error ("Failed to send TSR for " + aYearMonth + " to OpenPeppol");
+            LOGGER.error ("Failed to create TSR for " + aYearMonth);
+            return Boolean.FALSE;
           }
-          else
+          final Wrapper <String> aTSRString = new Wrapper <> ();
+          if (APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_TSR_VALIDATE_STORE,
+                                EAPSpanKind.INTERNAL,
+                                aChildSpan -> {
+                                  aChildSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "TSR")
+                                            .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
+                                                           aYearMonth.toString ());
+                                  return aPRS.validateAndStorePeppolTSR10 (aTSR, aTSRString::set);
+                                })
+                     .isFailure ())
+          {
             LOGGER.error ("Failed to validate and store TSR for " + aYearMonth);
+            return Boolean.FALSE;
+          }
+          if (aPRS.sendPeppolReport (aYearMonth, EPeppolReportType.TSR_V10, aTSRString.get (), aPeppolSender)
+                  .isFailure ())
+          {
+            LOGGER.error ("Failed to send TSR for " + aYearMonth + " to OpenPeppol");
+            return Boolean.FALSE;
+          }
+          LOGGER.info ("Successfully sent TSR for " + aYearMonth + " to OpenPeppol");
+          return Boolean.TRUE;
         }
-        else
-          LOGGER.error ("Failed to create TSR for " + aYearMonth);
-      }
-      catch (final Exception ex)
+        catch (final Exception ex)
+        {
+          LOGGER.error ("Failed to create TSR for " + aYearMonth, ex);
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
+                                            "Failed to create TSR for " + aYearMonth,
+                                            ex);
+          return Boolean.FALSE;
+        }
+      }).booleanValue ();
+
+      if (bTSRSuccess)
       {
-        LOGGER.error ("Failed to create TSR for " + aYearMonth, ex);
-
-        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
-                                          "Failed to create TSR for " + aYearMonth,
-                                          ex);
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onPeppolReportingTSRSuccess (aYearMonth);
       }
-
-      if (!bTSRSuccess)
+      else
+      {
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingTSRFailure (aYearMonth);
+      }
 
       // Handle EUSR
-      try
-      {
-        // Create
-        final EndUserStatisticsReportType aEUSR = createEUSR (aYearMonth);
-        if (aEUSR != null)
+      bEUSRSuccess = APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_EUSR, EAPSpanKind.PRODUCER, aSpan -> {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR")
+             .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH, aYearMonth.toString ());
+        try
         {
-          // Validate and store
-          final Wrapper <String> aEUSRString = new Wrapper <> ();
-          if (aPRS.validateAndStorePeppolEUSR11 (aEUSR, aEUSRString::set).isSuccess ())
+          final EndUserStatisticsReportType aEUSR = createEUSR (aYearMonth,
+                                                                nCount -> aSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_ITEM_COUNT,
+                                                                                              nCount));
+          if (aEUSR == null)
           {
-            // Send to OpenPeppol
-            if (aPRS.sendPeppolReport (aYearMonth, EPeppolReportType.EUSR_V11, aEUSRString.get (), aPeppolSender)
-                    .isSuccess ())
-            {
-              LOGGER.info ("Successfully sent EUSR for " + aYearMonth + " to OpenPeppol");
-              bEUSRSuccess = true;
-            }
-            else
-              LOGGER.error ("Failed to send EUSR for " + aYearMonth + " to OpenPeppol");
+            LOGGER.error ("Failed to create EUSR for " + aYearMonth);
+            return Boolean.FALSE;
           }
-          else
+          final Wrapper <String> aEUSRString = new Wrapper <> ();
+          if (APTrace.withSpan (CPhossAPOtel.SPAN_REPORTING_EUSR_VALIDATE_STORE,
+                                EAPSpanKind.INTERNAL,
+                                aChildSpan -> {
+                                  aChildSpan.setAttribute (CPhossAPOtel.ATTR_REPORT_TYPE, "EUSR")
+                                            .setAttribute (CPhossAPOtel.ATTR_REPORT_YEAR_MONTH,
+                                                           aYearMonth.toString ());
+                                  return aPRS.validateAndStorePeppolEUSR11 (aEUSR, aEUSRString::set);
+                                })
+                     .isFailure ())
+          {
             LOGGER.error ("Failed to validate and store EUSR for " + aYearMonth);
+            return Boolean.FALSE;
+          }
+          if (aPRS.sendPeppolReport (aYearMonth, EPeppolReportType.EUSR_V11, aEUSRString.get (), aPeppolSender)
+                  .isFailure ())
+          {
+            LOGGER.error ("Failed to send EUSR for " + aYearMonth + " to OpenPeppol");
+            return Boolean.FALSE;
+          }
+          LOGGER.info ("Successfully sent EUSR for " + aYearMonth + " to OpenPeppol");
+          return Boolean.TRUE;
         }
-        else
-          LOGGER.error ("Failed to create EUSR for " + aYearMonth);
-      }
-      catch (final Exception ex)
+        catch (final Exception ex)
+        {
+          LOGGER.error ("Failed to create EUSR for " + aYearMonth, ex);
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
+                                            "Failed to create EUSR for " + aYearMonth,
+                                            ex);
+          return Boolean.FALSE;
+        }
+      }).booleanValue ();
+
+      if (bEUSRSuccess)
       {
-        LOGGER.error ("Failed to create EUSR for " + aYearMonth, ex);
-
-        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onUnexpectedException ("APPeppolReportHelper.createAndSendPeppolReports",
-                                          "Failed to create EUSR for " + aYearMonth,
-                                          ex);
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onPeppolReportingEUSRSuccess (aYearMonth);
       }
-
-      if (!bEUSRSuccess)
+      else
+      {
         for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
           aHandler.onPeppolReportingEUSRFailure (aYearMonth);
+      }
     }
 
     aSW.stop ();

@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -69,7 +70,11 @@ import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
@@ -213,12 +218,24 @@ public final class OutboundOrchestrator
     // Optional verification
     if (APCoreConfig.isVerificationOutboundEnabled ())
     {
-      for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-        if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-        {
-          LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-          return null;
-        }
+      try (final IAPSpan aVerifySpan = APTrace.startSpan (CPhossAPOtel.SPAN_VERIFICATION, EAPSpanKind.INTERNAL)
+                                              .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true)
+                                              .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID))
+      {
+        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
+          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+          {
+            aVerifySpan.setStatusError ("Outbound verification failed");
+            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
+            return null;
+          }
+
+        // All verifiers accepted
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+      }
     }
 
     // Create in pending state
@@ -241,6 +258,13 @@ public final class OutboundOrchestrator
                                                        sSbdhTypeVersion,
                                                        sSbdhType,
                                                        sPayloadMimeType);
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onOutboundDocumentAccepted (sTransactionID,
+                                           aSenderID.getURIEncoded (),
+                                           aReceiverID.getURIEncoded (),
+                                           aDocTypeID.getURIEncoded (),
+                                           aProcessID.getURIEncoded (),
+                                           sSbdhInstanceID);
     return aOutboundMgr.getByID (sTransactionID);
   }
 
@@ -324,12 +348,24 @@ public final class OutboundOrchestrator
     {
       final IDocumentTypeIdentifier aDocTypeID = aSbdData.getDocumentTypeAsIdentifier ();
       final IProcessIdentifier aProcessID = aSbdData.getProcessAsIdentifier ();
-      for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-        if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-        {
-          LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-          return null;
-        }
+      try (final IAPSpan aVerifySpan = APTrace.startSpan (CPhossAPOtel.SPAN_VERIFICATION, EAPSpanKind.INTERNAL)
+                                              .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true)
+                                              .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID))
+      {
+        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
+          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
+          {
+            aVerifySpan.setStatusError ("Outbound verification failed");
+            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
+            return null;
+          }
+
+        // All verifiers accepted
+        for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+          aHandler.onOutboundVerificationAccepted (sSbdhInstanceID);
+      }
     }
 
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
@@ -360,6 +396,13 @@ public final class OutboundOrchestrator
                                                sSbdhTypeVersion,
                                                sSbdhType,
                                                sPayloadMimeType);
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onOutboundDocumentAccepted (sTransactionID,
+                                           aSbdData.getSenderURIEncoded (),
+                                           aSbdData.getReceiverURIEncoded (),
+                                           aSbdData.getDocumentTypeURIEncoded (),
+                                           aSbdData.getProcessURIEncoded (),
+                                           sSbdhInstanceID);
     return aMgr.getByID (sTransactionID);
   }
 
@@ -402,468 +445,566 @@ public final class OutboundOrchestrator
     LOGGER.info (sRealLogPrefix + "Processing outbound transaction");
     Phase4LogCustomizer.setThreadLocalLogPrefix (sRealLogPrefix);
 
-    // try-catch for overall duration only
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_OUTBOUND_SEND, EAPSpanKind.PRODUCER)
+                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID)
+                                      .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, aTx.getSbdhInstanceID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_SENDER_ID, aTx.getSenderID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, aTx.getReceiverID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_DOCTYPE_ID, aTx.getDocTypeID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_PROCESS_ID, aTx.getProcessID ()))
     {
-      final int nNewAttemptCount = aTx.getAttemptCount () + 1;
-      final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
-      final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
-
-      // Callback on recoverable error
-      final Consumer <String> onFailed = sErrMsg -> {
-        aAttemptMgr.create (sTxID,
-                            sAS4MessageID,
-                            aAS4Timestamp,
-                            null,
-                            null,
-                            EAttemptStatus.FAILED,
-                            sErrMsg,
-                            aSendingReport.getAsJsonString ());
-        final OffsetDateTime aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
-                                                                                APCoreConfig.getRetrySendingInitialBackoff (),
-                                                                                APCoreConfig.getRetrySendingBackoffMultiplier (),
-                                                                                APCoreConfig.getRetrySendingMaxBackoff ());
-        aTxMgr.updateStatusAndRetry (sTxID, EOutboundStatus.FAILED, nNewAttemptCount, aNextRetry, sErrMsg);
-      };
-
-      // Callback on permanent failure
-      final Consumer <String> onPermanentFailure = sErrMsg -> {
-        aAttemptMgr.create (sTxID,
-                            sAS4MessageID,
-                            aAS4Timestamp,
-                            null,
-                            null,
-                            EAttemptStatus.FAILED,
-                            sErrMsg,
-                            aSendingReport.getAsJsonString ());
-        aTxMgr.updateStatusAndRetry (sTxID, EOutboundStatus.PERMANENTLY_FAILED, nNewAttemptCount, null, sErrMsg);
-
-        // Notify
-        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-          aHandler.onOutboundPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
-      };
-
-      // Convert all identifiers to structured data - that should have been
-      // verified before
-      final IParticipantIdentifier aSenderID = aIF.parseParticipantIdentifier (aTx.getSenderID ());
-      if (aSenderID == null)
-        throw new IllegalStateException ("Failed to parse sender participant identifier '" + aTx.getSenderID () + "'");
-      aSendingReport.setSenderID (aSenderID);
-
-      final IParticipantIdentifier aReceiverID = aIF.parseParticipantIdentifier (aTx.getReceiverID ());
-      if (aReceiverID == null)
-        throw new IllegalStateException ("Failed to parse receiver participant identifier '" +
-                                         aTx.getReceiverID () +
-                                         "'");
-      aSendingReport.setReceiverID (aReceiverID);
-
-      final IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (aTx.getDocTypeID ());
-      if (aDocTypeID == null)
-        throw new IllegalStateException ("Failed to parse document type identifier '" + aTx.getDocTypeID () + "'");
-      aSendingReport.setDocTypeID (aDocTypeID);
-
-      final IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (aTx.getProcessID ());
-      if (aProcessID == null)
-        throw new IllegalStateException ("Failed to parse process identifier '" + aTx.getProcessID () + "'");
-      aSendingReport.setProcessID (aProcessID);
-
-      // Avoid message is taken by another thread
-      aTxMgr.updateStatus (sTxID, EOutboundStatus.SENDING);
-
-      // SMP lookup to find endpoint URL
-      // Try to resolve SMP host - performs NAPTR lookup
-      final StopWatch aLookupSW = StopWatch.createdStarted ();
-      final SMPClientReadOnly aSMPClient;
+      // try-catch for overall duration only
       try
       {
-        aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE, aReceiverID, aSMLInfo);
-        APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
+        final int nNewAttemptCount = aTx.getAttemptCount () + 1;
+        final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
+        final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
 
-        // Remember the host URL from NAPTR lookup
-        aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
-      }
-      catch (final SMPDNSResolutionException ex)
-      {
-        final String sMsg = "The participant ID '" + aTx.getReceiverID () + "' is not registered in the Peppol Network";
-        aSendingReport.setLookupError (sMsg);
-        aSendingReport.setLookupException (ex);
+        // Callback on recoverable error
+        final Consumer <String> onFailed = sErrMsg -> {
+          aAttemptMgr.create (sTxID,
+                              sAS4MessageID,
+                              aAS4Timestamp,
+                              null,
+                              null,
+                              EAttemptStatus.FAILED,
+                              sErrMsg,
+                              aSendingReport.getAsJsonString ());
+          final OffsetDateTime aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
+                                                                                  APCoreConfig.getRetrySendingInitialBackoff (),
+                                                                                  APCoreConfig.getRetrySendingBackoffMultiplier (),
+                                                                                  APCoreConfig.getRetrySendingMaxBackoff ());
+          aTxMgr.updateStatusAndRetry (sTxID, EOutboundStatus.FAILED, nNewAttemptCount, aNextRetry, sErrMsg);
+        };
 
-        // Remember duration
-        aLookupSW.stop ();
-        aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+        // Callback on permanent failure
+        final Consumer <String> onPermanentFailure = sErrMsg -> {
+          aAttemptMgr.create (sTxID,
+                              sAS4MessageID,
+                              aAS4Timestamp,
+                              null,
+                              null,
+                              EAttemptStatus.FAILED,
+                              sErrMsg,
+                              aSendingReport.getAsJsonString ());
+          aTxMgr.updateStatusAndRetry (sTxID, EOutboundStatus.PERMANENTLY_FAILED, nNewAttemptCount, null, sErrMsg);
 
-        onPermanentFailure.accept (sMsg + ". Technical details: " + ex.getMessage ());
+          // Notify
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onOutboundPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
+        };
 
-        return aSendingReport;
-      }
+        // Convert all identifiers to structured data - that should have been
+        // verified before
+        final IParticipantIdentifier aSenderID = aIF.parseParticipantIdentifier (aTx.getSenderID ());
+        if (aSenderID == null)
+          throw new IllegalStateException ("Failed to parse sender participant identifier '" +
+                                           aTx.getSenderID () +
+                                           "'");
+        aSendingReport.setSenderID (aSenderID);
 
-      // Perform SMP lookup
-      final X509Certificate aReceiverCert;
-      final String sReceiverAPURL;
-      String sReceiverTechnicalContact;
-      final String sCircuitBreakerKeySMP = "smp$" + aSMPClient.getSMPHostURI ();
-      if (!CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
-      {
-        aLookupSW.stop ();
-        aSendingReport.setLookupError ("SMP access limited by Circuit Breaker");
-        aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+        final IParticipantIdentifier aReceiverID = aIF.parseParticipantIdentifier (aTx.getReceiverID ());
+        if (aReceiverID == null)
+          throw new IllegalStateException ("Failed to parse receiver participant identifier '" +
+                                           aTx.getReceiverID () +
+                                           "'");
+        aSendingReport.setReceiverID (aReceiverID);
 
-        onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
-        return aSendingReport;
-      }
-      final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
-      try
-      {
-        // Throws an exception in case of error
-        aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
-        aLookupSW.stop ();
-        aReceiverCert = aEndpointDetails.getReceiverAPCertificate ();
-        sReceiverAPURL = aEndpointDetails.getReceiverAPEndpointURL ();
-        sReceiverTechnicalContact = aEndpointDetails.getReceiverTechnicalContact ();
+        final IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (aTx.getDocTypeID ());
+        if (aDocTypeID == null)
+          throw new IllegalStateException ("Failed to parse document type identifier '" + aTx.getDocTypeID () + "'");
+        aSendingReport.setDocTypeID (aDocTypeID);
 
-        // Updated sending report
-        aSendingReport.setC3Cert (aReceiverCert);
-        aSendingReport.setC3EndpointURL (sReceiverAPURL);
-        aSendingReport.setC3TechnicalContact (sReceiverTechnicalContact);
-        aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+        final IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (aTx.getProcessID ());
+        if (aProcessID == null)
+          throw new IllegalStateException ("Failed to parse process identifier '" + aTx.getProcessID () + "'");
+        aSendingReport.setProcessID (aProcessID);
 
-        CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
-      }
-      catch (final Phase4Exception ex)
-      {
-        CircuitBreakerManager.recordFailure (sCircuitBreakerKeySMP);
+        // Avoid message is taken by another thread
+        aTxMgr.updateStatus (sTxID, EOutboundStatus.SENDING);
 
-        aLookupSW.stop ();
-        if (ex instanceof Phase4SMPException)
+        // Hoisted out of the SMP span scope so the AS4 send section can read them
+        X509Certificate aReceiverCertOut = null;
+        String sReceiverAPURLOut = null;
+        String sReceiverTechnicalContactOut = null;
+
+        boolean bSmpLookupSuccess = false;
+        try (final IAPSpan aSmpSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SMP_LOOKUP, EAPSpanKind.CLIENT)
+                                             .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID, aTx.getReceiverID ()))
         {
-          aSendingReport.setLookupError (ex.getMessage ());
-          aSendingReport.setLookupException ((Exception) ex.getCause ());
-        }
-        else
-        {
-          aSendingReport.setLookupError ("Error fetching Service Details from SMP");
-          aSendingReport.setLookupException (ex);
-        }
-        aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
-
-        if (ex.isRetryFeasible ())
-          onFailed.accept (ex.getMessage ());
-        else
-          onPermanentFailure.accept (ex.getMessage ());
-        return aSendingReport;
-      }
-
-      final StopWatch aSendingSW = StopWatch.createdStarted ();
-      final String sCircuitBreakerKeyAP = "ap$" + sReceiverAPURL;
-      if (CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeyAP))
-      {
-        // Only add it here to the sending report, otherwise the interpretation
-        // of the report gets
-        // more difficult
-        aSendingReport.setSBDHInstanceIdentifier (aTx.getSbdhInstanceID ());
-        aSendingReport.setCountryC1 (aTx.getC1CountryCode ());
-        aSendingReport.setSenderPartyID (sC2SeatID);
-        aSendingReport.setAS4MessageID (sAS4MessageID);
-        aSendingReport.setAS4SendingDT (aAS4Timestamp);
-
-        final String sAS4ConversationID = MessageHelperMethods.createRandomConversationID ();
-        aSendingReport.setAS4ConversationID (sAS4ConversationID);
-
-        final TrustedCAChecker aAPCAChecker = ePeppolStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
-                                                                           : PeppolTrustedCA.peppolTestAP ();
-
-        PeppolReportingItem aReportingItem = null;
-        try
-        {
-          // Actual sending using Phase4PeppolSender
-          final Phase4PeppolHttpClientSettings aHCS = new Phase4PeppolHttpClientSettings ();
-          APBasicConfig.applyHttpProxySettings (aHCS);
-
-          final EAS4UserMessageSendResult eResult;
-
-          final Wrapper <Phase4Exception> aCaughtSendingEx = new Wrapper <> ();
-          switch (aTx.getSourceType ())
+          try
           {
-            case PAYLOAD_ONLY:
+            // SMP lookup to find endpoint URL
+            // Try to resolve SMP host - performs NAPTR lookup
+            final StopWatch aLookupSW = StopWatch.createdStarted ();
+            final SMPClientReadOnly aSMPClient;
+            try
             {
-              final PeppolUserMessageBuilder aBuilder;
-              aBuilder = Phase4PeppolSender.builder ()
-                                           .httpClientFactory (aHCS)
-                                           // AS4 input
-                                           .messageID (sAS4MessageID)
-                                           .conversationID (sAS4ConversationID)
-                                           .sendingDateTime (aAS4Timestamp)
-                                           // Peppol IDs
-                                           .senderParticipantID (aSenderID)
-                                           .receiverParticipantID (aReceiverID)
-                                           .documentTypeID (aDocTypeID)
-                                           .processID (aProcessID)
-                                           .countryC1 (aTx.getC1CountryCode ())
-                                           .senderPartyID (sC2SeatID)
-                                           .sbdhInstanceIdentifier (aTx.getSbdhInstanceID ())
-                                           // Certificate stuff
-                                           .peppolAP_CAChecker (aAPCAChecker)
-                                           .endpointDetailProvider (new AS4EndpointDetailProviderConstant (aReceiverCert,
-                                                                                                           sReceiverAPURL,
-                                                                                                           sReceiverTechnicalContact))
-                                           .certificateConsumer ( (aAPCertificate, aCheckDT, eCertCheckResult) -> {
-                                             // Take specifically the
-                                             // AP certificate
-                                             // verification
-                                             aSendingReport.setC3CertCheckDT (aCheckDT);
-                                             aSendingReport.setC3CertCheckResult (eCertCheckResult);
-                                           })
-                                           // Response stuff
-                                           .rawResponseConsumer (aSendingReport::setRawHttpResponse)
-                                           .signalMsgConsumer ( (aSignalMsg, aMessageMetadata, aState) -> {
-                                             aSendingReport.setAS4ReceivedSignalMsg (aSignalMsg);
-                                           });
+              aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE, aReceiverID, aSMLInfo);
+              APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
 
-              // Add the optional SBDH parameters required for e.g. PDF sending
-              if (StringHelper.isNotEmpty (aTx.getSbdhStandard ()))
-                aBuilder.sbdhStandard (aTx.getSbdhStandard ());
-              if (StringHelper.isNotEmpty (aTx.getSbdhTypeVersion ()))
-                aBuilder.sbdhTypeVersion (aTx.getSbdhTypeVersion ());
-              if (StringHelper.isNotEmpty (aTx.getSbdhType ()))
-                aBuilder.sbdhType (aTx.getSbdhType ());
+              // Remember the host URL from NAPTR lookup
+              aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
+              aSmpSpan.setAttribute (CPhossAPOtel.ATTR_SMP_URL, String.valueOf (aSMPClient.getSMPHostURI ()));
+            }
+            catch (final SMPDNSResolutionException ex)
+            {
+              final String sMsg = "The participant ID '" +
+                                  aTx.getReceiverID () +
+                                  "' is not registered in the Peppol Network";
+              aSendingReport.setLookupError (sMsg);
+              aSendingReport.setLookupException (ex);
 
-              // MLS params
-              if (StringHelper.isNotEmpty (aTx.getMlsTo ()))
+              // Remember duration
+              aLookupSW.stop ();
+              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+              onPermanentFailure.accept (sMsg + ". Technical details: " + ex.getMessage ());
+
+              return aSendingReport;
+            }
+
+            // Perform SMP lookup
+            final String sCircuitBreakerKeySMP = "smp$" + aSMPClient.getSMPHostURI ();
+            if (!CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
+            {
+              aLookupSW.stop ();
+              aSendingReport.setLookupError ("SMP access limited by Circuit Breaker");
+              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+              onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
+              return aSendingReport;
+            }
+            final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
+            try
+            {
+              // Throws an exception in case of error
+              aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
+              aLookupSW.stop ();
+              aReceiverCertOut = aEndpointDetails.getReceiverAPCertificate ();
+              sReceiverAPURLOut = aEndpointDetails.getReceiverAPEndpointURL ();
+              sReceiverTechnicalContactOut = aEndpointDetails.getReceiverTechnicalContact ();
+
+              // Updated sending report
+              aSendingReport.setC3Cert (aReceiverCertOut);
+              aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
+              aSendingReport.setC3TechnicalContact (sReceiverTechnicalContactOut);
+              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+              CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
+            }
+            catch (final Phase4Exception ex)
+            {
+              CircuitBreakerManager.recordFailure (sCircuitBreakerKeySMP);
+
+              aLookupSW.stop ();
+              if (ex instanceof Phase4SMPException)
               {
-                IParticipantIdentifier aMlsTo = aIF.parseParticipantIdentifier (aTx.getMlsTo ());
-                if (aMlsTo == null)
-                  aMlsTo = aIF.createParticipantIdentifierWithDefaultScheme (aTx.getMlsTo ());
-                aBuilder.mlsTo (aMlsTo);
-              }
-              aBuilder.mlsType (APCoreConfig.getMlsType ());
-
-              // Set the main payload
-              final String sPayloadMimeType = aTx.getPayloadMimeType ();
-              if (CMimeType.APPLICATION_PDF.getAsStringWithoutParameters ().equals (sPayloadMimeType))
-              {
-                // Send PDF - must fit into a byte array due to XML constraints
-                final byte [] aPDFBytes = aDocPayloadMgr.readDocument (aTx.getDocumentPath ());
-                aBuilder.payloadBinaryContent (aPDFBytes, CMimeType.APPLICATION_PDF, null);
+                aSendingReport.setLookupError (ex.getMessage ());
+                aSendingReport.setLookupException ((Exception) ex.getCause ());
               }
               else
               {
-                // Add support for other non-XML document types here (e.g. from
-                // SP2SP) if needed
-
-                // Default is XML
-                if (StringHelper.isNotEmpty (sPayloadMimeType))
-                  LOGGER.warn (sRealLogPrefix +
-                               "Ignoring unsupported payload MIME type '" +
-                               sPayloadMimeType +
-                               "' for transaction '" +
-                               sTxID +
-                               "'");
-
-                // Provide as InputStream to be able to handle larger payloads
-                aBuilder.payload (HasInputStream.multiple ( () -> aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ())));
+                aSendingReport.setLookupError ("Error fetching Service Details from SMP");
+                aSendingReport.setLookupException (ex);
               }
+              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
 
-              eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
-              aSendingReport.setAS4SendingResult (eResult);
-              LOGGER.info (sRealLogPrefix + "Peppol SBDH-building client send result: " + eResult);
-
-              aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
-              break;
+              if (ex.isRetryFeasible ())
+                onFailed.accept (ex.getMessage ());
+              else
+                onPermanentFailure.accept (ex.getMessage ());
+              return aSendingReport;
             }
-            case PREBUILT_SBD:
-            {
-              final PeppolSBDHData aSbdData;
-              final MessageDigest aMD = HashHelper.createMessageDigest ();
-              try (final InputStream aFileIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
-                   final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
-                   final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
-              {
-                aSbdData = new PeppolSBDHDataReader (aIF).extractData (aDigestIS);
-                if (aSbdData == null)
-                  throw new IllegalStateException ("Failed to read SBDH from file '" + aTx.getDocumentPath () + "'");
 
-                // Check if the read size matches the stored size
-                final long nReadByteCount = aCountingIS.getBytesRead ();
-                if (nReadByteCount != aTx.getDocumentSize ())
-                  throw new IllegalStateException ("The size of the SBDH from file '" +
-                                                   aTx.getDocumentPath () +
-                                                   "' was stored to be " +
-                                                   aTx.getDocumentSize () +
-                                                   " but " +
-                                                   nReadByteCount +
-                                                   " bytes were read now");
-
-                // Check if the read digest matches the stored digest
-                final String sReadHash = HashHelper.getDigestHex (aMD);
-                if (!sReadHash.equals (aTx.getDocumentHash ()))
-                  throw new IllegalStateException ("The hash of the SBDH from file '" +
-                                                   aTx.getDocumentPath () +
-                                                   "' was stored to be '" +
-                                                   aTx.getDocumentHash () +
-                                                   "' but the re-read document now creates the hash '" +
-                                                   sReadHash +
-                                                   "'");
-              }
-
-              // Start the main builder
-              final PeppolUserMessageSBDHBuilder aBuilder;
-              aBuilder = Phase4PeppolSender.sbdhBuilder ()
-                                           .httpClientFactory (aHCS)
-                                           // AS4 input
-                                           .messageID (sAS4MessageID)
-                                           .conversationID (sAS4ConversationID)
-                                           .sendingDateTime (aAS4Timestamp)
-                                           // SBD
-                                           .payloadAndMetadata (aSbdData)
-                                           // Remaining IDs
-                                           .senderPartyID (sC2SeatID)
-                                           // Certificate stuff
-                                           .peppolAP_CAChecker (aAPCAChecker)
-                                           .endpointDetailProvider (new AS4EndpointDetailProviderConstant (aReceiverCert,
-                                                                                                           sReceiverAPURL,
-                                                                                                           sReceiverTechnicalContact))
-                                           .certificateConsumer ( (aAPCertificate, aCheckDT, eCertCheckResult) -> {
-                                             // Determined by SMP
-                                             // lookup
-                                             aSendingReport.setC3CertCheckDT (aCheckDT);
-                                             aSendingReport.setC3CertCheckResult (eCertCheckResult);
-                                           })
-                                           // Response stuff
-                                           .rawResponseConsumer (aSendingReport::setRawHttpResponse)
-                                           .signalMsgConsumer ( (aSignalMsg, aMessageMetadata, aState) -> {
-                                             aSendingReport.setAS4ReceivedSignalMsg (aSignalMsg);
-                                           });
-              eResult = aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
-              aSendingReport.setAS4SendingResult (eResult);
-              LOGGER.info (sRealLogPrefix + "Peppol Prebuilt-SBDH client send result: " + eResult);
-
-              aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
-              break;
-            }
-            default:
-              throw new IllegalStateException ("Unsupported source type " + aTx.getSourceType ());
+            bSmpLookupSuccess = true;
           }
-
-          aSendingSW.stop ();
-          aSendingReport.setAS4SendingDurationMillis (aSendingSW.getMillis ());
-
-          if (eResult.isFailure () || aCaughtSendingEx.isSet ())
+          catch (final RuntimeException ex)
           {
-            // Maybe some exception occurred in phase4
-            final Phase4Exception ex = aCaughtSendingEx.get ();
+            aSmpSpan.recordException (ex);
+            throw ex;
+          }
+          finally
+          {
+            if (bSmpLookupSuccess)
+              aSmpSpan.setStatusOk ();
+            else
+              aSmpSpan.setStatusError (null);
+          }
+        }
 
-            LOGGER.error (sRealLogPrefix +
-                          "Outbound transaction '" +
-                          sTxID +
-                          "' could not be sent with phase4. Result code is " +
-                          eResult,
-                          ex);
+        // Final aliases — the SMP scope hoisted these as nullable locals so they remain visible
+        // here; at this point they are guaranteed non-null because every failure path inside the
+        // SMP scope returns out of the method.
+        final X509Certificate aReceiverCert = aReceiverCertOut;
+        final String sReceiverAPURL = sReceiverAPURLOut;
+        final String sReceiverTechnicalContact = sReceiverTechnicalContactOut;
 
-            aSendingReport.setAS4SendingError ("An error occurred during the phase4 transmission to '" +
-                                               sReceiverAPURL +
-                                               "'.");
+        final StopWatch aSendingSW = StopWatch.createdStarted ();
+        final String sCircuitBreakerKeyAP = "ap$" + sReceiverAPURL;
+        if (CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeyAP))
+        {
+          // Only add it here to the sending report, otherwise the interpretation
+          // of the report gets
+          // more difficult
+          aSendingReport.setSBDHInstanceIdentifier (aTx.getSbdhInstanceID ());
+          aSendingReport.setCountryC1 (aTx.getC1CountryCode ());
+          aSendingReport.setSenderPartyID (sC2SeatID);
+          aSendingReport.setAS4MessageID (sAS4MessageID);
+          aSendingReport.setAS4SendingDT (aAS4Timestamp);
+
+          final String sAS4ConversationID = MessageHelperMethods.createRandomConversationID ();
+          aSendingReport.setAS4ConversationID (sAS4ConversationID);
+
+          final TrustedCAChecker aAPCAChecker = ePeppolStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
+                                                                             : PeppolTrustedCA.peppolTestAP ();
+
+          PeppolReportingItem aReportingItem = null;
+          try
+          {
+            // Actual sending using Phase4PeppolSender
+            final Phase4PeppolHttpClientSettings aHCS = new Phase4PeppolHttpClientSettings ();
+            APBasicConfig.applyHttpProxySettings (aHCS);
+
+            final EAS4UserMessageSendResult eResult;
+
+            final Wrapper <Phase4Exception> aCaughtSendingEx = new Wrapper <> ();
+            switch (aTx.getSourceType ())
+            {
+              case PAYLOAD_ONLY:
+              {
+                final PeppolUserMessageBuilder aBuilder;
+                aBuilder = Phase4PeppolSender.builder ()
+                                             .httpClientFactory (aHCS)
+                                             // AS4 input
+                                             .messageID (sAS4MessageID)
+                                             .conversationID (sAS4ConversationID)
+                                             .sendingDateTime (aAS4Timestamp)
+                                             // Peppol IDs
+                                             .senderParticipantID (aSenderID)
+                                             .receiverParticipantID (aReceiverID)
+                                             .documentTypeID (aDocTypeID)
+                                             .processID (aProcessID)
+                                             .countryC1 (aTx.getC1CountryCode ())
+                                             .senderPartyID (sC2SeatID)
+                                             .sbdhInstanceIdentifier (aTx.getSbdhInstanceID ())
+                                             // Certificate stuff
+                                             .peppolAP_CAChecker (aAPCAChecker)
+                                             .endpointDetailProvider (new AS4EndpointDetailProviderConstant (aReceiverCert,
+                                                                                                             sReceiverAPURL,
+                                                                                                             sReceiverTechnicalContact))
+                                             .certificateConsumer ( (aAPCertificate, aCheckDT, eCertCheckResult) -> {
+                                               // Take specifically the
+                                               // AP certificate
+                                               // verification
+                                               aSendingReport.setC3CertCheckDT (aCheckDT);
+                                               aSendingReport.setC3CertCheckResult (eCertCheckResult);
+                                             })
+                                             // Response stuff
+                                             .rawResponseConsumer (aSendingReport::setRawHttpResponse)
+                                             .signalMsgConsumer ( (aSignalMsg, aMessageMetadata, aState) -> {
+                                               aSendingReport.setAS4ReceivedSignalMsg (aSignalMsg);
+                                             });
+
+                // Add the optional SBDH parameters required for e.g. PDF sending
+                if (StringHelper.isNotEmpty (aTx.getSbdhStandard ()))
+                  aBuilder.sbdhStandard (aTx.getSbdhStandard ());
+                if (StringHelper.isNotEmpty (aTx.getSbdhTypeVersion ()))
+                  aBuilder.sbdhTypeVersion (aTx.getSbdhTypeVersion ());
+                if (StringHelper.isNotEmpty (aTx.getSbdhType ()))
+                  aBuilder.sbdhType (aTx.getSbdhType ());
+
+                // MLS params
+                if (StringHelper.isNotEmpty (aTx.getMlsTo ()))
+                {
+                  IParticipantIdentifier aMlsTo = aIF.parseParticipantIdentifier (aTx.getMlsTo ());
+                  if (aMlsTo == null)
+                    aMlsTo = aIF.createParticipantIdentifierWithDefaultScheme (aTx.getMlsTo ());
+                  aBuilder.mlsTo (aMlsTo);
+                }
+                aBuilder.mlsType (APCoreConfig.getMlsType ());
+
+                // Set the main payload
+                final String sPayloadMimeType = aTx.getPayloadMimeType ();
+                if (CMimeType.APPLICATION_PDF.getAsStringWithoutParameters ().equals (sPayloadMimeType))
+                {
+                  // Send PDF - must fit into a byte array due to XML constraints
+                  final byte [] aPDFBytes = aDocPayloadMgr.readDocument (aTx.getDocumentPath ());
+                  aBuilder.payloadBinaryContent (aPDFBytes, CMimeType.APPLICATION_PDF, null);
+                }
+                else
+                {
+                  // Add support for other non-XML document types here (e.g. from
+                  // SP2SP) if needed
+
+                  // Default is XML
+                  if (StringHelper.isNotEmpty (sPayloadMimeType))
+                    LOGGER.warn (sRealLogPrefix +
+                                 "Ignoring unsupported payload MIME type '" +
+                                 sPayloadMimeType +
+                                 "' for transaction '" +
+                                 sTxID +
+                                 "'");
+
+                  // Provide as InputStream to be able to handle larger payloads
+                  aBuilder.payload (HasInputStream.multiple ( () -> aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ())));
+                }
+
+                eResult = APTrace.withSpan (CPhossAPOtel.SPAN_OUTBOUND_AS4_SEND,
+                                            EAPSpanKind.CLIENT,
+                                            aSendSpan -> {
+                                              aSendSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                      aTx.getReceiverID ());
+                                              return aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                                            });
+                aSendingReport.setAS4SendingResult (eResult);
+                LOGGER.info (sRealLogPrefix + "Peppol SBDH-building client send result: " + eResult);
+
+                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
+                break;
+              }
+              case PREBUILT_SBD:
+              {
+                final PeppolSBDHData aSbdData;
+                final MessageDigest aMD = HashHelper.createMessageDigest ();
+                try (final IAPSpan aSbdhSpan = APTrace.startSpan (CPhossAPOtel.SPAN_OUTBOUND_SBDH_READ,
+                                                                  EAPSpanKind.INTERNAL)
+                                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID))
+                {
+                  boolean bSbdhReadSuccess = false;
+                  try
+                  {
+                    try (final InputStream aFileIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
+                         final CountingInputStream aCountingIS = new CountingInputStream (aFileIS);
+                         final DigestInputStream aDigestIS = new DigestInputStream (aCountingIS, aMD))
+                    {
+                      aSbdData = new PeppolSBDHDataReader (aIF).extractData (aDigestIS);
+                      if (aSbdData == null)
+                        throw new IllegalStateException ("Failed to read SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "'");
+
+                      // Check if the read size matches the stored size
+                      final long nReadByteCount = aCountingIS.getBytesRead ();
+                      if (nReadByteCount != aTx.getDocumentSize ())
+                        throw new IllegalStateException ("The size of the SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "' was stored to be " +
+                                                         aTx.getDocumentSize () +
+                                                         " but " +
+                                                         nReadByteCount +
+                                                         " bytes were read now");
+
+                      // Check if the read digest matches the stored digest
+                      final String sReadHash = HashHelper.getDigestHex (aMD);
+                      if (!sReadHash.equals (aTx.getDocumentHash ()))
+                        throw new IllegalStateException ("The hash of the SBDH from file '" +
+                                                         aTx.getDocumentPath () +
+                                                         "' was stored to be '" +
+                                                         aTx.getDocumentHash () +
+                                                         "' but the re-read document now creates the hash '" +
+                                                         sReadHash +
+                                                         "'");
+                    }
+                    bSbdhReadSuccess = true;
+                  }
+                  finally
+                  {
+                    if (!bSbdhReadSuccess)
+                      aSbdhSpan.setStatusError (null);
+                  }
+                }
+
+                // Start the main builder
+                final PeppolUserMessageSBDHBuilder aBuilder;
+                aBuilder = Phase4PeppolSender.sbdhBuilder ()
+                                             .httpClientFactory (aHCS)
+                                             // AS4 input
+                                             .messageID (sAS4MessageID)
+                                             .conversationID (sAS4ConversationID)
+                                             .sendingDateTime (aAS4Timestamp)
+                                             // SBD
+                                             .payloadAndMetadata (aSbdData)
+                                             // Remaining IDs
+                                             .senderPartyID (sC2SeatID)
+                                             // Certificate stuff
+                                             .peppolAP_CAChecker (aAPCAChecker)
+                                             .endpointDetailProvider (new AS4EndpointDetailProviderConstant (aReceiverCert,
+                                                                                                             sReceiverAPURL,
+                                                                                                             sReceiverTechnicalContact))
+                                             .certificateConsumer ( (aAPCertificate, aCheckDT, eCertCheckResult) -> {
+                                               // Determined by SMP
+                                               // lookup
+                                               aSendingReport.setC3CertCheckDT (aCheckDT);
+                                               aSendingReport.setC3CertCheckResult (eCertCheckResult);
+                                             })
+                                             // Response stuff
+                                             .rawResponseConsumer (aSendingReport::setRawHttpResponse)
+                                             .signalMsgConsumer ( (aSignalMsg, aMessageMetadata, aState) -> {
+                                               aSendingReport.setAS4ReceivedSignalMsg (aSignalMsg);
+                                             });
+                eResult = APTrace.withSpan (CPhossAPOtel.SPAN_OUTBOUND_AS4_SEND,
+                                            EAPSpanKind.CLIENT,
+                                            aSendSpan -> {
+                                              aSendSpan.setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                      aTx.getReceiverID ());
+                                              return aBuilder.sendMessageAndCheckForReceipt (aCaughtSendingEx::set);
+                                            });
+                aSendingReport.setAS4SendingResult (eResult);
+                LOGGER.info (sRealLogPrefix + "Peppol Prebuilt-SBDH client send result: " + eResult);
+
+                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
+                break;
+              }
+              default:
+                throw new IllegalStateException ("Unsupported source type " + aTx.getSourceType ());
+            }
+
+            aSendingSW.stop ();
+            aSendingReport.setAS4SendingDurationMillis (aSendingSW.getMillis ());
+
+            if (eResult.isFailure () || aCaughtSendingEx.isSet ())
+            {
+              // Maybe some exception occurred in phase4
+              final Phase4Exception ex = aCaughtSendingEx.get ();
+
+              LOGGER.error (sRealLogPrefix +
+                            "Outbound transaction '" +
+                            sTxID +
+                            "' could not be sent with phase4. Result code is " +
+                            eResult,
+                            ex);
+
+              aSendingReport.setAS4SendingError ("An error occurred during the phase4 transmission to '" +
+                                                 sReceiverAPURL +
+                                                 "'.");
+              aSendingReport.setAS4SendingException (ex);
+              aSendingReport.setSendingSuccess (false);
+              aSendingReport.setOverallSuccess (false);
+
+              // Call after any Sending Report modifications
+              final String sErrorMsg = ex != null ? ex.getMessage ()
+                                                  : "Error in AS4 sending with result code " + eResult;
+              if (nNewAttemptCount >= APCoreConfig.getRetrySendingMaxAttempts ())
+                onPermanentFailure.accept (sErrorMsg);
+              else
+                onFailed.accept (sErrorMsg);
+            }
+            else
+            {
+              // On success
+              LOGGER.info (sRealLogPrefix + "Outbound transaction '" + sTxID + "' sent successfully with phase4");
+
+              // Sending result may be null
+              aSendingReport.setSendingSuccess (true);
+
+              // Store successful attempt
+              final String sAS4ReceiptID = aSendingReport.getAS4ReceivedSignalMsg ().getMessageInfo ().getMessageId ();
+              aAttemptMgr.createSuccess (sTxID,
+                                         sAS4MessageID,
+                                         aAS4Timestamp,
+                                         sAS4ReceiptID,
+                                         aSendingReport.getAsJsonString ());
+
+              // Update in DB
+              aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
+
+              // Lifecycle event: outbound sent
+              {
+                final OffsetDateTime aCreatedDT = aTx.getCreatedDT ();
+                final Duration aSendingDuration = aCreatedDT != null ? Duration.between (aCreatedDT,
+                                                                                         aTimestampMgr.getCurrentDateTimeUTC ())
+                                                                     : null;
+                for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+                  aHandler.onOutboundDocumentSent (sTxID, aTx.getSbdhInstanceID (), aSendingDuration, nNewAttemptCount);
+              }
+
+              // Store Reporting data on success only
+              final boolean bReportingItemStored;
+              if (aReportingItem != null)
+              {
+                bReportingItemStored = APPeppolReportingHelper.createOutboundPeppolReportingItem (sTxID, aReportingItem)
+                                                              .isSuccess ();
+                if (bReportingItemStored)
+                  LOGGER.info (sRealLogPrefix + "Successfully stored for Peppol Reporting");
+                else
+                  LOGGER.error (sRealLogPrefix + "Failed to store for Peppol Reporting");
+              }
+              else
+              {
+                bReportingItemStored = false;
+                LOGGER.error (sRealLogPrefix +
+                              "No Reporting Item could be created so cannot store for Peppol Reporting");
+              }
+
+              // Set as last activity
+              aSendingReport.setOverallSuccess (bReportingItemStored);
+            }
+          }
+          catch (final Exception ex)
+          {
+            // Unexpected exception - not a Phase4Exception
+            LOGGER.error (sRealLogPrefix + "Outbound sending exception for transaction '" + sTxID + "'", ex);
+
+            aSendingSW.stop ();
+            aSendingReport.setAS4SendingError ("Failed to transmit outbound AS4 message to '" + sReceiverAPURL + "'");
             aSendingReport.setAS4SendingException (ex);
+            aSendingReport.setAS4SendingDurationMillis (aSendingSW.getMillis ());
             aSendingReport.setSendingSuccess (false);
             aSendingReport.setOverallSuccess (false);
 
             // Call after any Sending Report modifications
-            final String sErrorMsg = ex != null ? ex.getMessage () : "Error in AS4 sending with result code " + eResult;
             if (nNewAttemptCount >= APCoreConfig.getRetrySendingMaxAttempts ())
-              onPermanentFailure.accept (sErrorMsg);
+              onPermanentFailure.accept (ex.getMessage ());
             else
-              onFailed.accept (sErrorMsg);
+              onFailed.accept (ex.getMessage ());
+
+            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+              aHandler.onUnexpectedException ("OutboundOrchestrator.processPendingOutbound",
+                                              "Outbound sending exception for transaction '" + sTxID + "'",
+                                              ex);
           }
+
+          // Update circuit breaker based on sending result only
+          if (aSendingReport.isSendingSuccess ())
+            CircuitBreakerManager.recordSuccess (sCircuitBreakerKeyAP);
           else
-          {
-            // On success
-            LOGGER.info (sRealLogPrefix + "Outbound transaction '" + sTxID + "' sent successfully with phase4");
-
-            // Sending result may be null
-            aSendingReport.setSendingSuccess (true);
-
-            // Store successful attempt
-            final String sAS4ReceiptID = aSendingReport.getAS4ReceivedSignalMsg ().getMessageInfo ().getMessageId ();
-            aAttemptMgr.createSuccess (sTxID,
-                                       sAS4MessageID,
-                                       aAS4Timestamp,
-                                       sAS4ReceiptID,
-                                       aSendingReport.getAsJsonString ());
-
-            // Update in DB
-            aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
-
-            // Store Reporting data on success only
-            final boolean bReportingItemStored;
-            if (aReportingItem != null)
-            {
-              bReportingItemStored = APPeppolReportingHelper.createOutboundPeppolReportingItem (sTxID, aReportingItem)
-                                                            .isSuccess ();
-              if (bReportingItemStored)
-                LOGGER.info (sRealLogPrefix + "Successfully stored for Peppol Reporting");
-              else
-                LOGGER.error (sRealLogPrefix + "Failed to store for Peppol Reporting");
-            }
-            else
-            {
-              bReportingItemStored = false;
-              LOGGER.error (sRealLogPrefix + "No Reporting Item could be created so cannot store for Peppol Reporting");
-            }
-
-            // Set as last activity
-            aSendingReport.setOverallSuccess (bReportingItemStored);
-          }
+            CircuitBreakerManager.recordFailure (sCircuitBreakerKeyAP);
         }
-        catch (final Exception ex)
+        else
         {
-          // Unexpected exception - not a Phase4Exception
-          LOGGER.error (sRealLogPrefix + "Outbound sending exception for transaction '" + sTxID + "'", ex);
-
+          // Circuit Breaker not acquired
           aSendingSW.stop ();
-          aSendingReport.setAS4SendingError ("Failed to transmit outbound AS4 message to '" + sReceiverAPURL + "'");
-          aSendingReport.setAS4SendingException (ex);
+          aSendingReport.setAS4SendingError ("AP access limited by Circuit Breaker");
           aSendingReport.setAS4SendingDurationMillis (aSendingSW.getMillis ());
           aSendingReport.setSendingSuccess (false);
           aSendingReport.setOverallSuccess (false);
 
           // Call after any Sending Report modifications
-          if (nNewAttemptCount >= APCoreConfig.getRetrySendingMaxAttempts ())
-            onPermanentFailure.accept (ex.getMessage ());
-          else
-            onFailed.accept (ex.getMessage ());
-
-          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onUnexpectedException ("OutboundOrchestrator.processPendingOutbound",
-                                            "Outbound sending exception for transaction '" + sTxID + "'",
-                                            ex);
+          onFailed.accept ("AP access limited by Circuit Breaker '" + sCircuitBreakerKeyAP + "'");
         }
-
-        // Update circuit breaker based on sending result only
-        if (aSendingReport.isSendingSuccess ())
-          CircuitBreakerManager.recordSuccess (sCircuitBreakerKeyAP);
-        else
-          CircuitBreakerManager.recordFailure (sCircuitBreakerKeyAP);
       }
-      else
+      catch (final RuntimeException ex)
       {
-        // Circuit Breaker not acquired
-        aSendingSW.stop ();
-        aSendingReport.setAS4SendingError ("AP access limited by Circuit Breaker");
-        aSendingReport.setAS4SendingDurationMillis (aSendingSW.getMillis ());
-        aSendingReport.setSendingSuccess (false);
+        // Catch-all so the span captures unexpected runtime errors that bypass the inner handlers
+        aSpan.recordException (ex);
         aSendingReport.setOverallSuccess (false);
-
-        // Call after any Sending Report modifications
-        onFailed.accept ("AP access limited by Circuit Breaker '" + sCircuitBreakerKeyAP + "'");
+        throw ex;
       }
-    }
-    finally
-    {
-      // Finalize overall stuff
-      aOverallSW.stop ();
-      aSendingReport.setOverallDurationMillis (aOverallSW.getMillis ());
+      finally
+      {
+        // Finalize overall stuff
+        aOverallSW.stop ();
+        aSendingReport.setOverallDurationMillis (aOverallSW.getMillis ());
 
-      // Don't forget to clean up
-      Phase4LogCustomizer.clearThreadLocals ();
+        // Don't forget to clean up
+        Phase4LogCustomizer.clearThreadLocals ();
+
+        if (aSendingReport.isOverallSuccess ())
+          aSpan.setStatusOk ();
+        else
+          aSpan.setStatusError (null);
+      }
     }
 
     return aSendingReport;

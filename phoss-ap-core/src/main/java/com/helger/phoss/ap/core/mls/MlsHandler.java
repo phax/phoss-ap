@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.core.mls;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 
 import org.jspecify.annotations.NonNull;
@@ -46,9 +47,14 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
+import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.helper.HashHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -89,151 +95,159 @@ public final class MlsHandler
       return ESuccess.SUCCESS;
     }
 
-    final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
-    final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
-    final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
-    final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
-    final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-
-    final EPeppolMLSResponseCode eResponseCode = aOutcome.getResponseCode ();
-    final EPeppolMLSType eMlsType = aInboundTx.getMlsType ();
-
-    // Determine if we should send MLS
-    if (eMlsType == EPeppolMLSType.FAILURE_ONLY && eResponseCode.isSuccess ())
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_MLS_SEND, EAPSpanKind.PRODUCER)
+                                      .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aInboundTx.getID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
+                                                     aInboundTx.getSbdhInstanceID ())
+                                      .setAttribute (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE,
+                                                     aOutcome.getResponseCode ().getID ()))
     {
-      LOGGER.info ("MLS not required for transaction " +
-                   aInboundTx.getID () +
-                   " (FAILURE_ONLY, outcome=" +
+      final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
+      final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
+      final IInboundTransactionManager aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+      final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+      final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
+
+      final EPeppolMLSResponseCode eResponseCode = aOutcome.getResponseCode ();
+      final EPeppolMLSType eMlsType = aInboundTx.getMlsType ();
+
+      // Determine if we should send MLS
+      if (eMlsType == EPeppolMLSType.FAILURE_ONLY && eResponseCode.isSuccess ())
+      {
+        LOGGER.info ("MLS not required for transaction " +
+                     aInboundTx.getID () +
+                     " (FAILURE_ONLY, outcome=" +
+                     eResponseCode.getID () +
+                     ")");
+        final String sMlsOutboundTransactionID = null;
+        return aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsOutboundTransactionID);
+      }
+
+      LOGGER.info ("Creating MLS response (" +
                    eResponseCode.getID () +
-                   ")");
-      final String sMlsOutboundTransactionID = null;
-      return aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsOutboundTransactionID);
-    }
+                   ") for inbound transaction '" +
+                   aInboundTx.getID () +
+                   "'");
 
-    LOGGER.info ("Creating MLS response (" +
-                 eResponseCode.getID () +
-                 ") for inbound transaction '" +
-                 aInboundTx.getID () +
-                 "'");
-
-    // Create MLS data structure from MlsOutcome
-    final String sSenderPIDValue = SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":" + APCoreConfig.getPeppolOwnerSPID ();
-    final IParticipantIdentifier aMLSSenderPID = aIF.createParticipantIdentifierWithDefaultScheme (sSenderPIDValue);
-    if (aMLSSenderPID == null)
-    {
-      // Failed to build PID
-      LOGGER.error ("Failed to create MLS sender participant ID with value '" + sSenderPIDValue + "'");
-      return ESuccess.FAILURE;
-    }
-
-    // If an MlsTo value is in the DB, it is previously checked and valid
-    final IParticipantIdentifier aMLSReceiverPID;
-    if (StringHelper.isNotEmpty (aInboundTx.getMlsTo ()))
-    {
-      // DB value contains meta-scheme, scheme and value
-      aMLSReceiverPID = aIF.parseParticipantIdentifier (aInboundTx.getMlsTo ());
-      if (aMLSReceiverPID == null)
+      // Create MLS data structure from MlsOutcome
+      final String sSenderPIDValue = SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":" + APCoreConfig.getPeppolOwnerSPID ();
+      final IParticipantIdentifier aMLSSenderPID = aIF.createParticipantIdentifierWithDefaultScheme (sSenderPIDValue);
+      if (aMLSSenderPID == null)
       {
         // Failed to build PID
-        LOGGER.error ("Failed to parse MLS receiver participant ID '" + aInboundTx.getMlsTo () + "'");
+        LOGGER.error ("Failed to create MLS sender participant ID with value '" + sSenderPIDValue + "'");
         return ESuccess.FAILURE;
       }
-    }
-    else
-    {
-      final String sValue = SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":" + aInboundTx.getC2SeatID ().substring (3);
-      aMLSReceiverPID = aIF.createParticipantIdentifierWithDefaultScheme (sValue);
-      if (aMLSReceiverPID == null)
+
+      // If an MlsTo value is in the DB, it is previously checked and valid
+      final IParticipantIdentifier aMLSReceiverPID;
+      if (StringHelper.isNotEmpty (aInboundTx.getMlsTo ()))
       {
-        // Failed to build PID
-        LOGGER.error ("Failed to create MLS receiver participant ID with value '" + sValue + "'");
+        // DB value contains meta-scheme, scheme and value
+        aMLSReceiverPID = aIF.parseParticipantIdentifier (aInboundTx.getMlsTo ());
+        if (aMLSReceiverPID == null)
+        {
+          // Failed to build PID
+          LOGGER.error ("Failed to parse MLS receiver participant ID '" + aInboundTx.getMlsTo () + "'");
+          return ESuccess.FAILURE;
+        }
+      }
+      else
+      {
+        final String sValue = SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":" + aInboundTx.getC2SeatID ().substring (3);
+        aMLSReceiverPID = aIF.createParticipantIdentifierWithDefaultScheme (sValue);
+        if (aMLSReceiverPID == null)
+        {
+          // Failed to build PID
+          LOGGER.error ("Failed to create MLS receiver participant ID with value '" + sValue + "'");
+          return ESuccess.FAILURE;
+        }
+      }
+
+      final PeppolMLSBuilder aBuilder = aOutcome.getAsMLSBuilder ();
+      aBuilder.randomID ()
+              .issueDateTimeNow ()
+              .senderParticipantID (aMLSSenderPID)
+              .receiverParticipantID (aMLSReceiverPID)
+              .referenceId (aInboundTx.getSbdhInstanceID ());
+      final var aMls = aBuilder.build ();
+      if (aMls == null)
+      {
+        // Failed to build MLS
+        LOGGER.error ("Failed to build MLS data structure - see log for details");
         return ESuccess.FAILURE;
       }
+
+      // Serialize ApplicationResponse to XML
+      final byte [] aMlsBytes = new PeppolMLSMarshaller ().getAsBytes (aMls);
+      if (aMlsBytes == null)
+      {
+        // Failed to serialize MLS
+        LOGGER.error ("Failed to serialize MLS to bytes - see log for details");
+        return ESuccess.FAILURE;
+      }
+
+      LOGGER.info ("Sending MLS from '" +
+                   aBuilder.senderParticipantID ().getURIEncoded () +
+                   "' to '" +
+                   aBuilder.receiverParticipantID ().getURIEncoded () +
+                   "'");
+
+      final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
+      final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
+
+      // Create an outbound transaction for the MLS response
+
+      // Store MLS document to disk
+      final String sDocumentPath = aDocPayloadMgr.storeDocument (APBasicConfig.getStorageOutboundPath (),
+                                                                 aCreationDT,
+                                                                 sMlsSbdhInstanceID + ".mls",
+                                                                 aMlsBytes);
+
+      // MLS can never have an MLS_TO
+      final String sMlsTo = null;
+
+      // The SBDH parameters are not needed for SBDH
+      final String sSbdhStandard = null;
+      final String sSbdhTypeVersion = null;
+      final String sSbdhType = null;
+      final String sPayloadMimeType = null;
+
+      // Create outbound transaction
+      final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
+                                                   aMLSSenderPID.getURIEncoded (),
+                                                   aMLSReceiverPID.getURIEncoded (),
+                                                   EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
+                                                   EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded (),
+                                                   sMlsSbdhInstanceID,
+                                                   ESourceType.PAYLOAD_ONLY,
+                                                   sDocumentPath,
+                                                   aMlsBytes.length,
+                                                   HashHelper.sha256Hex (aMlsBytes),
+                                                   APCoreConfig.getPeppolOwnerCountryCode (),
+                                                   aCreationDT,
+                                                   sMlsTo,
+                                                   aInboundTx.getID (),
+                                                   sSbdhStandard,
+                                                   sSbdhTypeVersion,
+                                                   sSbdhType,
+                                                   sPayloadMimeType);
+      final var aMlsTx = aOutboundMgr.getByID (sMlsTxID);
+      if (aMlsTx == null)
+      {
+        LOGGER.error ("Failed to submit outbound transaction");
+        return ESuccess.FAILURE;
+      }
+
+      // Update inbound with MLS fields
+      if (aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsTxID).isFailure ())
+        LOGGER.error ("Failed to update MLS fields for inbound transaction '" + aInboundTx.getID () + "'");
+
+      // Perform actual sending
+      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitMLS] ",
+                                                                                                    aMlsTx);
+      return ESuccess.valueOf (aSendingReport.isOverallSuccess ());
     }
-
-    final PeppolMLSBuilder aBuilder = aOutcome.getAsMLSBuilder ();
-    aBuilder.randomID ()
-            .issueDateTimeNow ()
-            .senderParticipantID (aMLSSenderPID)
-            .receiverParticipantID (aMLSReceiverPID)
-            .referenceId (aInboundTx.getSbdhInstanceID ());
-    final var aMls = aBuilder.build ();
-    if (aMls == null)
-    {
-      // Failed to build MLS
-      LOGGER.error ("Failed to build MLS data structure - see log for details");
-      return ESuccess.FAILURE;
-    }
-
-    // Serialize ApplicationResponse to XML
-    final byte [] aMlsBytes = new PeppolMLSMarshaller ().getAsBytes (aMls);
-    if (aMlsBytes == null)
-    {
-      // Failed to serialize MLS
-      LOGGER.error ("Failed to serialize MLS to bytes - see log for details");
-      return ESuccess.FAILURE;
-    }
-
-    LOGGER.info ("Sending MLS from '" +
-                 aBuilder.senderParticipantID ().getURIEncoded () +
-                 "' to '" +
-                 aBuilder.receiverParticipantID ().getURIEncoded () +
-                 "'");
-
-    final String sMlsSbdhInstanceID = PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
-    final OffsetDateTime aCreationDT = aTimestampMgr.getCurrentDateTimeUTC ();
-
-    // Create an outbound transaction for the MLS response
-
-    // Store MLS document to disk
-    final String sDocumentPath = aDocPayloadMgr.storeDocument (APBasicConfig.getStorageOutboundPath (),
-                                                               aCreationDT,
-                                                               sMlsSbdhInstanceID + ".mls",
-                                                               aMlsBytes);
-
-    // MLS can never have an MLS_TO
-    final String sMlsTo = null;
-
-    // The SBDH parameters are not needed for SBDH
-    final String sSbdhStandard = null;
-    final String sSbdhTypeVersion = null;
-    final String sSbdhType = null;
-    final String sPayloadMimeType = null;
-
-    // Create outbound transaction
-    final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
-                                                 aMLSSenderPID.getURIEncoded (),
-                                                 aMLSReceiverPID.getURIEncoded (),
-                                                 EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
-                                                 EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded (),
-                                                 sMlsSbdhInstanceID,
-                                                 ESourceType.PAYLOAD_ONLY,
-                                                 sDocumentPath,
-                                                 aMlsBytes.length,
-                                                 HashHelper.sha256Hex (aMlsBytes),
-                                                 APCoreConfig.getPeppolOwnerCountryCode (),
-                                                 aCreationDT,
-                                                 sMlsTo,
-                                                 aInboundTx.getID (),
-                                                 sSbdhStandard,
-                                                 sSbdhTypeVersion,
-                                                 sSbdhType,
-                                                 sPayloadMimeType);
-    final var aMlsTx = aOutboundMgr.getByID (sMlsTxID);
-    if (aMlsTx == null)
-    {
-      LOGGER.error ("Failed to submit outbound transaction");
-      return ESuccess.FAILURE;
-    }
-
-    // Update inbound with MLS fields
-    if (aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsTxID).isFailure ())
-      LOGGER.error ("Failed to update MLS fields for inbound transaction '" + aInboundTx.getID () + "'");
-
-    // Perform actual sending
-    final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitMLS] ",
-                                                                                                  aMlsTx);
-    return ESuccess.valueOf (aSendingReport.isOverallSuccess ());
   }
 
   /**
@@ -294,6 +308,14 @@ public final class MlsHandler
                  "' to '" +
                  eMlsStatus.getID () +
                  "'");
+
+    // Compute round-trip duration if the original outbound send completion timestamp is known
+    final OffsetDateTime aOutboundCompletedDT = aTx.getCompletedDT ();
+    final Duration aRoundTrip = aOutboundCompletedDT != null ? Duration.between (aOutboundCompletedDT,
+                                                                                 aMlsAS4ReceivedDT) : null;
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onInboundMLSCorrelated (sMlsInboundTransactionID, sSbdhInstanceID, eResponseCode, aRoundTrip);
+
     return ESuccess.SUCCESS;
   }
 }

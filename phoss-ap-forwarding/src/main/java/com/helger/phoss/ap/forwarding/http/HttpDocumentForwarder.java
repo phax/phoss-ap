@@ -46,6 +46,9 @@ import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 
 /**
@@ -121,6 +124,16 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  {
+    return APTrace.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, EAPSpanKind.CLIENT, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "http")
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
+      return _doForwardDocument (aTransaction);
+    });
+  }
+
+  @NonNull
+  private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
 

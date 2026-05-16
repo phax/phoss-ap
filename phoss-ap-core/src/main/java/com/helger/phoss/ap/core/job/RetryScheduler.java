@@ -25,9 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.otel.CPhossAPOtel;
+import com.helger.phoss.ap.api.trace.APTrace;
+import com.helger.phoss.ap.api.trace.EAPSpanKind;
+import com.helger.phoss.ap.api.trace.IAPSpan;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.inbound.InboundOrchestrator;
@@ -51,84 +56,118 @@ public final class RetryScheduler
   private static void _retryOutbound (@Nonnegative final int nBatchSize)
   {
     final var aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nProcessed = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "retry")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, true))
     {
-      final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForRetry (nBatchSize);
-
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
-        final String sLogPrefix = "[RetryOutbound] ";
+        final ICommonsList <IOutboundTransaction> aTransactions = aOutboundMgr.getAllForRetry (nBatchSize);
 
-        for (final IOutboundTransaction aTx : aTransactions)
+        if (aTransactions.isNotEmpty ())
         {
-          try
-          {
-            OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
-          }
-          catch (final Exception ex)
-          {
-            LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
+          LOGGER.info ("Retrying " + aTransactions.size () + " outbound transactions");
+          final String sLogPrefix = "[RetryOutbound] ";
 
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
-                                              "Error retrying outbound transaction '" + aTx.getID () + "'",
-                                              ex);
+          for (final IOutboundTransaction aTx : aTransactions)
+          {
+            nProcessed++;
+            try
+            {
+              OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
+            }
+            catch (final Exception ex)
+            {
+              LOGGER.error ("Error retrying outbound transaction '" + aTx.getID () + "'", ex);
+
+              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
+                                                "Error retrying outbound transaction '" + aTx.getID () + "'",
+                                                ex);
+            }
           }
         }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no outbound transactions for retry");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no outbound transactions for retry");
+        LOGGER.error ("Internal error in outbound retry cycle", ex);
+
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("RetryScheduler._retryOutbound",
+                                          "Internal error in outbound retry cycle",
+                                          ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nProcessed);
       }
     }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error in outbound retry cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("RetryScheduler._retryOutbound", "Internal error in outbound retry cycle", ex);
-    }
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onRetrySchedulerCycle (true, nProcessed, aCycleDuration);
   }
 
   private static void _retryInbound (@Nonnegative final int nBatchSize)
   {
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final StopWatch aSW = StopWatch.createdStarted ();
+    int nProcessed = 0;
 
-    try
+    try (final IAPSpan aSpan = APTrace.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE, EAPSpanKind.INTERNAL)
+                                      .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "retry")
+                                      .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false))
     {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForRetry (nBatchSize);
-
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
-        final String sLogPrefix = "[RetryInbound] ";
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForRetry (nBatchSize);
 
-        for (final IInboundTransaction aInboundTx : aTransactions)
+        if (aTransactions.isNotEmpty ())
         {
-          // Re-forward using the original InboundOrchestrator logic
-          if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+          LOGGER.info ("Retrying " + aTransactions.size () + " inbound forwarding transactions");
+          final String sLogPrefix = "[RetryInbound] ";
+
+          for (final IInboundTransaction aInboundTx : aTransactions)
           {
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            nProcessed++;
+            // Re-forward using the original InboundOrchestrator logic
+            if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+            {
+              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            }
           }
         }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no inbound transactions for retry");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no inbound transactions for retry");
+        LOGGER.error ("Internal error in inbound retry cycle", ex);
+
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nProcessed);
       }
     }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error in inbound retry cycle", ex);
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("RetryScheduler._retryInbound", "Internal error in inbound retry cycle", ex);
-    }
+    final Duration aCycleDuration = aSW.stopAndGetDuration ();
+    for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+      aHandler.onRetrySchedulerCycle (false, nProcessed, aCycleDuration);
   }
 
   /**

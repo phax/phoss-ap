@@ -59,6 +59,14 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
   }
 
   /** {@inheritDoc} */
+  public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
+                                               @Nullable final String sErrorDetails)
+  {
+    _logError ("onOutboundVerificationRejection",
+               Map.of ("sbdhInstanceID", sSbdhInstanceID, "errorDetails", sErrorDetails));
+  }
+
+  /** {@inheritDoc} */
   public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
                                                  @NonNull final String sSbdhInstanceID,
                                                  @Nullable final String sErrorDetails)

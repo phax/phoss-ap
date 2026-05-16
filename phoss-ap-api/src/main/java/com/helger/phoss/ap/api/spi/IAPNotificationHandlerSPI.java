@@ -69,6 +69,19 @@ public interface IAPNotificationHandlerSPI
                                        @Nullable String sErrorDetails);
 
   /**
+   * Called when an outbound document fails optional verification before sending and is rejected.
+   * No outbound transaction has been created yet, so this callback only carries the SBDH Instance
+   * Identifier.
+   *
+   * @param sSbdhInstanceID
+   *        The SBDH Instance Identifier. Never <code>null</code>.
+   * @param sErrorDetails
+   *        Optional error details. May be <code>null</code>.
+   * @since 0.9.0
+   */
+  void onOutboundVerificationRejection (@NonNull String sSbdhInstanceID, @Nullable String sErrorDetails);
+
+  /**
    * Called when the inbound message is an MLS but could not be correlated with an outbound
    * transaction.
    *

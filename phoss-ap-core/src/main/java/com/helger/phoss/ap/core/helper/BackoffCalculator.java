@@ -76,8 +76,8 @@ public final class BackoffCalculator
    * @param nMaxBackoffMs
    *        The maximum backoff duration in milliseconds. Must be &gt;= 0.
    * @return The calculated next retry timestamp. Never <code>null</code>.
-   * @deprecated Since 0.9.0; use
-   *             {@link #calculateNextRetry(int, Duration, double, Duration)} instead.
+   * @deprecated Since 0.9.0; use {@link #calculateNextRetry(int, Duration, double, Duration)}
+   *             instead.
    */
   @NonNull
   @Deprecated (forRemoval = true, since = "0.9.0")

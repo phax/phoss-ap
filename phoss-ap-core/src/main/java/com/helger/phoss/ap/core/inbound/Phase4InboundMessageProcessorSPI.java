@@ -385,8 +385,7 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
           final PeppolMLSBuilder aBuilder = PeppolMLSBuilder.createForApplicationResponse (aMLS);
 
           // The reference ID in the MLS is the SBDH Instance ID of the original
-          // outbound business
-          // document
+          // outbound business document
           final String sReferencedSbdhInstanceID = aBuilder.referenceId ();
           if (StringHelper.isEmpty (sReferencedSbdhInstanceID))
           {

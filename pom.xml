@@ -71,7 +71,7 @@
 
     <ph-commons.version>12.2.6</ph-commons.version>
     <ph-db.version>8.4.0</ph-db.version>
-    <ph-web.version>11.4.0</ph-web.version>
+    <ph-web.version>11.4.1</ph-web.version>
     <ph-oton.version>10.2.3</ph-oton.version>
     <peppol-commons.version>12.5.0</peppol-commons.version>
     <phive.version>12.0.3</phive.version>

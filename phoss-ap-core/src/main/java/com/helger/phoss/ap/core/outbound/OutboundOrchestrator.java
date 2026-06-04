@@ -767,7 +767,7 @@ public final class OutboundOrchestrator
                 aSendingReport.setAS4SendingResult (eResult);
                 LOGGER.info (sRealLogPrefix + "Peppol SBDH-building client send result: " + eResult);
 
-                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
+                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aSenderID.getURIEncoded ());
                 break;
               }
               case PREBUILT_SBD:
@@ -860,7 +860,7 @@ public final class OutboundOrchestrator
                 aSendingReport.setAS4SendingResult (eResult);
                 LOGGER.info (sRealLogPrefix + "Peppol Prebuilt-SBDH client send result: " + eResult);
 
-                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aReceiverID.getURIEncoded ());
+                aReportingItem = aBuilder.createPeppolReportingItemAfterSending (aSenderID.getURIEncoded ());
                 break;
               }
               default:

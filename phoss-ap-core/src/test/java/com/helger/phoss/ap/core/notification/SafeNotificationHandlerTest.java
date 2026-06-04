@@ -139,7 +139,7 @@ public final class SafeNotificationHandlerTest
   }
 
   /**
-   * A handler that throws RuntimeException from every method.
+   * A handler that throws IllegalStateException from every method.
    */
   private static final class ThrowingHandler implements IAPNotificationHandlerSPI
   {
@@ -147,13 +147,13 @@ public final class SafeNotificationHandlerTest
                                                 @NonNull final String sSbdhInstanceID,
                                                 @Nullable final String sErrorDetails)
     {
-      throw new RuntimeException ("test-onInboundVerificationRejection");
+      throw new IllegalStateException ("test-onInboundVerificationRejection");
     }
 
     public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
                                                  @Nullable final String sErrorDetails)
     {
-      throw new RuntimeException ("test-onOutboundVerificationRejection");
+      throw new IllegalStateException ("test-onOutboundVerificationRejection");
     }
 
     @Override
@@ -168,7 +168,7 @@ public final class SafeNotificationHandlerTest
                                             final boolean bIsDuplicateSBDH,
                                             @NonNull final String sErrorDetails)
     {
-      throw new RuntimeException ("test-onInboundDuplicateRejected");
+      throw new IllegalStateException ("test-onInboundDuplicateRejected");
     }
 
     public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
@@ -177,50 +177,50 @@ public final class SafeNotificationHandlerTest
                                               @NonNull final String sProcessID,
                                               @NonNull final String sSbdhInstanceID)
     {
-      throw new RuntimeException ("test-onInboundReceiverNotServiced");
+      throw new IllegalStateException ("test-onInboundReceiverNotServiced");
     }
 
     public void onInboundMLSCorrelationError (@NonNull final String sTransactionID,
                                               @NonNull final String sReferencedSbdhInstanceID,
                                               @NonNull final EPeppolMLSResponseCode eMlsResponseCode)
     {
-      throw new RuntimeException ("test-onInboundMLSCorrelationError");
+      throw new IllegalStateException ("test-onInboundMLSCorrelationError");
     }
 
     public void onInboundForwardingError (@NonNull final String sTransactionID, final boolean bIsRetry)
     {
-      throw new RuntimeException ("test-onInboundForwardingError");
+      throw new IllegalStateException ("test-onInboundForwardingError");
     }
 
     public void onInboundPermanentForwardingFailure (@NonNull final String sTransactionID,
                                                      @NonNull final String sSbdhInstanceID,
                                                      @Nullable final String sErrorDetails)
     {
-      throw new RuntimeException ("test-onInboundPermanentForwardingFailure");
+      throw new IllegalStateException ("test-onInboundPermanentForwardingFailure");
     }
 
     public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
                                                    @NonNull final String sSbdhInstanceID,
                                                    @Nullable final String sErrorDetails)
     {
-      throw new RuntimeException ("test-onOutboundPermanentSendingFailure");
+      throw new IllegalStateException ("test-onOutboundPermanentSendingFailure");
     }
 
     public void onPeppolReportingTSRFailure (@NonNull final YearMonth aYearMonth)
     {
-      throw new RuntimeException ("test-onPeppolReportingTSRFailure");
+      throw new IllegalStateException ("test-onPeppolReportingTSRFailure");
     }
 
     public void onPeppolReportingEUSRFailure (@NonNull final YearMonth aYearMonth)
     {
-      throw new RuntimeException ("test-onPeppolReportingEUSRFailure");
+      throw new IllegalStateException ("test-onPeppolReportingEUSRFailure");
     }
 
     public void onUnexpectedException (@NonNull final String sContext,
                                        @NonNull final String sMessage,
                                        @NonNull final Exception aException)
     {
-      throw new RuntimeException ("test-onUnexpectedException");
+      throw new IllegalStateException ("test-onUnexpectedException");
     }
   }
 

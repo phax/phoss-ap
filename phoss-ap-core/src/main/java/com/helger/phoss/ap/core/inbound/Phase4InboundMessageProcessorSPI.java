@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.Locale;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.unece.cefact.namespaces.sbdh.StandardBusinessDocument;
 
@@ -87,6 +88,30 @@ import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.Applicati
 public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSBDHandlerSPI
 {
   private static final Logger LOGGER = Phase4LoggerFactory.getLogger (Phase4InboundMessageProcessorSPI.class);
+
+  private static void _notifyInboundDuplicateRejected (@NonNull final String sSenderID,
+                                                       @NonNull final String sReceiverID,
+                                                       @NonNull final String sDocTypeID,
+                                                       @NonNull final String sProcessID,
+                                                       @Nullable final String sSenderProviderID,
+                                                       @Nullable final String sAS4MessageID,
+                                                       @NonNull final String sSbdhInstanceID,
+                                                       final boolean bIsDuplicateAS4,
+                                                       final boolean bIsDuplicateSBDH,
+                                                       @NonNull final String sErrorDetails)
+  {
+    for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+      aHandler.onInboundDuplicateRejected (sSenderID,
+                                           sReceiverID,
+                                           sDocTypeID,
+                                           sProcessID,
+                                           sSenderProviderID,
+                                           sAS4MessageID,
+                                           sSbdhInstanceID,
+                                           bIsDuplicateAS4,
+                                           bIsDuplicateSBDH,
+                                           sErrorDetails);
+  }
 
   /** {@inheritDoc} */
   public void handleIncomingSBD (@NonNull final IAS4IncomingMessageMetadata aMessageMetadata,
@@ -175,6 +200,16 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                                                                      .refToMessageInError (aIncomingState.getMessageID ())
                                                                                      .errorDetail (sMsg))
                                                     .build ());
+              _notifyInboundDuplicateRejected (sSenderID,
+                                               sReceiverID,
+                                               sDocTypeID,
+                                               sProcessID,
+                                               sC2ID,
+                                               sAS4MessageID,
+                                               sSbdhInstanceID,
+                                               bIsDuplicateAS4,
+                                               bIsDuplicateSBDH,
+                                               sMsg);
               return;
             }
 
@@ -195,6 +230,16 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
                                                                                      .refToMessageInError (aIncomingState.getMessageID ())
                                                                                      .errorDetail (sMsg))
                                                     .build ());
+              _notifyInboundDuplicateRejected (sSenderID,
+                                               sReceiverID,
+                                               sDocTypeID,
+                                               sProcessID,
+                                               sC2ID,
+                                               sAS4MessageID,
+                                               sSbdhInstanceID,
+                                               bIsDuplicateAS4,
+                                               bIsDuplicateSBDH,
+                                               sMsg);
               return;
             }
 

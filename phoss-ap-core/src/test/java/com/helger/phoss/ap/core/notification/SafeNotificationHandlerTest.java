@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.YearMonth;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -44,6 +45,8 @@ public final class SafeNotificationHandlerTest
   {
     final AtomicInteger m_aInboundVerificationRejectionCount = new AtomicInteger (0);
     final AtomicInteger m_aOutboundVerificationRejectionCount = new AtomicInteger (0);
+    final AtomicInteger m_aInboundDuplicateRejectedCount = new AtomicInteger (0);
+    final AtomicReference <String> m_aInboundDuplicateRejectedSenderProviderID = new AtomicReference <> ();
     final AtomicInteger m_aInboundReceiverNotServicedCount = new AtomicInteger (0);
     final AtomicInteger m_aInboundMLSCorrelationErrorCount = new AtomicInteger (0);
     final AtomicInteger m_aInboundForwardingErrorCount = new AtomicInteger (0);
@@ -64,6 +67,22 @@ public final class SafeNotificationHandlerTest
                                                  @Nullable final String sErrorDetails)
     {
       m_aOutboundVerificationRejectionCount.incrementAndGet ();
+    }
+
+    @Override
+    public void onInboundDuplicateRejected (@NonNull final String sSenderID,
+                                            @NonNull final String sReceiverID,
+                                            @NonNull final String sDocTypeID,
+                                            @NonNull final String sProcessID,
+                                            @Nullable final String sSenderProviderID,
+                                            @Nullable final String sAS4MessageID,
+                                            @NonNull final String sSbdhInstanceID,
+                                            final boolean bIsDuplicateAS4,
+                                            final boolean bIsDuplicateSBDH,
+                                            @NonNull final String sErrorDetails)
+    {
+      m_aInboundDuplicateRejectedCount.incrementAndGet ();
+      m_aInboundDuplicateRejectedSenderProviderID.set (sSenderProviderID);
     }
 
     public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
@@ -137,6 +156,21 @@ public final class SafeNotificationHandlerTest
       throw new RuntimeException ("test-onOutboundVerificationRejection");
     }
 
+    @Override
+    public void onInboundDuplicateRejected (@NonNull final String sSenderID,
+                                            @NonNull final String sReceiverID,
+                                            @NonNull final String sDocTypeID,
+                                            @NonNull final String sProcessID,
+                                            @Nullable final String sSenderProviderID,
+                                            @Nullable final String sAS4MessageID,
+                                            @NonNull final String sSbdhInstanceID,
+                                            final boolean bIsDuplicateAS4,
+                                            final boolean bIsDuplicateSBDH,
+                                            @NonNull final String sErrorDetails)
+    {
+      throw new RuntimeException ("test-onInboundDuplicateRejected");
+    }
+
     public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                               @NonNull final String sReceiverID,
                                               @NonNull final String sDocTypeID,
@@ -202,6 +236,19 @@ public final class SafeNotificationHandlerTest
     aSafe.onOutboundVerificationRejection ("sbdh-out", "error");
     assertEquals (1, aInner.m_aOutboundVerificationRejectionCount.get ());
 
+    aSafe.onInboundDuplicateRejected ("sender",
+                                      "receiver",
+                                      "doctype",
+                                      "process",
+                                      "POP0000000001",
+                                      "as4-1",
+                                      "sbdh-dup",
+                                      true,
+                                      false,
+                                      "duplicate");
+    assertEquals (1, aInner.m_aInboundDuplicateRejectedCount.get ());
+    assertEquals ("POP0000000001", aInner.m_aInboundDuplicateRejectedSenderProviderID.get ());
+
     aSafe.onInboundReceiverNotServiced ("sender", "receiver", "doctype", "process", "sbdh-2");
     assertEquals (1, aInner.m_aInboundReceiverNotServicedCount.get ());
 
@@ -235,6 +282,16 @@ public final class SafeNotificationHandlerTest
     // None of these should throw
     aSafe.onInboundVerificationRejection ("tx-1", "sbdh-1", "error");
     aSafe.onOutboundVerificationRejection ("sbdh-out", "error");
+    aSafe.onInboundDuplicateRejected ("sender",
+                                      "receiver",
+                                      "doctype",
+                                      "process",
+                                      null,
+                                      null,
+                                      "sbdh-dup",
+                                      true,
+                                      false,
+                                      "duplicate");
     aSafe.onInboundReceiverNotServiced ("sender", "receiver", "doctype", "process", "sbdh-2");
     aSafe.onInboundMLSCorrelationError ("tx-2", "ref-sbdh", EPeppolMLSResponseCode.REJECTION);
     aSafe.onInboundForwardingError ("tx-3", true);

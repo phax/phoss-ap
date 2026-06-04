@@ -82,6 +82,45 @@ public interface IAPNotificationHandlerSPI
   void onOutboundVerificationRejection (@NonNull String sSbdhInstanceID, @Nullable String sErrorDetails);
 
   /**
+   * Called when an inbound AS4 message is rejected because it was detected as a duplicate before an
+   * inbound transaction could be persisted.
+   *
+   * @param sSenderID
+   *        Peppol sender ID (C1). Never <code>null</code>.
+   * @param sReceiverID
+   *        Peppol receiver ID (C4). Never <code>null</code>.
+   * @param sDocTypeID
+   *        Peppol document type ID. Never <code>null</code>.
+   * @param sProcessID
+   *        Peppol process ID. Never <code>null</code>.
+   * @param sSenderProviderID
+   *        Peppol sender provider ID (C2), usually derived from the signing certificate common name.
+   *        May be <code>null</code>.
+   * @param sAS4MessageID
+   *        AS4 Message ID. May be <code>null</code>.
+   * @param sSbdhInstanceID
+   *        SBDH Instance Identifier. Never <code>null</code>.
+   * @param bIsDuplicateAS4
+   *        <code>true</code> if an AS4 message with the same ID was previously received.
+   * @param bIsDuplicateSBDH
+   *        <code>true</code> if an SBDH with the same Instance ID was previously received.
+   * @param sErrorDetails
+   *        Error details sent back as AS4 error. Never <code>null</code>.
+   * @since 0.9.1
+   */
+  default void onInboundDuplicateRejected (@NonNull final String sSenderID,
+                                           @NonNull final String sReceiverID,
+                                           @NonNull final String sDocTypeID,
+                                           @NonNull final String sProcessID,
+                                           @Nullable final String sSenderProviderID,
+                                           @Nullable final String sAS4MessageID,
+                                           @NonNull final String sSbdhInstanceID,
+                                           final boolean bIsDuplicateAS4,
+                                           final boolean bIsDuplicateSBDH,
+                                           @NonNull final String sErrorDetails)
+  {}
+
+  /**
    * Called when the inbound message is an MLS but could not be correlated with an outbound
    * transaction.
    *

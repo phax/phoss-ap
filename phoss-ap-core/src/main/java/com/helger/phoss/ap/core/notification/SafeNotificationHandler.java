@@ -83,6 +83,37 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
   }
 
   /** {@inheritDoc} */
+  public void onInboundDuplicateRejected (@NonNull final String sSenderID,
+                                          @NonNull final String sReceiverID,
+                                          @NonNull final String sDocTypeID,
+                                          @NonNull final String sProcessID,
+                                          @Nullable final String sSenderProviderID,
+                                          @Nullable final String sAS4MessageID,
+                                          @NonNull final String sSbdhInstanceID,
+                                          final boolean bIsDuplicateAS4,
+                                          final boolean bIsDuplicateSBDH,
+                                          @NonNull final String sErrorDetails)
+  {
+    try
+    {
+      m_aHdl.onInboundDuplicateRejected (sSenderID,
+                                         sReceiverID,
+                                         sDocTypeID,
+                                         sProcessID,
+                                         sSenderProviderID,
+                                         sAS4MessageID,
+                                         sSbdhInstanceID,
+                                         bIsDuplicateAS4,
+                                         bIsDuplicateSBDH,
+                                         sErrorDetails);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error invoking onInboundDuplicateRejected on " + m_aHdl, ex);
+    }
+  }
+
+  /** {@inheritDoc} */
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,
                                             @NonNull final String sReceiverID,
                                             @NonNull final String sDocTypeID,

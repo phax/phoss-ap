@@ -69,5 +69,6 @@ public final class APConfigurationPropertiesTest
     assertEquals ("retry.sending.max-attempts", APConfigurationProperties.RETRY_SENDING_MAX_ATTEMPTS);
     assertEquals ("mls.sending.enabled", APConfigurationProperties.MLS_SENDING_ENABLED);
     assertEquals ("mls.type", APConfigurationProperties.MLS_TYPE);
+    assertEquals ("spi.id", APConfigurationProperties.FORWARDING_SPI_ID_SUFFIX);
   }
 }

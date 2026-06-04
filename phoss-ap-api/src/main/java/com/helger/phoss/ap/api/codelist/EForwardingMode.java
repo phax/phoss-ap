@@ -48,7 +48,11 @@ public enum EForwardingMode implements IHasID <String>
   /**
    * SBD is written to a local directory on the filesystem. Since v0.2.0.
    */
-  FILESYSTEM ("filesystem");
+  FILESYSTEM ("filesystem"),
+  /**
+   * SBD is forwarded by a deployment-provided document forwarder provider SPI. Since v0.9.1.
+   */
+  SPI ("spi");
 
   private final String m_sID;
 
@@ -67,7 +71,7 @@ public enum EForwardingMode implements IHasID <String>
 
   /**
    * @return <code>true</code> if this forwarding mode provides delivery confirmation (HTTP modes),
-   *         <code>false</code> if it does not (SFTP, S3).
+   *         <code>false</code> if it does not (SFTP, S3, filesystem, SPI).
    */
   public boolean isWithDeliveryConfirmation ()
   {

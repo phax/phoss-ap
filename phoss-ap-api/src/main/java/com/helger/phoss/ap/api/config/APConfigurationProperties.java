@@ -112,6 +112,14 @@ public final class APConfigurationProperties
 
   // Forwarding
   public static final String FORWARDING_MODE = "forwarding.mode";
+  /**
+   * Suffix appended to a forwarding configuration prefix to read the selected document forwarder
+   * provider SPI ID. For the primary forwarder this results in <code>forwarding.spi.id</code>; for
+   * secondary forwarders it results in <code>forwarding.secondary.{n}.spi.id</code>.
+   *
+   * @since 0.9.1
+   */
+  public static final String FORWARDING_SPI_ID_SUFFIX = "spi.id";
 
   // Forwarding - Secondary forwarders (since 0.9.0)
   /**

@@ -42,12 +42,9 @@ import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
+import com.helger.phoss.ap.core.forwarding.DocumentForwarderFactory;
 import com.helger.phoss.ap.core.notification.LifecycleEventManager;
 import com.helger.phoss.ap.core.notification.NotificationHandlerManager;
-import com.helger.phoss.ap.forwarding.filesystem.FilesystemDocumentForwarder;
-import com.helger.phoss.ap.forwarding.http.HttpDocumentForwarder;
-import com.helger.phoss.ap.forwarding.s3.S3DocumentForwarder;
-import com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder;
 import com.helger.smpclient.httpclient.SMPHttpClientSettings;
 
 /**
@@ -73,25 +70,6 @@ public final class APCoreMetaManager
   {}
 
   /**
-   * Create a new forwarder instance for the given mode. Does not initialize it from configuration.
-   *
-   * @param eMode
-   *        The forwarding mode. May not be <code>null</code>.
-   * @return A new forwarder instance. Never <code>null</code>.
-   */
-  @NonNull
-  private static IDocumentForwarder _createForwarder (@NonNull final EForwardingMode eMode)
-  {
-    return switch (eMode)
-    {
-      case HTTP_POST_SYNC, HTTP_POST_ASYNC -> new HttpDocumentForwarder (eMode);
-      case S3_LINK -> new S3DocumentForwarder ();
-      case SFTP -> new SftpDocumentForwarder ();
-      case FILESYSTEM -> new FilesystemDocumentForwarder ();
-    };
-  }
-
-  /**
    * Initialize the core meta manager by creating the document forwarder from configuration and
    * loading all SPI-based verifiers, receiver checks, and notification handlers.
    */
@@ -108,7 +86,9 @@ public final class APCoreMetaManager
       if (eForwardingMode == null)
         throw new InitializationException ("The configured Forwarding Mode '" + sForwardingMode + "' is invalid");
 
-      final IDocumentForwarder aForwarder = _createForwarder (eForwardingMode);
+      final IDocumentForwarder aForwarder = DocumentForwarderFactory.create (eForwardingMode,
+                                                                             aConfig,
+                                                                             IDocumentForwarder.DEFAULT_CONFIG_KEY_PREFIX);
       if (aForwarder.initFromConfiguration (aConfig, IDocumentForwarder.DEFAULT_CONFIG_KEY_PREFIX).isFailure ())
         throw new InitializationException ("Failed to init forwarder configuration - see logs for details");
 
@@ -138,7 +118,7 @@ public final class APCoreMetaManager
         if (nIndex > 10)
           throw new InitializationException ("No more than 10 secondary Forwarders are allowed.");
 
-        final IDocumentForwarder aSecondary = _createForwarder (eSecondaryMode);
+        final IDocumentForwarder aSecondary = DocumentForwarderFactory.create (eSecondaryMode, aConfig, sSecondaryPrefix);
         if (aSecondary.initFromConfiguration (aConfig, sSecondaryPrefix).isFailure ())
           throw new InitializationException ("Failed to init secondary forwarder #" +
                                              nIndex +

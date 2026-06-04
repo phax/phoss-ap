@@ -24,10 +24,9 @@ import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
- * SPI interface for forwarding received inbound documents to the Receiver Backend (C4).
- * Implementations are loaded via {@link java.util.ServiceLoader}. Exactly one primary
- * implementation must be present on the classpath at runtime; additional secondary forwarders may
- * be configured using indexed configuration keys (see <code>forwarding.secondary.{n}.*</code>).
+ * Interface for forwarding received inbound documents to the Receiver Backend (C4). Built-in
+ * implementations are selected by <code>forwarding.mode</code>; deployment-provided implementations
+ * can be exposed through {@link com.helger.phoss.ap.api.spi.IDocumentForwarderProviderSPI}.
  *
  * @author Philip Helger
  */

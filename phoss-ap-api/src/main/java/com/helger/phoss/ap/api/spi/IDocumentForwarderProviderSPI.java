@@ -29,7 +29,7 @@ import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
  * matching {@link #getID()} against the configured <code>forwarding.spi.id</code> value.
  *
  * @author Philip Helger
- * @since 0.9.1
+ * @since 0.10.0
  */
 @IsSPIInterface
 public interface IDocumentForwarderProviderSPI

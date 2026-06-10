@@ -56,6 +56,7 @@ import com.helger.smpclient.httpclient.SMPHttpClientSettings;
  */
 public final class APCoreMetaManager
 {
+  public static final int MAX_SECONDARY_FORWARDERS = 10;
   private static final Logger LOGGER = LoggerFactory.getLogger (APCoreMetaManager.class);
 
   private static EForwardingMode s_eForwardingMode;
@@ -115,10 +116,14 @@ public final class APCoreMetaManager
                                              sSecondaryMode +
                                              "') is invalid");
 
-        if (nIndex > 10)
-          throw new InitializationException ("No more than 10 secondary Forwarders are allowed.");
+        if (nIndex > MAX_SECONDARY_FORWARDERS)
+          throw new InitializationException ("No more than " +
+                                             MAX_SECONDARY_FORWARDERS +
+                                             " secondary Forwarders are allowed.");
 
-        final IDocumentForwarder aSecondary = DocumentForwarderFactory.create (eSecondaryMode, aConfig, sSecondaryPrefix);
+        final IDocumentForwarder aSecondary = DocumentForwarderFactory.create (eSecondaryMode,
+                                                                               aConfig,
+                                                                               sSecondaryPrefix);
         if (aSecondary.initFromConfiguration (aConfig, sSecondaryPrefix).isFailure ())
           throw new InitializationException ("Failed to init secondary forwarder #" +
                                              nIndex +

@@ -45,9 +45,9 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.telemetry.Telemetry;
-import com.helger.telemetry.ETelemetrySpanKind;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
+import com.helger.telemetry.ETelemetrySpanKind;
+import com.helger.telemetry.Telemetry;
 
 /**
  * Implementation of {@link IDocumentForwarder} that writes the received SBD to a local filesystem
@@ -212,17 +212,6 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
     return ForwardingResult.success ();
   }
 
-  /** {@inheritDoc} */
-  @NonNull
-  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
-  {
-    return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
-      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "filesystem")
-           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
-      return _doForwardDocument (aTransaction);
-    });
-  }
-
   @NonNull
   private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
@@ -248,6 +237,22 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
       LOGGER.error ("Filesystem forwarding failed for transaction '" + aTransaction.getID () + "'", ex);
       return ForwardingResult.failure ("filesystem_error", ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
+  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  {
+    return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "filesystem")
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
+      return _doForwardDocument (aTransaction);
+    });
+  }
+
+  public boolean isWithDeliveryConfirmation ()
+  {
+    return false;
   }
 
   /** {@inheritDoc} */

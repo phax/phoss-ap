@@ -43,14 +43,16 @@ public enum EForwardingMode implements IHasID <String>
    * SBD is stored in S3; a link/reference is forwarded to the Receiver Backend.
    */
   S3_LINK ("s3_link"),
-  /** SBD is uploaded to the Receiver Backend via SFTP. */
+  /**
+   * SBD is uploaded to the Receiver Backend via SFTP.
+   */
   SFTP ("sftp"),
   /**
    * SBD is written to a local directory on the filesystem. Since v0.2.0.
    */
   FILESYSTEM ("filesystem"),
   /**
-   * SBD is forwarded by a deployment-provided document forwarder provider SPI. Since v0.9.1.
+   * SBD is forwarded by a deployment-provided document forwarder provider SPI. Since v0.10.0.
    */
   SPI ("spi");
 
@@ -71,8 +73,14 @@ public enum EForwardingMode implements IHasID <String>
 
   /**
    * @return <code>true</code> if this forwarding mode provides delivery confirmation (HTTP modes),
-   *         <code>false</code> if it does not (SFTP, S3, filesystem, SPI).
+   *         <code>false</code> if it does not (SFTP, S3, filesystem). For {@link #SPI} this method
+   *         always returns <code>false</code> because it cannot inspect the SPI-provided forwarder
+   *         instance.
+   * @deprecated Since 0.10.0 — query the active forwarder via
+   *             {@link com.helger.phoss.ap.api.mgr.IDocumentForwarder#isWithDeliveryConfirmation()}
+   *             instead, which also reflects SPI-provided forwarders correctly.
    */
+  @Deprecated (forRemoval = true, since = "0.10.0")
   public boolean isWithDeliveryConfirmation ()
   {
     return this == HTTP_POST_SYNC || this == HTTP_POST_ASYNC;

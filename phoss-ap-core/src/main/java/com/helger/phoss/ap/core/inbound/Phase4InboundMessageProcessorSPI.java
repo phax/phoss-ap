@@ -63,9 +63,6 @@ import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
-import com.helger.telemetry.Telemetry;
-import com.helger.telemetry.ETelemetrySpanKind;
-import com.helger.telemetry.ITelemetrySpan;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
@@ -75,6 +72,9 @@ import com.helger.phoss.ap.core.mls.MlsHandler;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.PhotonWorkerPool;
 import com.helger.security.certificate.CertificateHelper;
+import com.helger.telemetry.ETelemetrySpanKind;
+import com.helger.telemetry.ITelemetrySpan;
+import com.helger.telemetry.Telemetry;
 
 import oasis.names.specification.ubl.schema.xsd.applicationresponse_21.ApplicationResponseType;
 
@@ -303,9 +303,9 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
           {
             // Scheme is valid
             if (sValue != null &&
-              sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
-              sValue.length () > 5 &&
-              RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
+                sValue.startsWith (SPIDHelper.SPIS_PARTICIPANT_ID_SCHEME + ":") &&
+                sValue.length () > 5 &&
+                RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sValue.substring (5)))
             {
               // Value is valid as well - use it
               sValidMlsTo = CIdentifier.getURIEncoded (sScheme, sValue);
@@ -479,11 +479,11 @@ public class Phase4InboundMessageProcessorSPI implements IPhase4PeppolIncomingSB
             {
               // Send asynchronously
               PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-                // AP for HTTP (delivery with confirmation), AB for SFTP/S3
-                // (without confirmation)
-                final MlsOutcome aOutcome = APCoreMetaManager.getForwardingMode ().isWithDeliveryConfirmation ()
-                                                                                                                 ? MlsOutcome.acceptance ()
-                                                                                                                 : MlsOutcome.acknowledging ();
+                // AP for delivery with confirmation (e.g. http), AB for delivery without
+                // confirmation (e.g. SFTP, S3, file system)
+                final MlsOutcome aOutcome = APCoreMetaManager.getForwarder ().isWithDeliveryConfirmation () ? MlsOutcome
+                                                                                                                        .acceptance ()
+                                                                                                            : MlsOutcome.acknowledging ();
                 MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
               });
             }

@@ -86,6 +86,13 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   }
 
   /** {@inheritDoc} */
+  @Override
+  public boolean isWithDeliveryConfirmation ()
+  {
+    return true;
+  }
+
+  /** {@inheritDoc} */
   @NonNull
   public ESuccess initFromConfiguration (@NonNull final IConfigWithFallback aConfig, @NonNull final String sKeyPrefix)
   {

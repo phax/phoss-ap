@@ -37,7 +37,7 @@ import com.helger.phoss.ap.forwarding.sftp.SftpDocumentForwarder;
  * Factory for built-in and SPI-provided document forwarders.
  *
  * @author Philip Helger
- * @since 0.9.1
+ * @since 0.10.0
  */
 public final class DocumentForwarderFactory
 {

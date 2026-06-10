@@ -117,7 +117,7 @@ public final class APConfigurationProperties
    * provider SPI ID. For the primary forwarder this results in <code>forwarding.spi.id</code>; for
    * secondary forwarders it results in <code>forwarding.secondary.{n}.spi.id</code>.
    *
-   * @since 0.9.1
+   * @since 0.10.0
    */
   public static final String FORWARDING_SPI_ID_SUFFIX = "spi.id";
 

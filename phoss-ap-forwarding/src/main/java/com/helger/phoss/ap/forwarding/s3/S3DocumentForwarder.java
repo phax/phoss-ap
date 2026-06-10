@@ -34,9 +34,9 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
-import com.helger.telemetry.Telemetry;
-import com.helger.telemetry.ETelemetrySpanKind;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
+import com.helger.telemetry.ETelemetrySpanKind;
+import com.helger.telemetry.Telemetry;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -110,17 +110,6 @@ public class S3DocumentForwarder implements IDocumentForwarder
     return ESuccess.SUCCESS;
   }
 
-  /** {@inheritDoc} */
-  @NonNull
-  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
-  {
-    return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
-      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "s3")
-           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
-      return _doForwardDocument (aTransaction);
-    });
-  }
-
   @NonNull
   private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
   {
@@ -184,6 +173,22 @@ public class S3DocumentForwarder implements IDocumentForwarder
                     ex);
       return ForwardingResult.failure ("s3_error", ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
+  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  {
+    return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
+      aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "s3")
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
+      return _doForwardDocument (aTransaction);
+    });
+  }
+
+  public boolean isWithDeliveryConfirmation ()
+  {
+    return false;
   }
 
   /** {@inheritDoc} */

@@ -83,4 +83,15 @@ public interface IDocumentForwarder
    */
   @NonNull
   ForwardingResult forwardDocument (@NonNull IInboundTransaction aTransaction);
+
+  /**
+   * @return <code>true</code> if this forwarder synchronously confirms delivery to the Receiver
+   *         Backend (and an inbound MLS may therefore be answered with
+   *         {@link com.helger.phoss.ap.api.model.MlsOutcome#acceptance()}), <code>false</code> if
+   *         it does not (in which case an MLS is answered with
+   *         {@link com.helger.phoss.ap.api.model.MlsOutcome#acknowledging()}). The default is
+   *         <code>false</code>.
+   * @since 0.10.0
+   */
+  boolean isWithDeliveryConfirmation ();
 }

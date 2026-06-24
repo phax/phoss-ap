@@ -71,6 +71,7 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
   private final class S3UploadOutputStream extends NonBlockingByteArrayOutputStream
   {
     private final String m_sKey;
+    private boolean m_bClosed;
 
     S3UploadOutputStream (@NonNull final String sKey)
     {
@@ -80,6 +81,10 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     @Override
     public void close ()
     {
+      if (m_bClosed)
+        return;
+      m_bClosed = true;
+
       try
       {
         super.close ();
@@ -307,11 +312,13 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     try
     {
       final BucketAndKey aBucketAndKey = _extractBucketAndKey (sAbsolutePath);
-      final ResponseInputStream <GetObjectResponse> aIS = m_aS3Client.getObject (GetObjectRequest.builder ()
-                                                                                                 .bucket (aBucketAndKey.bucket ())
-                                                                                                 .key (aBucketAndKey.key ())
-                                                                                                 .build ());
-      return aIS.readAllBytes ();
+      try (final ResponseInputStream<GetObjectResponse> aIS = m_aS3Client.getObject(GetObjectRequest.builder()
+                                                                                                    .bucket(aBucketAndKey.bucket())
+                                                                                                    .key(aBucketAndKey.key())
+                                                                                                    .build()))
+      {
+        return aIS.readAllBytes();
+      }
     }
     catch (final Exception ex)
     {

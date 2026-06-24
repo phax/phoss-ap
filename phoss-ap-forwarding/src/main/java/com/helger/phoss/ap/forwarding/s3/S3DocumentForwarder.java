@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.forwarding.s3;
 
+import java.io.InputStream;
 import java.net.URI;
 
 import org.jspecify.annotations.NonNull;
@@ -128,7 +129,8 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                                                                     m_sSecretAccessKey)));
       }
 
-      try (final S3Client aS3Client = aBuilder.build ())
+      try (final S3Client aS3Client = aBuilder.build ();
+           final InputStream aDocumentIS = aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()))
       {
         final String sKey = m_sKeyPrefix + aTransaction.getSbdhInstanceID () + ".xml";
 
@@ -139,7 +141,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
                                                          .build ();
 
         final var aResult = aS3Client.putObject (aPutReq,
-                                                 RequestBody.fromInputStream (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                                                 RequestBody.fromInputStream (aDocumentIS,
                                                                               aTransaction.getDocumentSize ()));
         if (!aResult.sdkHttpResponse ().isSuccessful ())
         {

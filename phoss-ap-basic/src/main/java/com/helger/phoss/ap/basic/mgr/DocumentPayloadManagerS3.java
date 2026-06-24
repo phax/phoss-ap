@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.jspecify.annotations.NonNull;
@@ -71,7 +72,7 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
   private final class S3UploadOutputStream extends NonBlockingByteArrayOutputStream
   {
     private final String m_sKey;
-    private boolean m_bClosed;
+    private final AtomicBoolean m_aClosed = new AtomicBoolean (false);
 
     S3UploadOutputStream (@NonNull final String sKey)
     {
@@ -81,24 +82,23 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     @Override
     public void close ()
     {
-      if (m_bClosed)
-        return;
-      m_bClosed = true;
-
-      try
+      if (!m_aClosed.getAndSet (true))
       {
-        super.close ();
-        m_aS3Client.putObject (PutObjectRequest.builder ().bucket (m_sBucket).key (m_sKey).build (),
-                               RequestBody.fromByteBuffer (ByteBuffer.wrap (m_aBuf, 0, m_nCount)));
-      }
-      catch (final Exception ex)
-      {
-        throw new IllegalStateException ("Failed to upload buffered document to S3 '" +
-                                         m_sBucket +
-                                         "' / '" +
-                                         m_sKey +
-                                         "'",
-                                         ex);
+        try
+        {
+          super.close ();
+          m_aS3Client.putObject (PutObjectRequest.builder ().bucket (m_sBucket).key (m_sKey).build (),
+                                 RequestBody.fromByteBuffer (ByteBuffer.wrap (m_aBuf, 0, m_nCount)));
+        }
+        catch (final Exception ex)
+        {
+          throw new IllegalStateException ("Failed to upload buffered document to S3 '" +
+                                           m_sBucket +
+                                           "' / '" +
+                                           m_sKey +
+                                           "'",
+                                           ex);
+        }
       }
     }
   }
@@ -251,7 +251,7 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     ValueEnforcer.notNull (aReferenceDT, "ReferenceDT");
     ValueEnforcer.notEmpty (sFilename, "Filename");
     ValueEnforcer.notEmpty (sFileExt, "FileExt");
-    ValueEnforcer.isTrue ( () -> sFileExt.startsWith ("."), "FileExt must start with a dot");
+    ValueEnforcer.isTrue (() -> sFileExt.startsWith ("."), "FileExt must start with a dot");
     ValueEnforcer.notNull (aPathConsumer, "PathConsumer");
 
     final String sKey = _buildKey (sBaseDir, aReferenceDT, sFilename + sFileExt);
@@ -312,12 +312,12 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     try
     {
       final BucketAndKey aBucketAndKey = _extractBucketAndKey (sAbsolutePath);
-      try (final ResponseInputStream<GetObjectResponse> aIS = m_aS3Client.getObject(GetObjectRequest.builder()
-                                                                                                    .bucket(aBucketAndKey.bucket())
-                                                                                                    .key(aBucketAndKey.key())
-                                                                                                    .build()))
+      try (final ResponseInputStream <GetObjectResponse> aIS = m_aS3Client.getObject (GetObjectRequest.builder ()
+                                                                                                      .bucket (aBucketAndKey.bucket ())
+                                                                                                      .key (aBucketAndKey.key ())
+                                                                                                      .build ()))
       {
-        return aIS.readAllBytes();
+        return aIS.readAllBytes ();
       }
     }
     catch (final Exception ex)

@@ -197,6 +197,9 @@ public class S3DocumentForwarder implements IDocumentForwarder
   @Override
   public String toString ()
   {
-    return new ToStringGenerator (this).getToString ();
+    return new ToStringGenerator (this).append ("Region", m_aRegion)
+                                       .append ("Bucket", m_sBucket)
+                                       .append ("PathStyleAccess", m_bPathStyleAccess)
+                                       .getToString ();
   }
 }

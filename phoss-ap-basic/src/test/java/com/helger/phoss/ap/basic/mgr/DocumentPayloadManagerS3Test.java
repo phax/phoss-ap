@@ -20,7 +20,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +28,10 @@ import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.Test;
+
+import com.helger.base.io.nonblocking.NonBlockingByteArrayInputStream;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -42,21 +44,28 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 public final class DocumentPayloadManagerS3Test
 {
   private static final String BUCKET = "test-bucket";
-  private static final OffsetDateTime REFERENCE_DT = OffsetDateTime.of (2026,
-                                                                        6,
-                                                                        23,
-                                                                        10,
-                                                                        0,
-                                                                        0,
-                                                                        0,
-                                                                        ZoneOffset.UTC);
+  private static final OffsetDateTime REFERENCE_DT = OffsetDateTime.of (2026, 6, 23, 10, 0, 0, 0, ZoneOffset.UTC);
+
+  @FunctionalInterface
+  private interface IS3InvocationHandler
+  {
+    Object invoke (@NonNull String sMethodName, @NonNull Object [] aArgs) throws Throwable;
+  }
+
+  @NonNull
+  private static S3Client _createS3Client (final IS3InvocationHandler aHandler)
+  {
+    return (S3Client) Proxy.newProxyInstance (DocumentPayloadManagerS3Test.class.getClassLoader (),
+                                              new Class <?> [] { S3Client.class },
+                                              (aProxy, aMethod, aArgs) -> aHandler.invoke (aMethod.getName (), aArgs));
+  }
 
   @Test
   public void testReadDocumentClosesS3ResponseStream ()
   {
     final byte [] aPayload = "payload".getBytes (StandardCharsets.UTF_8);
     final AtomicBoolean aClosed = new AtomicBoolean (false);
-    final ByteArrayInputStream aSourceIS = new ByteArrayInputStream (aPayload)
+    final NonBlockingByteArrayInputStream aSourceIS = new NonBlockingByteArrayInputStream (aPayload)
     {
       @Override
       public void close ()
@@ -64,7 +73,7 @@ public final class DocumentPayloadManagerS3Test
         aClosed.set (true);
       }
     };
-    final S3Client aS3Client = _createS3Client ( (sMethodName, aArgs) -> {
+    final S3Client aS3Client = _createS3Client ((sMethodName, aArgs) -> {
       if ("getObject".equals (sMethodName))
         return new ResponseInputStream <> (GetObjectResponse.builder ().build (), aSourceIS);
       throw new UnsupportedOperationException (sMethodName);
@@ -79,7 +88,7 @@ public final class DocumentPayloadManagerS3Test
   public void testUploadStreamCloseIsIdempotent () throws Exception
   {
     final AtomicInteger aPutCount = new AtomicInteger ();
-    final S3Client aS3Client = _createS3Client ( (sMethodName, aArgs) -> {
+    final S3Client aS3Client = _createS3Client ((sMethodName, aArgs) -> {
       if ("putObject".equals (sMethodName))
       {
         aPutCount.incrementAndGet ();
@@ -89,6 +98,7 @@ public final class DocumentPayloadManagerS3Test
     });
 
     final DocumentPayloadManagerS3 aManager = new DocumentPayloadManagerS3 (aS3Client, BUCKET);
+    @SuppressWarnings ("resource")
     final OutputStream aOS = aManager.openDocumentStreamForWrite ("outbound",
                                                                   REFERENCE_DT,
                                                                   "document",
@@ -99,18 +109,5 @@ public final class DocumentPayloadManagerS3Test
     aOS.close ();
 
     assertEquals ("Closing the stream twice must upload only once", 1, aPutCount.get ());
-  }
-
-  @FunctionalInterface
-  private interface IS3InvocationHandler
-  {
-    Object invoke (String sMethodName, Object [] aArgs) throws Throwable;
-  }
-
-  private static S3Client _createS3Client (final IS3InvocationHandler aHandler)
-  {
-    return (S3Client) Proxy.newProxyInstance (DocumentPayloadManagerS3Test.class.getClassLoader (),
-                                               new Class <?> [] { S3Client.class },
-                                               (aProxy, aMethod, aArgs) -> aHandler.invoke (aMethod.getName (), aArgs));
   }
 }

@@ -358,6 +358,10 @@ public final class APConfigurationProperties
   public static final String OUTBOUND_S3_PATH_STYLE_ACCESS = "outbound.s3.path-style-access";
   public static final boolean OUTBOUND_S3_PATH_STYLE_ACCESS_DEFAULT = false;
 
+  // Outbound local development loopback
+  public static final String OUTBOUND_DEV_LOOPBACK_ENABLED = "outbound.dev-loopback.enabled";
+  public static final boolean OUTBOUND_DEV_LOOPBACK_ENABLED_DEFAULT = false;
+
   // Directory sender (since 0.2.0)
   public static final String DIRSENDER_ENABLED = "dirsender.enabled";
   public static final boolean DIRSENDER_ENABLED_DEFAULT = false;

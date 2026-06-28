@@ -70,5 +70,6 @@ public final class APConfigurationPropertiesTest
     assertEquals ("mls.sending.enabled", APConfigurationProperties.MLS_SENDING_ENABLED);
     assertEquals ("mls.type", APConfigurationProperties.MLS_TYPE);
     assertEquals ("spi.id", APConfigurationProperties.FORWARDING_SPI_ID_SUFFIX);
+    assertEquals ("outbound.dev-loopback.enabled", APConfigurationProperties.OUTBOUND_DEV_LOOPBACK_ENABLED);
   }
 }

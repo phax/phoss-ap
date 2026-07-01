@@ -19,6 +19,7 @@ package com.helger.phoss.ap.core.outbound;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.DigestInputStream;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -49,6 +50,7 @@ import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IParticipantIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.IIdentifierFactory;
+import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
 import com.helger.phase4.dynamicdiscovery.AS4EndpointDetailProviderConstant;
 import com.helger.phase4.dynamicdiscovery.AS4EndpointDetailProviderPeppol;
 import com.helger.phase4.dynamicdiscovery.Phase4SMPException;
@@ -68,6 +70,7 @@ import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
+import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
@@ -539,111 +542,147 @@ public final class OutboundOrchestrator
         String sReceiverAPURLOut = null;
         String sReceiverTechnicalContactOut = null;
 
-        boolean bSmpLookupSuccess = false;
-        try (final ITelemetrySpan aSmpSpan = Telemetry.startSpan (CPhossAPOtel.SPAN_SMP_LOOKUP,
-                                                                  ETelemetrySpanKind.CLIENT)
-                                                      .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
-                                                                     aTx.getReceiverID ()))
+        if (APCoreConfig.isOutboundDevLoopbackEnabled ())
         {
-          try
+          final String sAPURL = APCoreConfig.getPhase4EndpointAddress ();
+          if (StringHelper.isEmpty (sAPURL))
           {
-            // SMP lookup to find endpoint URL
-            // Try to resolve SMP host - performs NAPTR lookup
-            final StopWatch aLookupSW = StopWatch.createdStarted ();
-            final SMPClientReadOnly aSMPClient;
+            final String sMsg = "Outbound dev loopback requires configuration property '" +
+                                APConfigurationProperties.PHASE4_ENDPOINT_ADDRESS +
+                                "' to be set";
+            aSendingReport.setLookupError (sMsg);
+            onPermanentFailure.accept (sMsg);
+            return aSendingReport;
+          }
+
+          final KeyStore.PrivateKeyEntry aPKE = AS4CryptoFactoryConfiguration.getDefaultInstance ().getPrivateKeyEntry ();
+          if (aPKE == null || !(aPKE.getCertificate () instanceof final X509Certificate aOwnCert))
+          {
+            final String sMsg = "Outbound dev loopback could not load this AP's own certificate from the AS4 keystore";
+            aSendingReport.setLookupError (sMsg);
+            onPermanentFailure.accept (sMsg);
+            return aSendingReport;
+          }
+
+          aReceiverCertOut = aOwnCert;
+          sReceiverAPURLOut = sAPURL;
+
+          aSendingReport.setC3Cert (aReceiverCertOut);
+          aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
+
+          LOGGER.warn (sRealLogPrefix +
+                       "Outbound dev loopback is enabled; bypassing SMP lookup and sending receiver '{}' to this AP endpoint '{}'",
+                       aTx.getReceiverID (),
+                       sReceiverAPURLOut);
+        }
+        else
+        {
+          boolean bSmpLookupSuccess = false;
+          try (final ITelemetrySpan aSmpSpan = Telemetry.startSpan (CPhossAPOtel.SPAN_SMP_LOOKUP,
+                                                                    ETelemetrySpanKind.CLIENT)
+                                                        .setAttribute (CPhossAPOtel.ATTR_RECEIVER_ID,
+                                                                       aTx.getReceiverID ()))
+          {
             try
             {
-              aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE, aReceiverID, aSMLInfo);
-              APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
-
-              // Remember the host URL from NAPTR lookup
-              aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
-              aSmpSpan.setAttribute (CPhossAPOtel.ATTR_SMP_URL, String.valueOf (aSMPClient.getSMPHostURI ()));
-            }
-            catch (final SMPDNSResolutionException ex)
-            {
-              final String sMsg = "The participant ID '" +
-                                  aTx.getReceiverID () +
-                                  "' is not registered in the Peppol Network";
-              aSendingReport.setLookupError (sMsg);
-              aSendingReport.setLookupException (ex);
-
-              // Remember duration
-              aLookupSW.stop ();
-              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
-
-              onPermanentFailure.accept (sMsg + ". Technical details: " + ex.getMessage ());
-
-              return aSendingReport;
-            }
-
-            // Perform SMP lookup
-            final String sCircuitBreakerKeySMP = "smp$" + aSMPClient.getSMPHostURI ();
-            if (!CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
-            {
-              aLookupSW.stop ();
-              aSendingReport.setLookupError ("SMP access limited by Circuit Breaker");
-              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
-
-              onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
-              return aSendingReport;
-            }
-
-            final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
-            try
-            {
-              // Throws an exception in case of error
-              aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
-              aLookupSW.stop ();
-              aReceiverCertOut = aEndpointDetails.getReceiverAPCertificate ();
-              sReceiverAPURLOut = aEndpointDetails.getReceiverAPEndpointURL ();
-              sReceiverTechnicalContactOut = aEndpointDetails.getReceiverTechnicalContact ();
-
-              // Updated sending report
-              aSendingReport.setC3Cert (aReceiverCertOut);
-              aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
-              aSendingReport.setC3TechnicalContact (sReceiverTechnicalContactOut);
-              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
-
-              CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
-            }
-            catch (final Phase4Exception ex)
-            {
-              CircuitBreakerManager.recordFailure (sCircuitBreakerKeySMP);
-
-              aLookupSW.stop ();
-              if (ex instanceof Phase4SMPException)
+              // SMP lookup to find endpoint URL
+              // Try to resolve SMP host - performs NAPTR lookup
+              final StopWatch aLookupSW = StopWatch.createdStarted ();
+              final SMPClientReadOnly aSMPClient;
+              try
               {
-                aSendingReport.setLookupError (ex.getMessage ());
-                aSendingReport.setLookupException ((Exception) ex.getCause ());
+                aSMPClient = new CachingSMPClientReadOnly (PeppolNaptrURLProvider.INSTANCE, aReceiverID, aSMLInfo);
+                APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
+
+                // Remember the host URL from NAPTR lookup
+                aSendingReport.setC3SMPURL (aSMPClient.getSMPHostURI ());
+                aSmpSpan.setAttribute (CPhossAPOtel.ATTR_SMP_URL, String.valueOf (aSMPClient.getSMPHostURI ()));
               }
-              else
+              catch (final SMPDNSResolutionException ex)
               {
-                aSendingReport.setLookupError ("Error fetching Service Details from SMP");
+                final String sMsg = "The participant ID '" +
+                                    aTx.getReceiverID () +
+                                    "' is not registered in the Peppol Network";
+                aSendingReport.setLookupError (sMsg);
                 aSendingReport.setLookupException (ex);
+
+                // Remember duration
+                aLookupSW.stop ();
+                aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+                onPermanentFailure.accept (sMsg + ". Technical details: " + ex.getMessage ());
+
+                return aSendingReport;
               }
-              aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
 
-              if (ex.isRetryFeasible ())
-                onFailed.accept (ex.getMessage ());
-              else
-                onPermanentFailure.accept (ex.getMessage ());
-              return aSendingReport;
+              // Perform SMP lookup
+              final String sCircuitBreakerKeySMP = "smp$" + aSMPClient.getSMPHostURI ();
+              if (!CircuitBreakerManager.tryAcquirePermit (sCircuitBreakerKeySMP))
+              {
+                aLookupSW.stop ();
+                aSendingReport.setLookupError ("SMP access limited by Circuit Breaker");
+                aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+                onFailed.accept ("SMP access limited by Circuit Breaker '" + sCircuitBreakerKeySMP + "'");
+                return aSendingReport;
+              }
+
+              final AS4EndpointDetailProviderPeppol aEndpointDetails = AS4EndpointDetailProviderPeppol.create (aSMPClient);
+              try
+              {
+                // Throws an exception in case of error
+                aEndpointDetails.init (aDocTypeID, aProcessID, aReceiverID);
+                aLookupSW.stop ();
+                aReceiverCertOut = aEndpointDetails.getReceiverAPCertificate ();
+                sReceiverAPURLOut = aEndpointDetails.getReceiverAPEndpointURL ();
+                sReceiverTechnicalContactOut = aEndpointDetails.getReceiverTechnicalContact ();
+
+                // Updated sending report
+                aSendingReport.setC3Cert (aReceiverCertOut);
+                aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
+                aSendingReport.setC3TechnicalContact (sReceiverTechnicalContactOut);
+                aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+                CircuitBreakerManager.recordSuccess (sCircuitBreakerKeySMP);
+              }
+              catch (final Phase4Exception ex)
+              {
+                CircuitBreakerManager.recordFailure (sCircuitBreakerKeySMP);
+
+                aLookupSW.stop ();
+                if (ex instanceof Phase4SMPException)
+                {
+                  aSendingReport.setLookupError (ex.getMessage ());
+                  aSendingReport.setLookupException ((Exception) ex.getCause ());
+                }
+                else
+                {
+                  aSendingReport.setLookupError ("Error fetching Service Details from SMP");
+                  aSendingReport.setLookupException (ex);
+                }
+                aSendingReport.setLookupDurationMillis (aLookupSW.getMillis ());
+
+                if (ex.isRetryFeasible ())
+                  onFailed.accept (ex.getMessage ());
+                else
+                  onPermanentFailure.accept (ex.getMessage ());
+                return aSendingReport;
+              }
+
+              bSmpLookupSuccess = true;
             }
-
-            bSmpLookupSuccess = true;
-          }
-          catch (final RuntimeException ex)
-          {
-            aSmpSpan.recordException (ex);
-            throw ex;
-          }
-          finally
-          {
-            if (bSmpLookupSuccess)
-              aSmpSpan.setStatusOk ();
-            else
-              aSmpSpan.setStatusError (null);
+            catch (final RuntimeException ex)
+            {
+              aSmpSpan.recordException (ex);
+              throw ex;
+            }
+            finally
+            {
+              if (bSmpLookupSuccess)
+                aSmpSpan.setStatusOk ();
+              else
+                aSmpSpan.setStatusError (null);
+            }
           }
         }
 

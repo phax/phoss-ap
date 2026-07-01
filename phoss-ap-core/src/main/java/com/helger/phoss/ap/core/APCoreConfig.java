@@ -117,6 +117,20 @@ public final class APCoreConfig
   }
 
   /**
+   * @return {@code true} if outbound sending should bypass SMP lookup and send back to this AP's
+   *         own AS4 endpoint. This is intentionally enabled only on the Peppol test network.
+   */
+  public static boolean isOutboundDevLoopbackEnabled ()
+  {
+    if (!_getConfig ().getAsBoolean (APConfigurationProperties.OUTBOUND_DEV_LOOPBACK_ENABLED,
+                                     APConfigurationProperties.OUTBOUND_DEV_LOOPBACK_ENABLED_DEFAULT))
+      return false;
+
+    final EPeppolNetwork ePeppolStage = getPeppolStage ();
+    return ePeppolStage != null && ePeppolStage.isTest ();
+  }
+
+  /**
    * @return The configured Peppol network stage (production or test). May be <code>null</code> if
    *         not configured.
    */

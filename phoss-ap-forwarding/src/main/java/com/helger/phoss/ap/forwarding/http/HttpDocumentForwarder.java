@@ -59,6 +59,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (HttpDocumentForwarder.class);
   private static final int MAX_CUSTOM_HEADERS = 100;
+  private static final String HEADER_SBDH_INSTANCE_ID = "X-SBDH-Instance-ID";
   // Configuration key suffixes (relative to the configured base prefix)
   private static final String SUFFIX_HTTP_ENDPOINT = "http.endpoint";
   private static final String SUFFIX_HTTP_HEADERS_PREFIX = "http.headers.";
@@ -162,6 +163,8 @@ public class HttpDocumentForwarder implements IDocumentForwarder
       // Apply custom headers (case-insensitive by using setHeader which overwrites existing)
       for (final var aEntry : m_aCustomHeaders.entrySet ())
         aPost.setHeader (aEntry.getKey (), aEntry.getValue ());
+
+      aPost.setHeader (HEADER_SBDH_INSTANCE_ID, aTransaction.getSbdhInstanceID ());
 
       LOGGER.info ("Forwarding inbound transaction '" +
                    aTransaction.getID () +

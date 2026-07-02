@@ -203,7 +203,6 @@ public class S3DocumentForwarder implements IDocumentForwarder
     aMetadata.put ("as4-timestamp", aTransaction.getAS4Timestamp().format(DateTimeFormatter.ISO_DATE_TIME));
     aMetadata.put ("sbdh-instance-id", aTransaction.getSbdhInstanceID ());
     aMetadata.put ("c1-country-code", aTransaction.getC1CountryCode ());
-    aMetadata.put ("c4-country-code", aTransaction.getC4CountryCode ());
 
     return aMetadata;
   }

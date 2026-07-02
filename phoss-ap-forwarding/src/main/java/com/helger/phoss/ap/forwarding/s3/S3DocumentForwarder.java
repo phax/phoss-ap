@@ -191,12 +191,12 @@ public class S3DocumentForwarder implements IDocumentForwarder
       return aMetadata;
 
     aMetadata.put ("id", aTransaction.getID ());
-    aMetadata.put ("incoming-id",  aTransaction.getIncomingID ());
+    aMetadata.put ("incoming-id", aTransaction.getIncomingID ());
     aMetadata.put ("c2-seat-id", aTransaction.getC2SeatID ());
     aMetadata.put ("c3-seat-id", aTransaction.getC3SeatID ());
     aMetadata.put ("signing-cert-cn", aTransaction.getSigningCertCN ());
     aMetadata.put ("sender-id",  aTransaction.getSenderID ());
-    aMetadata.put ("receiver-id",  aTransaction.getReceiverID ());
+    aMetadata.put ("receiver-id", aTransaction.getReceiverID ());
     aMetadata.put ("document-size", aTransaction.getDocumentSize() + "");
     aMetadata.put ("document-hash", aTransaction.getDocumentHash ());
     aMetadata.put ("as4-message-id", aTransaction.getAS4MessageID());

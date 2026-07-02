@@ -18,6 +18,9 @@ package com.helger.phoss.ap.forwarding.s3;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
@@ -63,6 +66,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
   private static final String SUFFIX_S3_ENDPOINT = "s3.endpoint";
   private static final String SUFFIX_S3_PATH_STYLE_ACCESS = "s3.path-style-access";
   private static final String SUFFIX_S3_KEY_PREFIX = "s3.key-prefix";
+  private static final String SUFFIX_S3_METADATA = "s3.metadata";
 
   private Region m_aRegion;
   private String m_sBucket;
@@ -71,6 +75,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
   private String m_sKeyPrefix;
   private String m_sEndpoint;
   private boolean m_bPathStyleAccess;
+  private boolean m_bMetadata;
 
   /** {@inheritDoc} */
   @NonNull
@@ -99,6 +104,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
     m_sEndpoint = aConfig.getAsString (sKeyPrefix + SUFFIX_S3_ENDPOINT);
     m_bPathStyleAccess = aConfig.getAsBoolean (sKeyPrefix + SUFFIX_S3_PATH_STYLE_ACCESS,
                                                APConfigurationProperties.FORWARDING_S3_PATH_STYLE_ACCESS_DEFAULT);
+    m_bMetadata = aConfig.getAsBoolean( sKeyPrefix + SUFFIX_S3_METADATA, false);
 
     m_sKeyPrefix = aConfig.getAsString (sKeyPrefix + SUFFIX_S3_KEY_PREFIX);
     if (StringHelper.isNotEmpty (m_sKeyPrefix))
@@ -137,6 +143,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
         final PutObjectRequest aPutReq = PutObjectRequest.builder ()
                                                          .bucket (m_sBucket)
                                                          .key (sKey)
+                                                         .metadata (_generateMetadata (aTransaction))
                                                          .contentType (CMimeType.APPLICATION_XML.getAsString ())
                                                          .build ();
 
@@ -175,6 +182,30 @@ public class S3DocumentForwarder implements IDocumentForwarder
                     ex);
       return ForwardingResult.failure ("s3_error", ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
+  }
+
+  private Map<String, String> _generateMetadata (@NonNull final IInboundTransaction aTransaction) {
+    final Map<String, String> aMetadata = new HashMap<>();
+
+    if (!m_bMetadata)
+      return aMetadata;
+
+    aMetadata.put ("id", aTransaction.getID ());
+    aMetadata.put ("incoming-id",  aTransaction.getIncomingID ());
+    aMetadata.put ("c2-seat-id", aTransaction.getC2SeatID ());
+    aMetadata.put ("c3-seat-id", aTransaction.getC3SeatID ());
+    aMetadata.put ("signing-cert-cn", aTransaction.getSigningCertCN ());
+    aMetadata.put ("sender-id",  aTransaction.getSenderID ());
+    aMetadata.put ("receiver-id",  aTransaction.getReceiverID ());
+    aMetadata.put ("document-size", aTransaction.getDocumentSize() + "");
+    aMetadata.put ("document-hash", aTransaction.getDocumentHash ());
+    aMetadata.put ("as4-message-id", aTransaction.getAS4MessageID());
+    aMetadata.put ("as4-timestamp", aTransaction.getAS4Timestamp().format(DateTimeFormatter.ISO_DATE_TIME));
+    aMetadata.put ("sbdh-instance-id", aTransaction.getSbdhInstanceID ());
+    aMetadata.put ("c1-country-code", aTransaction.getC1CountryCode ());
+    aMetadata.put ("c4-country-code", aTransaction.getC4CountryCode ());
+
+    return aMetadata;
   }
 
   /** {@inheritDoc} */

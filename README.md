@@ -21,12 +21,13 @@ Features include:
 * Inbound document reception with configurable forwarding (HTTP, S3, SFTP)
 * Outbound document sending with automatic SMP lookup and SBDH creation
 * Retry with exponential backoff and circuit breaker for both sending and forwarding
-* Optional document validation via external verification service
+* Optional document validation via external [verification service](https://github.com/phax/phorm)
 * Duplicate detection on AS4 Message ID and SBDH Instance Identifier
 * MLS (Message Level Status) support with SLA monitoring
 * Peppol Reporting with scheduled submission
 * Archival of completed transactions
 * Sentry integration for error tracking
+* OpenTelemetry based execution telemetry measurements
 
 phoss AP is part of my Peppol solution stack. See https://github.com/phax/peppol for other components and libraries in that area.
 

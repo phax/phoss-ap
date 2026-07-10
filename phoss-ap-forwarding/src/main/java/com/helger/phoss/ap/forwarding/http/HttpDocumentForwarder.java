@@ -17,10 +17,12 @@
 package com.helger.phoss.ap.forwarding.http;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.InputStreamEntity;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +41,12 @@ import com.helger.httpclient.HttpClientSettingsConfig;
 import com.helger.httpclient.response.ExtendedHttpResponseException;
 import com.helger.httpclient.response.ResponseHandlerByteArray;
 import com.helger.json.IJsonObject;
+import com.helger.json.JsonObject;
 import com.helger.json.serialize.JsonReader;
+import com.helger.json.serialize.JsonWriter;
+import com.helger.json.serialize.JsonWriterSettings;
 import com.helger.phoss.ap.api.codelist.EForwardingMode;
+import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
@@ -62,12 +68,14 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   private static final String HEADER_SBDH_INSTANCE_ID = "X-SBDH-Instance-ID";
   // Configuration key suffixes (relative to the configured base prefix)
   private static final String SUFFIX_HTTP_ENDPOINT = "http.endpoint";
+  private static final String SUFFIX_HTTP_JSON_ENABLED = "http.json.enabled";
   private static final String SUFFIX_HTTP_HEADERS_PREFIX = "http.headers.";
   private static final String SUFFIX_HTTP_HEADER_NAME = ".name";
   private static final String SUFFIX_HTTP_HEADER_VALUE = ".value";
 
   private final EForwardingMode m_eMode;
   private String m_sEndpointURL;
+  private boolean m_bJsonForwardingEnabled;
   private final HttpClientSettings m_aHCS = new HttpClientSettings ();
   private final ICommonsOrderedMap <String, String> m_aCustomHeaders = new CommonsLinkedHashMap <> ();
 
@@ -112,6 +120,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
       return ESuccess.FAILURE;
     }
 
+    m_bJsonForwardingEnabled = aConfig.getAsBoolean (sKeyPrefix + SUFFIX_HTTP_JSON_ENABLED, false);
     HttpClientSettingsConfig.assignConfigValues (m_aHCS, aConfig, sKeyPrefix);
 
     // Load custom HTTP headers (indexed: <prefix>http.headers.1.name / .value)
@@ -138,6 +147,15 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     return ESuccess.SUCCESS;
   }
 
+  @NonNull
+  private static String _createJsonPayload (@NonNull final IInboundTransaction aTransaction, final byte @NonNull [] aXML)
+  {
+    final IJsonObject aJson = new JsonObject ().add ("transaction",
+                                                     InboundTransactionResponse.fromDomain (aTransaction).getAsJson ())
+                                             .add ("xmlContent", new String (aXML, StandardCharsets.UTF_8));
+    return new JsonWriter (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED).writeAsString (aJson);
+  }
+
   /** {@inheritDoc} */
   @NonNull
   public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
@@ -157,8 +175,17 @@ public class HttpDocumentForwarder implements IDocumentForwarder
     try (final HttpClientManager aHttpClientMgr = HttpClientManager.create (m_aHCS))
     {
       final HttpPost aPost = new HttpPost (m_sEndpointURL);
-      aPost.setEntity (new InputStreamEntity (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
-                                              ContentType.APPLICATION_XML));
+      if (m_bJsonForwardingEnabled)
+      {
+        final byte [] aXML = aDocPayloadMgr.readDocument (aTransaction.getDocumentPath ());
+        aPost.setEntity (new StringEntity (_createJsonPayload (aTransaction, aXML),
+                                           ContentType.APPLICATION_JSON.withCharset (StandardCharsets.UTF_8)));
+      }
+      else
+      {
+        aPost.setEntity (new InputStreamEntity (aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()),
+                                                ContentType.APPLICATION_XML));
+      }
 
       // Apply custom headers (case-insensitive by using setHeader which overwrites existing)
       for (final var aEntry : m_aCustomHeaders.entrySet ())
@@ -172,7 +199,9 @@ public class HttpDocumentForwarder implements IDocumentForwarder
                    aTransaction.getSbdhInstanceID () +
                    "') to '" +
                    m_sEndpointURL +
-                   "'");
+                   "' as " +
+                   (m_bJsonForwardingEnabled ? "JSON" : "XML") +
+                   " payload");
 
       final byte [] aResponse = aHttpClientMgr.execute (aPost, new ResponseHandlerByteArray ());
       return switch (m_eMode)
@@ -243,6 +272,7 @@ public class HttpDocumentForwarder implements IDocumentForwarder
   {
     return new ToStringGenerator (this).append ("Mode", m_eMode)
                                        .append ("EnpointURL", m_sEndpointURL)
+                                       .append ("JsonForwardingEnabled", m_bJsonForwardingEnabled)
                                        .append ("HCS", m_aHCS)
                                        .append ("CustomHeaders", m_aCustomHeaders.size ())
                                        .getToString ();

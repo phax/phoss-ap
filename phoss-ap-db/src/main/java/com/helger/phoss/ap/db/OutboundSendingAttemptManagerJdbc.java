@@ -83,10 +83,10 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                                                                       new ConstantPreparedStatementDataProvider (sID,
                                                                                                                  sOutboundTransactionID,
                                                                                                                  sAS4MessageID,
-                                                                                                                 aAS4Timestamp,
+                                                                                                                 toTS (aAS4Timestamp),
                                                                                                                  sReceiptMessageID,
                                                                                                                  aHttpStatusCode,
-                                                                                                                 aNow,
+                                                                                                                 toTS (aNow),
                                                                                                                  eAttemptStatus.getID (),
                                                                                                                  sErrorDetails,
                                                                                                                  sSendingReport));

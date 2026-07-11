@@ -122,7 +122,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             Long.valueOf (nDocumentSize),
                                                                                                             sDocumentHash,
                                                                                                             sAS4MessageID,
-                                                                                                            aAS4Timestamp,
+                                                                                                            toTS (aAS4Timestamp),
                                                                                                             sSbdhInstanceID,
                                                                                                             sC1CountryCode,
                                                                                                             null,
@@ -130,7 +130,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             Boolean.valueOf (bIsDuplicateSBDH),
                                                                                                             EInboundStatus.RECEIVED.getID (),
                                                                                                             Integer.valueOf (0),
-                                                                                                            aNow,
+                                                                                                            toTS (aNow),
                                                                                                             null,
                                                                                                             EReportingStatus.PENDING.getID (),
                                                                                                             null,
@@ -296,7 +296,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
                                                                                                                  Integer.valueOf (nAttemptCount),
-                                                                                                                 aNextRetryDT,
+                                                                                                                 toTS (aNextRetryDT),
                                                                                                                  sErrorDetails,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
@@ -311,7 +311,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " SET status=?, completed_dt=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
-                                                                                                                 now (),
+                                                                                                                 toTS (now ()),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }

@@ -76,7 +76,7 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
                                                                       " VALUES (?,?,?,?,?,?)",
                                                                       new ConstantPreparedStatementDataProvider (sID,
                                                                                                                  sInboundTransactionID,
-                                                                                                                 aNow,
+                                                                                                                 toTS (aNow),
                                                                                                                  eAttemptStatus.getID (),
                                                                                                                  sErrorCode,
                                                                                                                  sErrorDetails));

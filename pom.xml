@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.helger</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>3.0.5</version>
+    <version>3.1.0</version>
   </parent>
   <groupId>com.helger.phoss.ap</groupId>
   <artifactId>phoss-ap-parent-pom</artifactId>
@@ -49,14 +49,14 @@
   </scm>
 
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
+    <java.version>21</java.version>
 
     <!-- External dependency versions -->
     <awssdk.version>2.47.6</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>12.10.0</flyway.version>
+    <flyway.version>12.11.0</flyway.version>
     <h2.version>2.4.240</h2.version>
     <jackson.version>3.2.1</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
@@ -65,13 +65,13 @@
     <okhttp.version>5.4.0</okhttp.version>
     <opentelemetry.version>1.64.0</opentelemetry.version>
     <opentelemetry-instrumentation.version>2.29.0</opentelemetry-instrumentation.version>
-    <postgres.version>42.7.12</postgres.version>
-    <sentry.version>8.47.0</sentry.version>
+    <postgres.version>42.7.13</postgres.version>
+    <sentry.version>8.48.0</sentry.version>
     <spring-boot.version>4.1.0</spring-boot.version>
     <springdoc.version>3.0.3</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->
     <swagger-annotations.version>2.2.52</swagger-annotations.version>
-    <sshd-sftp.version>2.18.0</sshd-sftp.version>
+    <sshd-sftp.version>2.19.0</sshd-sftp.version>
 
     <ph-commons.version>12.3.2</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>

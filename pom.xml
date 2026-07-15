@@ -73,7 +73,7 @@
     <swagger-annotations.version>2.2.52</swagger-annotations.version>
     <sshd-sftp.version>2.19.0</sshd-sftp.version>
 
-    <ph-commons.version>12.3.2</ph-commons.version>
+    <ph-commons.version>12.3.3</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
     <ph-db.version>8.4.0</ph-db.version>
     <ph-web.version>11.4.1</ph-web.version>

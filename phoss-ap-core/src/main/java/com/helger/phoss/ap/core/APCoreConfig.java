@@ -17,6 +17,8 @@
 package com.helger.phoss.ap.core;
 
 import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -54,6 +56,9 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 public final class APCoreConfig
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APCoreConfig.class);
+  // Remember the legacy keys for which a deprecation warning was already logged, so it is emitted
+  // only once per key
+  private static final Set <String> WARNED_DEPRECATED_KEYS = ConcurrentHashMap.newKeySet ();
 
   private APCoreConfig ()
   {}
@@ -96,11 +101,12 @@ public final class APCoreConfig
 
     if (_getConfig ().containsConfiguredValue (sLegacyMillisKey))
     {
-      LOGGER.warn ("Configuration key '" +
-                   sLegacyMillisKey +
-                   "' is deprecated; please use '" +
-                   sDurationKey +
-                   "' with the duration grammar (e.g. '5s', '1m 30s') instead.");
+      if (WARNED_DEPRECATED_KEYS.add (sLegacyMillisKey))
+        LOGGER.warn ("Configuration key '" +
+                     sLegacyMillisKey +
+                     "' is deprecated; please use '" +
+                     sDurationKey +
+                     "' with the duration grammar (e.g. '5s', '1m 30s') instead.");
       return Duration.ofMillis (_getConfig ().getAsLong (sLegacyMillisKey, aDefault.toMillis ()));
     }
 

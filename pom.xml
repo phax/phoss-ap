@@ -52,7 +52,7 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.47.6</awssdk.version>
+    <awssdk.version>2.48.1</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
@@ -66,7 +66,7 @@
     <opentelemetry.version>1.64.0</opentelemetry.version>
     <opentelemetry-instrumentation.version>2.29.0</opentelemetry-instrumentation.version>
     <postgres.version>42.7.13</postgres.version>
-    <sentry.version>8.48.0</sentry.version>
+    <sentry.version>8.49.0</sentry.version>
     <spring-boot.version>4.1.0</spring-boot.version>
     <springdoc.version>3.0.3</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->
@@ -82,7 +82,7 @@
     <phive.version>12.0.3</phive.version>
     <phase4.version>4.5.3</phase4.version>
     <ddd.version>0.8.10</ddd.version>
-    <peppol-reporting.version>4.1.5</peppol-reporting.version>
+    <peppol-reporting.version>4.1.6</peppol-reporting.version>
     <peppol-ap-support.version>2.1.3</peppol-ap-support.version>
   </properties>
 

@@ -61,9 +61,15 @@ See the [Running phoss AP](https://github.com/phax/phoss-ap/wiki/Running-phoss-A
 
 ## Infrastructure
 
-As the backend system a PostgreSQL or MySQL DB is required.
-The system can be deployed both locally as well as in a Cloud environment.
-Docker images are available publicly.
+By default, phoss-ap can easily connect to either a MySQL/MariaDB or a PostgreSQL database.
+
+### DB2 (Experimental)
+Experimental support for IBM DB2 LUW is also included. To use DB2:
+1. Ensure the optional `flyway-database-db2` and `com.ibm.db2:jcc` dependencies are on the classpath (they are scoped as optional in `phoss-ap-db` to avoid forcing the IBM driver on all users).
+2. Configure `phossap.jdbc.database-type=db2` in your `application.properties`.
+3. Due to DB2's strictness, ensure your driver version matches your database. Boolean values are mapped to `SMALLINT` (`0`/`1`), and unbounded text is mapped to `CLOB` or `VARCHAR(32000)`.
+
+See `docker-compose.db2.yml` for an example of how to spin up a local DB2 instance for testing.
 
 ## Documentation
 

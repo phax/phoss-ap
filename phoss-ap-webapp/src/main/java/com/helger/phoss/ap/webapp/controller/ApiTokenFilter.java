@@ -39,7 +39,7 @@ public class ApiTokenFilter extends OncePerRequestFilter
   protected boolean shouldNotFilter (@NonNull final HttpServletRequest request)
   {
     // Only filter /api/** requests
-    return !request.getRequestURI ().startsWith ("/api/");
+    return !request.getServletPath ().startsWith ("/api/");
   }
 
   @Override

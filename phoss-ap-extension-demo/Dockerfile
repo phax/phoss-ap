@@ -24,7 +24,7 @@
 #   docker build -t phoss-ap-with-demo-ext .
 #
 # Or override the base image:
-#   docker build --build-arg PHOSS_AP_IMAGE=phelger/phoss-ap:0.10.3 -t phoss-ap-with-demo-ext .
+#   docker build --build-arg PHOSS_AP_IMAGE=phelger/phoss-ap:0.10.4 -t phoss-ap-with-demo-ext .
 #
 # The assemble.sh script in this directory performs both the Maven build and this
 # Docker build in one step.

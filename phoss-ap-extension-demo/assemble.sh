@@ -23,7 +23,7 @@
 # Usage:
 #   ./assemble.sh                 build the jar + the Docker image "phoss-ap-with-demo-ext"
 #   ./assemble.sh --jar-only      only build the thin extension jar (no Docker)
-#   PHOSS_AP_IMAGE=phelger/phoss-ap:0.10.3 ./assemble.sh
+#   PHOSS_AP_IMAGE=phelger/phoss-ap:0.10.4 ./assemble.sh
 #                                 base the image on a specific phoss-ap tag
 #
 

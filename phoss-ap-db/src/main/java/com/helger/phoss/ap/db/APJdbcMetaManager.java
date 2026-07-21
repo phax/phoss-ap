@@ -98,6 +98,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       // Resolve database type
       final EDatabaseSystemType eDBType = m_aJdbcConfig.getJdbcDatabaseSystemType ();
       if (eDBType == null || !ALLOWED_DB_TYPES.contains (eDBType))
+      {
         throw new IllegalStateException ("The database type MUST be provided and MUST be one of " +
                                          StringImplode.imploder ()
                                                       .source (ALLOWED_DB_TYPES, EDatabaseSystemType::getID)
@@ -106,6 +107,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
                                          " - provided value is '" +
                                          m_aJdbcConfig.getJdbcDatabaseType () +
                                          "'");
+      }
 
       // Run Flyway
       final FlywayConfiguration aFlywayConfig = new APFlywayConfigurationBuilder (aConfig, m_aJdbcConfig).build ();

@@ -64,10 +64,12 @@ See the [Running phoss AP](https://github.com/phax/phoss-ap/wiki/Running-phoss-A
 By default, phoss-ap can easily connect to either a MySQL/MariaDB or a PostgreSQL database.
 
 ### DB2 (Experimental)
-Experimental support for IBM DB2 LUW is also included. To use DB2:
-1. Ensure the optional `flyway-database-db2` and `com.ibm.db2:jcc` dependencies are on the classpath (they are scoped as optional in `phoss-ap-db` to avoid forcing the IBM driver on all users).
+Experimental support for IBM DB2 LUW is also included. Because the IBM `jcc` driver is proprietary, it is **not bundled** — it is supplied at runtime via the extension mechanism (requires 0.10.4 or later). To use DB2:
+1. Drop the `com.ibm.db2:jcc` driver and the `org.flywaydb:flyway-database-db2` dialect jars into the `/ext` extension directory (`LOADER_PATH`). See the [Runtime Extensions](https://github.com/phax/phoss-ap/wiki/Runtime-Extensions) wiki page.
 2. Configure `phossap.jdbc.database-type=db2` in your `application.properties`.
 3. Due to DB2's strictness, ensure your driver version matches your database. Boolean values are mapped to `SMALLINT` (`0`/`1`), and unbounded text is mapped to `CLOB` or `VARCHAR(32000)`.
+
+The Peppol Reporting SQL backend also supports DB2 (since `peppol-reporting` 4.2.0), so the reporting database may run on DB2 as well — it uses the same `jcc` driver supplied via `/ext`.
 
 See `docker-compose.db2.yml` for an example of how to spin up a local DB2 instance for testing.
 

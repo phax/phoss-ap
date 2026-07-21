@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBResultRow;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
@@ -83,10 +84,10 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
                                                                       new ConstantPreparedStatementDataProvider (sID,
                                                                                                                  sOutboundTransactionID,
                                                                                                                  sAS4MessageID,
-                                                                                                                 toTS (aAS4Timestamp),
+                                                                                                                 DBValueHelper.toTimestamp (aAS4Timestamp),
                                                                                                                  sReceiptMessageID,
                                                                                                                  aHttpStatusCode,
-                                                                                                                 toTS (aNow),
+                                                                                                                 DBValueHelper.toTimestamp (aNow),
                                                                                                                  eAttemptStatus.getID (),
                                                                                                                  sErrorDetails,
                                                                                                                  sSendingReport));

@@ -30,6 +30,7 @@ import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
@@ -120,7 +121,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                                                             sC1CountryCode,
                                                                                                             EOutboundStatus.PENDING.getID (),
                                                                                                             Integer.valueOf (0),
-                                                                                                            toTS (aCreationTD),
+                                                                                                            DBValueHelper.toTimestamp (aCreationTD),
                                                                                                             null,
                                                                                                             EReportingStatus.PENDING.getID (),
                                                                                                             null,
@@ -249,7 +250,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
                                                                                                                  Integer.valueOf (nAttemptCount),
-                                                                                                                 toTS (aNextRetryDT),
+                                                                                                                 DBValueHelper.toTimestamp (aNextRetryDT),
                                                                                                                  sErrorDetails,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
@@ -264,7 +265,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " SET status=?, completed_dt=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
-                                                                                                                 toTS (now ()),
+                                                                                                                 DBValueHelper.toTimestamp (now ()),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
@@ -282,7 +283,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " SET mls_status=?, mls_received_dt=?, mls_id=?, mls_inbound_transaction_id=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eMlsStatus.getID (),
-                                                                                                                 toTS (aMlsReceivedDT),
+                                                                                                                 DBValueHelper.toTimestamp (aMlsReceivedDT),
                                                                                                                  sMlsID,
                                                                                                                  sMlsInboundTransactionID,
                                                                                                                  sID));

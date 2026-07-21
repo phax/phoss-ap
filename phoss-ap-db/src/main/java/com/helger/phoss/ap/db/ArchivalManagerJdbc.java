@@ -29,6 +29,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
@@ -67,7 +68,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     ValueEnforcer.notEmpty (sID, "ID");
 
     final DBExecutor aExecutor = newExecutor ();
-    return aExecutor.performInTransaction ( () -> {
+    return aExecutor.performInTransaction (() -> {
       // Copy sending attempts first
       aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
                                         m_sTableNamePrefix +
@@ -106,7 +107,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     ValueEnforcer.notEmpty (sID, "ID");
 
     final DBExecutor aExecutor = newExecutor ();
-    return aExecutor.performInTransaction ( () -> {
+    return aExecutor.performInTransaction (() -> {
       // Copy forwarding attempts first
       aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
                                         m_sTableNamePrefix +
@@ -157,7 +158,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " LIMIT " +
                                                                  nBatchSize +
                                                                  " FOR UPDATE SKIP LOCKED",
-                                                                 new ConstantPreparedStatementDataProvider (toTS (aCutoff)));
+                                                                 new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;
 
@@ -170,7 +171,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
       if (!aDocumentDeleter.test (sDocumentPath))
         continue;
 
-      final ESuccess eSuccess = aExecutor.performInTransaction ( () -> {
+      final ESuccess eSuccess = aExecutor.performInTransaction (() -> {
         aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
                                           m_sTableNamePrefix +
                                           "outbound_sending_attempt_archive" +
@@ -215,7 +216,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " LIMIT " +
                                                                  nBatchSize +
                                                                  " FOR UPDATE SKIP LOCKED",
-                                                                 new ConstantPreparedStatementDataProvider (toTS (aCutoff)));
+                                                                 new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;
 
@@ -228,7 +229,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
       if (!aDocumentDeleter.test (sDocumentPath))
         continue;
 
-      final ESuccess eSuccess = aExecutor.performInTransaction ( () -> {
+      final ESuccess eSuccess = aExecutor.performInTransaction (() -> {
         aExecutor.insertOrUpdateOrDelete ("DELETE FROM " +
                                           m_sTableNamePrefix +
                                           "inbound_forwarding_attempt_archive" +

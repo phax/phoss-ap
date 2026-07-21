@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBResultRow;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
@@ -76,7 +77,7 @@ public class InboundForwardingAttemptManagerJdbc extends AbstractAPJdbcManager i
                                                                       " VALUES (?,?,?,?,?,?)",
                                                                       new ConstantPreparedStatementDataProvider (sID,
                                                                                                                  sInboundTransactionID,
-                                                                                                                 toTS (aNow),
+                                                                                                                 DBValueHelper.toTimestamp (aNow),
                                                                                                                  eAttemptStatus.getID (),
                                                                                                                  sErrorCode,
                                                                                                                  sErrorDetails));

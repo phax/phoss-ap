@@ -16,12 +16,10 @@
  */
 package com.helger.phoss.ap.db;
 
-import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.Nonempty;
 import com.helger.base.tostring.ToStringGenerator;
@@ -55,25 +53,6 @@ public abstract class AbstractAPJdbcManager extends AbstractJDBCEnabledManager
   protected final OffsetDateTime now ()
   {
     return m_aTimestampMgr.getCurrentDateTimeUTC ();
-  }
-
-  /**
-   * Convert an {@link OffsetDateTime} to a {@link java.sql.Timestamp} for use as a JDBC parameter.
-   * <p>
-   * DB2's JDBC driver does not accept {@code OffsetDateTime} via {@code setObject()}, but all major
-   * databases accept {@code java.sql.Timestamp}. Use this method whenever an {@code OffsetDateTime}
-   * needs to be passed as a prepared-statement parameter.
-   * </p>
-   *
-   * @param aDT
-   *        The date-time to convert. May be <code>null</code>.
-   * @return A {@link Timestamp} representing the same instant, or <code>null</code> if the input is
-   *         <code>null</code>.
-   */
-  @Nullable
-  protected static Timestamp toTS (@Nullable final OffsetDateTime aDT)
-  {
-    return aDT == null ? null : Timestamp.from (aDT.toInstant ());
   }
 
   @Override

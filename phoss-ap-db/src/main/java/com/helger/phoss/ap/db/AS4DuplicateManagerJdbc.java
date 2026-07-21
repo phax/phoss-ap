@@ -33,6 +33,7 @@ import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
@@ -153,7 +154,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
                                                                      new ConstantPreparedStatementDataProvider (sMessageID,
                                                                                                                 sProfileID,
                                                                                                                 sPModeID,
-                                                                                                                toTS (now ())));
+                                                                                                                DBValueHelper.toTimestamp (now ())));
         if (nRowsAffected != 1)
         {
           // PK violation race - treat as duplicate
@@ -200,7 +201,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
       final ICommonsList <DBResultRow> aRows = aExecutor.queryAll ("SELECT message_id FROM " +
                                                                    m_sTableName +
                                                                    " WHERE created_dt < ?",
-                                                                   new ConstantPreparedStatementDataProvider (toTS (aRefDT)));
+                                                                   new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aRefDT)));
       if (aRows != null)
         for (final DBResultRow aRow : aRows)
           aEvictedIDs.add (aRow.getAsString (0));
@@ -208,7 +209,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
       if (aEvictedIDs.isNotEmpty ())
       {
         aExecutor.insertOrUpdateOrDelete ("DELETE FROM " + m_sTableName + " WHERE created_dt < ?",
-                                          new ConstantPreparedStatementDataProvider (toTS (aRefDT)));
+                                          new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aRefDT)));
       }
     });
     return aEvictedIDs;

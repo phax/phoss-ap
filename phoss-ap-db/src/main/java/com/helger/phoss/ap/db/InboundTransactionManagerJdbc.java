@@ -29,6 +29,7 @@ import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
@@ -122,7 +123,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             Long.valueOf (nDocumentSize),
                                                                                                             sDocumentHash,
                                                                                                             sAS4MessageID,
-                                                                                                            toTS (aAS4Timestamp),
+                                                                                                            DBValueHelper.toTimestamp (aAS4Timestamp),
                                                                                                             sSbdhInstanceID,
                                                                                                             sC1CountryCode,
                                                                                                             null,
@@ -130,7 +131,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             Boolean.valueOf (bIsDuplicateSBDH),
                                                                                                             EInboundStatus.RECEIVED.getID (),
                                                                                                             Integer.valueOf (0),
-                                                                                                            toTS (aNow),
+                                                                                                            DBValueHelper.toTimestamp (aNow),
                                                                                                             null,
                                                                                                             EReportingStatus.PENDING.getID (),
                                                                                                             null,
@@ -296,7 +297,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
                                                                                                                  Integer.valueOf (nAttemptCount),
-                                                                                                                 toTS (aNextRetryDT),
+                                                                                                                 DBValueHelper.toTimestamp (aNextRetryDT),
                                                                                                                  sErrorDetails,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
@@ -311,7 +312,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " SET status=?, completed_dt=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
-                                                                                                                 toTS (now ()),
+                                                                                                                 DBValueHelper.toTimestamp (now ()),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }

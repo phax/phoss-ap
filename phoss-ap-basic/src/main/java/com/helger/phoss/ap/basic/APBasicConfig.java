@@ -65,6 +65,17 @@ public final class APBasicConfig
   }
 
   /**
+   * @return The configured provider ID for storage mode <code>spi</code>, or <code>null</code> if
+   *         not set.
+   * @since v0.10.4
+   */
+  @Nullable
+  public static String getStorageSpiID ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.STORAGE_SPI_ID);
+  }
+
+  /**
    * @return The configured path for storing inbound documents. This applies to all storage modes in
    *         the same way. Never <code>null</code>.
    */

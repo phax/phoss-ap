@@ -339,6 +339,8 @@ public final class APConfigurationProperties
 
   // Document storage
   public static final String STORAGE_MODE = "storage.mode";
+  // Provider ID for storage mode 'spi' (since 0.10.4)
+  public static final String STORAGE_SPI_ID = "storage.spi.id";
   public static final String STORAGE_INBOUND_PATH = "storage.inbound.path";
   public static final String STORAGE_INBOUND_PATH_DEFAULT = System.getProperty ("user.home") + "/phoss-ap/inbound";
   public static final String STORAGE_OUTBOUND_PATH = "storage.outbound.path";

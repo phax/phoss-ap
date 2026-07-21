@@ -103,13 +103,25 @@
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
       <version>${springdoc.version}</version>
     </dependency>
     
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-db2</artifactId>
+      <version>${flyway.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.db2</groupId>
+      <artifactId>jcc</artifactId>
+      <version>11.5.9.0</version>
       <scope>runtime</scope>
     </dependency>
  
@@ -140,6 +152,12 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${spring-boot.version}</version>
+        <configuration>
+          <!-- The ZIP layout uses PropertiesLauncher, so external jars (custom DB drivers,
+               SPI extensions) can be added to the classpath at runtime via the LOADER_PATH
+               environment variable or -Dloader.path, without rebuilding this jar. -->
+          <layout>ZIP</layout>
+        </configuration>
         <executions>
           <execution>
             <goals>

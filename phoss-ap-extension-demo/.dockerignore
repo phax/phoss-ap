@@ -1,0 +1,10 @@
+# Keep the Docker build context minimal and make the "COPY target/phoss-ap-extension-demo-*.jar"
+# wildcard resolve to exactly the runtime jar (exclude the attached sources / javadoc jars).
+target/*-sources.jar
+target/*-javadoc.jar
+target/classes
+target/generated-sources
+target/maven-status
+target/maven-archiver
+target/test-classes
+target/surefire-reports

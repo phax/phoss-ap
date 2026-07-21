@@ -157,7 +157,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " LIMIT " +
                                                                  nBatchSize +
                                                                  " FOR UPDATE SKIP LOCKED",
-                                                                 new ConstantPreparedStatementDataProvider (aCutoff));
+                                                                 new ConstantPreparedStatementDataProvider (toTS (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;
 
@@ -215,7 +215,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " LIMIT " +
                                                                  nBatchSize +
                                                                  " FOR UPDATE SKIP LOCKED",
-                                                                 new ConstantPreparedStatementDataProvider (aCutoff));
+                                                                 new ConstantPreparedStatementDataProvider (toTS (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;
 

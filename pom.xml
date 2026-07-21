@@ -52,7 +52,7 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.48.1</awssdk.version>
+    <awssdk.version>2.48.3</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
@@ -75,15 +75,15 @@
 
     <ph-commons.version>12.3.3</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
-    <ph-db.version>8.4.0</ph-db.version>
-    <ph-web.version>11.4.1</ph-web.version>
+    <ph-db.version>8.4.1</ph-db.version>
+    <ph-web.version>11.4.2</ph-web.version>
     <ph-oton.version>10.2.3</ph-oton.version>
-    <peppol-commons.version>12.5.5</peppol-commons.version>
-    <phive.version>12.0.3</phive.version>
-    <phase4.version>4.5.3</phase4.version>
+    <peppol-commons.version>12.6.0</peppol-commons.version>
+    <phive.version>12.1.0</phive.version>
+    <phase4.version>4.5.4</phase4.version>
     <ddd.version>0.8.10</ddd.version>
-    <peppol-reporting.version>4.1.6</peppol-reporting.version>
-    <peppol-ap-support.version>2.1.3</peppol-ap-support.version>
+    <peppol-reporting.version>4.2.0</peppol-reporting.version>
+    <peppol-ap-support.version>2.2.1</peppol-ap-support.version>
   </properties>
 
   <dependencyManagement>
@@ -352,5 +352,7 @@
     <!-- Test stuff -->
     <module>phoss-ap-testbackend</module>
     <module>phoss-ap-testsender</module>
+    <!-- Example runtime extension (SPI demo, loaded via /ext) -->
+    <module>phoss-ap-extension-demo</module>
   </modules>
 </project>

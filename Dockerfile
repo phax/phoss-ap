@@ -31,6 +31,14 @@ LABEL org.opencontainers.image.version="${VERSION}"
 VOLUME /tmp
 VOLUME /var/phoss-ap/data
 
+# Directory for external extension jars (custom DB drivers, SPI extensions).
+# Any jar placed here is added to the classpath at runtime via LOADER_PATH below,
+# without rebuilding the application jar. It is a plain directory (not a VOLUME) so it
+# works both when bind-mounted from the host and when extensions are baked into a
+# derived image via "COPY my-extension.jar /ext/". See phoss-ap-extension-demo.
+RUN mkdir -p /ext
+ENV LOADER_PATH=/ext
+
 ADD https://github.com/phax/phoss-ap/releases/download/phoss-ap-parent-pom-${VERSION}/phoss-ap-webapp-${VERSION}.jar /app.jar
 
 EXPOSE 8080

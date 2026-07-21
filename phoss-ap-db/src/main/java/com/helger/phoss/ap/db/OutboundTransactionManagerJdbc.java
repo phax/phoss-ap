@@ -120,7 +120,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                                                             sC1CountryCode,
                                                                                                             EOutboundStatus.PENDING.getID (),
                                                                                                             Integer.valueOf (0),
-                                                                                                            aCreationTD,
+                                                                                                            toTS (aCreationTD),
                                                                                                             null,
                                                                                                             EReportingStatus.PENDING.getID (),
                                                                                                             null,
@@ -249,7 +249,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
                                                                                                                  Integer.valueOf (nAttemptCount),
-                                                                                                                 aNextRetryDT,
+                                                                                                                 toTS (aNextRetryDT),
                                                                                                                  sErrorDetails,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
@@ -264,7 +264,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " SET status=?, completed_dt=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
-                                                                                                                 now (),
+                                                                                                                 toTS (now ()),
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
@@ -282,7 +282,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       " SET mls_status=?, mls_received_dt=?, mls_id=?, mls_inbound_transaction_id=?" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eMlsStatus.getID (),
-                                                                                                                 aMlsReceivedDT,
+                                                                                                                 toTS (aMlsReceivedDT),
                                                                                                                  sMlsID,
                                                                                                                  sMlsInboundTransactionID,
                                                                                                                  sID));

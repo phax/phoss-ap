@@ -166,6 +166,9 @@ public class APServletInit
 
     // Apply global certificate revocation soft-fail flag
     CertificateRevocationCheckerDefaults.setAllowSoftFail (APCoreConfig.isRevocationSoftFailAllowed ());
+
+    // As phoss-ap runs its own JVM, no need to synchronize the revocation checks (see #61)
+    CertificateRevocationCheckerDefaults.setExecuteInSynchronizedBlock (false);
   }
 
   /**

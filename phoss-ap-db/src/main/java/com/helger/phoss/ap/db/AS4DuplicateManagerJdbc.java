@@ -153,7 +153,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
                                                                      new ConstantPreparedStatementDataProvider (sMessageID,
                                                                                                                 sProfileID,
                                                                                                                 sPModeID,
-                                                                                                                now ()));
+                                                                                                                toTS (now ())));
         if (nRowsAffected != 1)
         {
           // PK violation race - treat as duplicate
@@ -200,7 +200,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
       final ICommonsList <DBResultRow> aRows = aExecutor.queryAll ("SELECT message_id FROM " +
                                                                    m_sTableName +
                                                                    " WHERE created_dt < ?",
-                                                                   new ConstantPreparedStatementDataProvider (aRefDT));
+                                                                   new ConstantPreparedStatementDataProvider (toTS (aRefDT)));
       if (aRows != null)
         for (final DBResultRow aRow : aRows)
           aEvictedIDs.add (aRow.getAsString (0));
@@ -208,7 +208,7 @@ public class AS4DuplicateManagerJdbc extends AbstractAPJdbcManager implements IA
       if (aEvictedIDs.isNotEmpty ())
       {
         aExecutor.insertOrUpdateOrDelete ("DELETE FROM " + m_sTableName + " WHERE created_dt < ?",
-                                          new ConstantPreparedStatementDataProvider (aRefDT));
+                                          new ConstantPreparedStatementDataProvider (toTS (aRefDT)));
       }
     });
     return aEvictedIDs;

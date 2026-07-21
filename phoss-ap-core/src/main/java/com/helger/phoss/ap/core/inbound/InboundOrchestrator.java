@@ -316,7 +316,7 @@ public final class InboundOrchestrator
           }
         }
 
-        // Store document to disk
+        // Store SBD in a persistent storage
         final String sDocumentPath = aDocPayloadMgr.storeDocument (APBasicConfig.getStorageInboundPath (),
                                                                    aAS4Timestamp,
                                                                    sSbdhInstanceID + ".sbd",
@@ -346,6 +346,7 @@ public final class InboundOrchestrator
         if (aInboundTx == null)
           throw new IllegalStateException ("Failed to store incoming transaction");
 
+        // Call callbacks
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
           aHandler.onInboundDocumentReceived (sTxID,
                                               sSenderID,
@@ -366,6 +367,7 @@ public final class InboundOrchestrator
                                                            .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
                                                                           sSbdhInstanceID))
           {
+            // Call callbacks
             for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
             {
               final MlsOutcome aVerifierOutcome = aVerifier.verifyInboundDocument (sDocumentPath,
@@ -404,6 +406,8 @@ public final class InboundOrchestrator
         if (CPhossAP.isMLS (aDocTypeID, aProcessID))
         {
           LOGGER.info (sLogPrefix + "Handling incoming MLS message");
+
+          // Read as UBL ApplicationResponse
           final ErrorList aXSDErrors = new ErrorList ();
           final ApplicationResponseType aMLS = new PeppolMLSMarshaller ().setCollectErrors (aXSDErrors)
                                                                          .read (aPeppolSBD.getBusinessMessageNoClone ());
@@ -419,6 +423,7 @@ public final class InboundOrchestrator
             return aProcessingErrors;
           }
 
+          // Read as Peppol MLS
           final PeppolMLSBuilder aBuilder = PeppolMLSBuilder.createForApplicationResponse (aMLS);
 
           // The reference ID in the MLS is the SBDH Instance ID of the original
@@ -437,14 +442,17 @@ public final class InboundOrchestrator
             aCorrelateSpan.setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, sTxID)
                           .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID, sSbdhInstanceID)
                           .setAttribute (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE, aBuilder.responseCode ().getID ());
-            return MlsHandler.handleIncomingMls (sLogPrefix,
-                                                 sReferencedSbdhInstanceID,
-                                                 aBuilder.responseCode (),
-                                                 aAS4Timestamp,
-                                                 aBuilder.id (),
-                                                 sTxID);
+            {
+              return MlsHandler.handleIncomingMls (sLogPrefix,
+                                                   sReferencedSbdhInstanceID,
+                                                   aBuilder.responseCode (),
+                                                   aAS4Timestamp,
+                                                   aBuilder.id (),
+                                                   sTxID);
+            }
           }).isFailure ())
           {
+            // Call callbacks
             for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
               aHandler.onInboundMLSCorrelationError (sTxID, sReferencedSbdhInstanceID, aBuilder.responseCode ());
           }

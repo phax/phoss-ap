@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.Test;
@@ -60,7 +61,7 @@ public final class PhiveToMlsMapperTest
                                            final EExtendedValidity eValidity,
                                            final IError... aErrors)
   {
-    return new ValidationResult (_artefact (aType), new ErrorList (aErrors), eValidity, 0L);
+    return new ValidationResult (_artefact (aType), new ErrorList (aErrors), eValidity, Duration.ZERO);
   }
 
   @Test
@@ -79,7 +80,10 @@ public final class PhiveToMlsMapperTest
   public void testWarningOnlyYieldsAcceptance ()
   {
     // Warnings without errors must not produce a rejection
-    final IError aWarn = SingleError.builderWarn ().errorFieldName ("/Invoice/Note").errorText ("Soft warning").build ();
+    final IError aWarn = SingleError.builderWarn ()
+                                    .errorFieldName ("/Invoice/Note")
+                                    .errorText ("Soft warning")
+                                    .build ();
     final ValidationResultList aList = new ValidationResultList (null);
     aList.add (_result (EValidationType.SCHEMATRON_XSLT2, EExtendedValidity.VALID, aWarn));
 

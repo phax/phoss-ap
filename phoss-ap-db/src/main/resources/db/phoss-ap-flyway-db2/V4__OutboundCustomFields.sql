@@ -19,10 +19,15 @@
 -- Three optional custom identifier fields, max 255 characters each.
 -- Existing rows default to NULL. Mirrored into the archive table.
 
+-- DB2 puts a table into REORG-pending state after ALTER TABLE ... ADD COLUMN,
+-- so a REORG is required before the table is fully usable (and before exceeding
+-- DB2's limit of 3 pending ALTERs per table).
 ALTER TABLE outbound_transaction         ADD COLUMN custom1 VARCHAR(255);
 ALTER TABLE outbound_transaction         ADD COLUMN custom2 VARCHAR(255);
 ALTER TABLE outbound_transaction         ADD COLUMN custom3 VARCHAR(255);
+CALL SYSPROC.ADMIN_CMD('REORG TABLE outbound_transaction');
 
 ALTER TABLE outbound_transaction_archive ADD COLUMN custom1 VARCHAR(255);
 ALTER TABLE outbound_transaction_archive ADD COLUMN custom2 VARCHAR(255);
 ALTER TABLE outbound_transaction_archive ADD COLUMN custom3 VARCHAR(255);
+CALL SYSPROC.ADMIN_CMD('REORG TABLE outbound_transaction_archive');

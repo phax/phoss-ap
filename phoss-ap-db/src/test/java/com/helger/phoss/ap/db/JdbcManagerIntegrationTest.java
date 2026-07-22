@@ -100,6 +100,9 @@ public final class JdbcManagerIntegrationTest
                                      null,
                                      null,
                                      null,
+                                     null,
+                                     null,
+                                     null,
                                      null);
   }
 
@@ -135,6 +138,9 @@ public final class JdbcManagerIntegrationTest
     assertNull (aTx.getMlsReceivedDT ());
     assertNull (aTx.getMlsID ());
     assertNull (aTx.getMlsInboundTransactionID ());
+    assertNull (aTx.getCustom1 ());
+    assertNull (aTx.getCustom2 ());
+    assertNull (aTx.getCustom3 ());
   }
 
   @Test
@@ -160,6 +166,9 @@ public final class JdbcManagerIntegrationTest
                                     "hash456",
                                     "AT",
                                     _now (),
+                                    null,
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null,
@@ -201,6 +210,9 @@ public final class JdbcManagerIntegrationTest
                                     null,
                                     null,
                                     null,
+                                    null,
+                                    null,
+                                    null,
                                     null);
     assertNotNull (sID);
 
@@ -228,6 +240,9 @@ public final class JdbcManagerIntegrationTest
                                     _now (),
                                     null,
                                     "inbound-tx-ref-123",
+                                    null,
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null,
@@ -262,7 +277,10 @@ public final class JdbcManagerIntegrationTest
                                     "urn:peppol:doctype:pdf+xml",
                                     "0",
                                     "factur-x",
-                                    "application/pdf");
+                                    "application/pdf",
+                                    null,
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -273,6 +291,40 @@ public final class JdbcManagerIntegrationTest
     assertEquals ("application/pdf", aTx.getPayloadMimeType ());
     assertEquals (4096L, aTx.getDocumentSize ());
     assertEquals ("FR", aTx.getC1CountryCode ());
+  }
+
+  @Test
+  public void testOutboundCreateWithCustomFields ()
+  {
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final String sID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
+                                    "iso6523-actorid-upis::9915:sender",
+                                    "iso6523-actorid-upis::9915:receiver",
+                                    "busdox-docid-qns::urn:test:invoice",
+                                    "cenbii-procid-ubl::urn:test:process",
+                                    _uniqueID (),
+                                    ESourceType.PAYLOAD_ONLY,
+                                    "/tmp/test-custom.sbd",
+                                    768L,
+                                    "hashCustom0123456789012345678901234567890123456789012345678901",
+                                    "IT",
+                                    _now (),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    "my-custom-1",
+                                    "my-custom-2",
+                                    "my-custom-3");
+    assertNotNull (sID);
+
+    final IOutboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals ("my-custom-1", aTx.getCustom1 ());
+    assertEquals ("my-custom-2", aTx.getCustom2 ());
+    assertEquals ("my-custom-3", aTx.getCustom3 ());
   }
 
   @Test
@@ -306,6 +358,9 @@ public final class JdbcManagerIntegrationTest
                                     "hashPrebuilt",
                                     "AT",
                                     _now (),
+                                    null,
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null,
@@ -1073,7 +1128,10 @@ public final class JdbcManagerIntegrationTest
                                         null,
                                         null,
                                         null,
-                                        null);
+                                        null,
+                                        "archive-custom-1",
+                                        "archive-custom-2",
+                                        "archive-custom-3");
     assertNotNull (sTxID);
 
     // Active table only: both methods find the transaction
@@ -1092,6 +1150,10 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (aTxArchived);
     assertEquals (sTxID, aTxArchived.getID ());
     assertEquals (sSbdhID, aTxArchived.getSbdhInstanceID ());
+    // Custom fields must be mirrored into the archive table (issue #64)
+    assertEquals ("archive-custom-1", aTxArchived.getCustom1 ());
+    assertEquals ("archive-custom-2", aTxArchived.getCustom2 ());
+    assertEquals ("archive-custom-3", aTxArchived.getCustom3 ());
   }
 
   @Test

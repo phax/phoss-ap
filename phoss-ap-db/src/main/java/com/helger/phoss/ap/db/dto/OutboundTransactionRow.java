@@ -67,6 +67,9 @@ public class OutboundTransactionRow implements IOutboundTransaction
   private final String m_sSbdhTypeVersion;
   private final String m_sSbdhType;
   private final String m_sPayloadMimeType;
+  private final String m_sCustom1;
+  private final String m_sCustom2;
+  private final String m_sCustom3;
 
   /**
    * Construct an outbound transaction row from a JDBC result row.
@@ -104,6 +107,9 @@ public class OutboundTransactionRow implements IOutboundTransaction
     m_sSbdhTypeVersion = aRow.getAsString (25);
     m_sSbdhType = aRow.getAsString (26);
     m_sPayloadMimeType = aRow.getAsString (27);
+    m_sCustom1 = aRow.getAsString (28);
+    m_sCustom2 = aRow.getAsString (29);
+    m_sCustom3 = aRow.getAsString (30);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notNull (m_eTransactionType, "TransactionType");
     ValueEnforcer.notEmpty (m_sSenderID, "SenderID");
@@ -325,5 +331,26 @@ public class OutboundTransactionRow implements IOutboundTransaction
   public String getPayloadMimeType ()
   {
     return m_sPayloadMimeType;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getCustom1 ()
+  {
+    return m_sCustom1;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getCustom2 ()
+  {
+    return m_sCustom2;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getCustom3 ()
+  {
+    return m_sCustom3;
   }
 }

@@ -51,7 +51,7 @@ public final class OutboundTransactionRowTest
   {
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
-    // 24 columns, matching OutboundTransactionRow constructor order
+    // 31 columns, matching OutboundTransactionRow constructor order
     // 0 id
     // 1 transactionType
     // 2 senderID
@@ -76,6 +76,13 @@ public final class OutboundTransactionRowTest
     // 21 mlsReceivedDT (nullable)
     // 22 mlsID (nullable)
     // 23 mlsInboundTransactionID (nullable)
+    // 24 sbdhStandard (nullable)
+    // 25 sbdhTypeVersion (nullable)
+    // 26 sbdhType (nullable)
+    // 27 payloadMimeType (nullable)
+    // 28 custom1 (nullable)
+    // 29 custom2 (nullable)
+    // 30 custom3 (nullable)
     return DBResultRowHelper.createRow ("tx-001",
                                         ETransactionType.BUSINESS_DOCUMENT.getID (),
                                         "iso6523-actorid-upis::sender",
@@ -103,6 +110,10 @@ public final class OutboundTransactionRowTest
                                         null,
                                         null,
                                         null,
+                                        null,
+                                        null,
+                                        null,
+                                        // 28 custom1, 29 custom2, 30 custom3
                                         null,
                                         null,
                                         null);
@@ -134,6 +145,9 @@ public final class OutboundTransactionRowTest
     assertNull (aTx.getSbdhTypeVersion ());
     assertNull (aTx.getSbdhType ());
     assertNull (aTx.getPayloadMimeType ());
+    assertNull (aTx.getCustom1 ());
+    assertNull (aTx.getCustom2 ());
+    assertNull (aTx.getCustom3 ());
   }
 
   @Test
@@ -184,7 +198,10 @@ public final class OutboundTransactionRowTest
                                                           "sbdh-std",
                                                           "sbdh-type-ver",
                                                           "sbdh-type",
-                                                          "application/xml");
+                                                          "application/xml",
+                                                          "custom-1",
+                                                          "custom-2",
+                                                          "custom-3");
     final OutboundTransactionRow aTx = new OutboundTransactionRow (aRow);
 
     assertEquals ("tx-full", aTx.getID ());
@@ -205,5 +222,8 @@ public final class OutboundTransactionRowTest
     assertEquals ("sbdh-type-ver", aTx.getSbdhTypeVersion ());
     assertEquals ("sbdh-type", aTx.getSbdhType ());
     assertEquals ("application/xml", aTx.getPayloadMimeType ());
+    assertEquals ("custom-1", aTx.getCustom1 ());
+    assertEquals ("custom-2", aTx.getCustom2 ());
+    assertEquals ("custom-3", aTx.getCustom3 ());
   }
 }

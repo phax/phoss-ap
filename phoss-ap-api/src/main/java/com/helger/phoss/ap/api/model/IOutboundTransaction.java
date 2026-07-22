@@ -220,4 +220,22 @@ public interface IOutboundTransaction extends IHasID <String>
    */
   @Nullable
   String getPayloadMimeType ();
+
+  /**
+   * @return The first optional custom field (max 255 characters), or <code>null</code> if not set.
+   */
+  @Nullable
+  String getCustom1 ();
+
+  /**
+   * @return The second optional custom field (max 255 characters), or <code>null</code> if not set.
+   */
+  @Nullable
+  String getCustom2 ();
+
+  /**
+   * @return The third optional custom field (max 255 characters), or <code>null</code> if not set.
+   */
+  @Nullable
+  String getCustom3 ();
 }

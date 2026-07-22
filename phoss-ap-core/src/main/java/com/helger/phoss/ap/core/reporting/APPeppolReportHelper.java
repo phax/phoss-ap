@@ -309,6 +309,10 @@ public final class APPeppolReportHelper
       final String sSbdhTypeVersion = null;
       final String sSbdhType = null;
       final String sPayloadMimeType = null;
+      // Custom fields do not apply to system-generated Peppol Reporting documents
+      final String sCustom1 = null;
+      final String sCustom2 = null;
+      final String sCustom3 = null;
       final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[PeppolReporting] ",
                                                                                aSenderID,
                                                                                aReceiverID,
@@ -321,7 +325,10 @@ public final class APPeppolReportHelper
                                                                                sSbdhStandard,
                                                                                sSbdhTypeVersion,
                                                                                sSbdhType,
-                                                                               sPayloadMimeType);
+                                                                               sPayloadMimeType,
+                                                                               sCustom1,
+                                                                               sCustom2,
+                                                                               sCustom3);
       if (aTx == null)
         throw new IllegalStateException ("Failed to submit Peppol Reporting document for transmission");
 

@@ -87,6 +87,15 @@ public class OutboundTransactionResponse
            nullable = true)
   private String mlsStatus;
 
+  @Schema (description = "First optional custom field (max 255 characters); null if not set", nullable = true)
+  private String custom1;
+
+  @Schema (description = "Second optional custom field (max 255 characters); null if not set", nullable = true)
+  private String custom2;
+
+  @Schema (description = "Third optional custom field (max 255 characters); null if not set", nullable = true)
+  private String custom3;
+
   /**
    * Default constructor for JSON deserialization.
    */
@@ -119,6 +128,9 @@ public class OutboundTransactionResponse
     aResp.nextRetryDT = aTx.getNextRetryDT () != null ? aTx.getNextRetryDT ().toString () : null;
     aResp.errorDetails = aTx.getErrorDetails ();
     aResp.mlsStatus = aTx.getMlsStatus () != null ? aTx.getMlsStatus ().getID () : null;
+    aResp.custom1 = aTx.getCustom1 ();
+    aResp.custom2 = aTx.getCustom2 ();
+    aResp.custom3 = aTx.getCustom3 ();
     return aResp;
   }
 
@@ -345,5 +357,50 @@ public class OutboundTransactionResponse
   public void setMlsStatus (final String s)
   {
     mlsStatus = s;
+  }
+
+  /** @return the first custom field */
+  public String getCustom1 ()
+  {
+    return custom1;
+  }
+
+  /**
+   * @param s
+   *        The first custom field to set.
+   */
+  public void setCustom1 (final String s)
+  {
+    custom1 = s;
+  }
+
+  /** @return the second custom field */
+  public String getCustom2 ()
+  {
+    return custom2;
+  }
+
+  /**
+   * @param s
+   *        The second custom field to set.
+   */
+  public void setCustom2 (final String s)
+  {
+    custom2 = s;
+  }
+
+  /** @return the third custom field */
+  public String getCustom3 ()
+  {
+    return custom3;
+  }
+
+  /**
+   * @param s
+   *        The third custom field to set.
+   */
+  public void setCustom3 (final String s)
+  {
+    custom3 = s;
   }
 }

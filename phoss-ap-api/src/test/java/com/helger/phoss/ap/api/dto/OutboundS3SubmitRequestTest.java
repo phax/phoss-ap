@@ -45,6 +45,9 @@ public final class OutboundS3SubmitRequestTest
     assertNull (a.getSbdhTypeVersion ());
     assertNull (a.getSbdhType ());
     assertNull (a.getPayloadMimeType ());
+    assertNull (a.getCustom1 ());
+    assertNull (a.getCustom2 ());
+    assertNull (a.getCustom3 ());
   }
 
   @Test
@@ -64,6 +67,9 @@ public final class OutboundS3SubmitRequestTest
     a.setSbdhTypeVersion ("1.0");
     a.setSbdhType ("type1");
     a.setPayloadMimeType ("application/pdf");
+    a.setCustom1 ("c1");
+    a.setCustom2 ("c2");
+    a.setCustom3 ("c3");
 
     assertEquals ("sender1", a.getSenderID ());
     assertEquals ("receiver1", a.getReceiverID ());
@@ -78,5 +84,8 @@ public final class OutboundS3SubmitRequestTest
     assertEquals ("1.0", a.getSbdhTypeVersion ());
     assertEquals ("type1", a.getSbdhType ());
     assertEquals ("application/pdf", a.getPayloadMimeType ());
+    assertEquals ("c1", a.getCustom1 ());
+    assertEquals ("c2", a.getCustom2 ());
+    assertEquals ("c3", a.getCustom3 ());
   }
 }

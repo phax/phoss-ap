@@ -215,7 +215,8 @@ public final class DirectoryFileProcessor
     final IOutboundTransaction aTx;
     try (final InputStream aIS = FileHelper.getBufferedInputStream (aPendingFile))
     {
-      aTx = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null);
+      // Custom fields are not available for directory-based ingestion
+      aTx = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null, null, null, null);
     }
     catch (final Exception ex)
     {

@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -87,6 +88,38 @@ public class OutboundController
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (OutboundController.class);
 
+  /** Maximum length of each custom field (issue #64). */
+  private static final int MAX_CUSTOM_FIELD_LENGTH = 255;
+
+  /**
+   * Validate that none of the optional custom fields exceeds the maximum length.
+   *
+   * @param sCustom1
+   *        First custom field. May be <code>null</code>.
+   * @param sCustom2
+   *        Second custom field. May be <code>null</code>.
+   * @param sCustom3
+   *        Third custom field. May be <code>null</code>.
+   * @return A 400 Bad Request response describing the first offending field, or <code>null</code>
+   *         if all fields are valid.
+   */
+  @Nullable
+  private static ResponseEntity <String> _validateCustomFields (@Nullable final String sCustom1,
+                                                                @Nullable final String sCustom2,
+                                                                @Nullable final String sCustom3)
+  {
+    final String [] aValues = { sCustom1, sCustom2, sCustom3 };
+    for (int i = 0; i < aValues.length; ++i)
+      if (aValues[i] != null && aValues[i].length () > MAX_CUSTOM_FIELD_LENGTH)
+        return ResponseEntity.badRequest ()
+                             .body (JsonValue.create ("The 'custom" +
+                                                      (i + 1) +
+                                                      "' field exceeds the maximum length of " +
+                                                      MAX_CUSTOM_FIELD_LENGTH +
+                                                      " characters").getAsJsonString ());
+    return null;
+  }
+
   /**
    * Submit a raw (payload-only) document for outbound sending via the Peppol network. The document
    * payload is read from the HTTP request body. Peppol identifiers are parsed from the URL path
@@ -116,6 +149,12 @@ public class OutboundController
    *        Optional SBDH type.
    * @param sPayloadMimeType
    *        Optional payload MIME type.
+   * @param sCustom1
+   *        Optional custom field 1 (max 255 characters).
+   * @param sCustom2
+   *        Optional custom field 2 (max 255 characters).
+   * @param sCustom3
+   *        Optional custom field 3 (max 255 characters).
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -163,13 +202,23 @@ public class OutboundController
                                                     @Parameter (description = "SBDH Type override (e.g., factur-x). Auto-derived from the document type when omitted.") @RequestParam (value = "sbdhType",
                                                                                                                                                                                        required = false) final String sSbdhType,
                                                     @Parameter (description = "MIME type for binary payloads (e.g., application/pdf). When set, the payload is wrapped in <BinaryContent>; otherwise treated as XML.") @RequestParam (value = "payloadMimeType",
-                                                                                                                                                                                                                                      required = false) final String sPayloadMimeType) throws Exception
+                                                                                                                                                                                                                                      required = false) final String sPayloadMimeType,
+                                                    @Parameter (description = "Optional custom field 1 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom1",
+                                                                                                                                                                                                          required = false) final String sCustom1,
+                                                    @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
+                                                                                                                                                                                                          required = false) final String sCustom2,
+                                                    @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
+                                                                                                                                                                                                          required = false) final String sCustom3) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
       LOGGER.info ("Peppol AP sending is disabled");
       return ResponseEntity.notFound ().build ();
     }
+
+    final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
+    if (aCustomErr != null)
+      return aCustomErr;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
                                                                                       : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -247,7 +296,10 @@ public class OutboundController
                                                                                sSbdhStandard,
                                                                                sSbdhTypeVersion,
                                                                                sSbdhType,
-                                                                               sPayloadMimeType);
+                                                                               sPayloadMimeType,
+                                                                               sCustom1,
+                                                                               sCustom2,
+                                                                               sCustom3);
       if (aTx == null)
       {
         return ResponseEntity.unprocessableContent ()
@@ -275,6 +327,12 @@ public class OutboundController
    *        The HTTP servlet request containing the SBD payload.
    * @param sMlsTo
    *        Optional MLS "To" address.
+   * @param sCustom1
+   *        Optional custom field 1 (max 255 characters).
+   * @param sCustom2
+   *        Optional custom field 2 (max 255 characters).
+   * @param sCustom3
+   *        Optional custom field 3 (max 255 characters).
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -294,7 +352,13 @@ public class OutboundController
                    @ApiResponse (responseCode = "422", description = "Sending failed — see the report body for details") })
   public ResponseEntity <String> submitPrebuiltSBD (@Parameter (hidden = true) @NonNull final HttpServletRequest aServletRequest,
                                                     @Parameter (description = "Alternative Peppol Participant ID to receive MLS responses") @RequestParam (value = "mlsTo",
-                                                                                                                                                            required = false) final String sMlsTo) throws Exception
+                                                                                                                                                            required = false) final String sMlsTo,
+                                                    @Parameter (description = "Optional custom field 1 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom1",
+                                                                                                                                                                                                          required = false) final String sCustom1,
+                                                    @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
+                                                                                                                                                                                                          required = false) final String sCustom2,
+                                                    @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
+                                                                                                                                                                                                          required = false) final String sCustom3) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -302,11 +366,20 @@ public class OutboundController
       return ResponseEntity.notFound ().build ();
     }
 
+    final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
+    if (aCustomErr != null)
+      return aCustomErr;
+
     // Read the InputStream only once
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD ("[SubmitPrebuiltSBD] ", aIS, sMlsTo);
+      final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD ("[SubmitPrebuiltSBD] ",
+                                                                               aIS,
+                                                                               sMlsTo,
+                                                                               sCustom1,
+                                                                               sCustom2,
+                                                                               sCustom3);
       if (aTx == null)
       {
         return ResponseEntity.badRequest ()
@@ -343,6 +416,12 @@ public class OutboundController
    *        Optional SBDH Instance ID. A random one is generated if not provided.
    * @param sMlsTo
    *        Optional MLS "To" address.
+   * @param sCustom1
+   *        Optional custom field 1 (max 255 characters).
+   * @param sCustom2
+   *        Optional custom field 2 (max 255 characters).
+   * @param sCustom3
+   *        Optional custom field 3 (max 255 characters).
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -377,13 +456,23 @@ public class OutboundController
                                                    @Parameter (description = "Custom SBDH Instance Identifier. A random UUID-based identifier is generated when omitted.") @RequestParam (value = "sbdhInstanceID",
                                                                                                                                                                                            required = false) final String sSbdhInstanceID,
                                                    @Parameter (description = "Alternative Peppol Participant ID to receive MLS responses") @RequestParam (value = "mlsTo",
-                                                                                                                                                           required = false) final String sMlsTo) throws Exception
+                                                                                                                                                           required = false) final String sMlsTo,
+                                                   @Parameter (description = "Optional custom field 1 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom1",
+                                                                                                                                                                                                         required = false) final String sCustom1,
+                                                   @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
+                                                                                                                                                                                                         required = false) final String sCustom2,
+                                                   @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
+                                                                                                                                                                                                         required = false) final String sCustom3) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
       LOGGER.info ("Peppol AP sending is disabled");
       return ResponseEntity.notFound ().build ();
     }
+
+    final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
+    if (aCustomErr != null)
+      return aCustomErr;
 
     final String sLogPrefix = "[SubmitAutoDetect] ";
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
@@ -477,7 +566,10 @@ public class OutboundController
                                                                                null,
                                                                                null,
                                                                                null,
-                                                                               null);
+                                                                               null,
+                                                                               sCustom1,
+                                                                               sCustom2,
+                                                                               sCustom3);
       if (aTx == null)
         return ResponseEntity.badRequest ()
                              .body (JsonValue.create ("Failed to submit outbound transaction").getAsJsonString ());
@@ -546,6 +638,12 @@ public class OutboundController
                            .body (JsonValue.create ("Missing required fields: senderID, receiverID, docTypeID, processID, c1CountryCode, s3Key")
                                            .getAsJsonString ());
     }
+
+    final ResponseEntity <String> aCustomErr = _validateCustomFields (aRequest.getCustom1 (),
+                                                                      aRequest.getCustom2 (),
+                                                                      aRequest.getCustom3 ());
+    if (aCustomErr != null)
+      return aCustomErr;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (aRequest.getSbdhInstanceID ()) ? aRequest.getSbdhInstanceID ()
                                                                                                     : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -658,7 +756,10 @@ public class OutboundController
                                                                                aRequest.getSbdhStandard (),
                                                                                aRequest.getSbdhTypeVersion (),
                                                                                aRequest.getSbdhType (),
-                                                                               aRequest.getPayloadMimeType ());
+                                                                               aRequest.getPayloadMimeType (),
+                                                                               aRequest.getCustom1 (),
+                                                                               aRequest.getCustom2 (),
+                                                                               aRequest.getCustom3 ());
       if (aTx == null)
       {
         return ResponseEntity.unprocessableContent ()

@@ -84,6 +84,15 @@ public class OutboundS3SubmitRequest
            example = "application/pdf")
   private String payloadMimeType;
 
+  @Schema (description = "Optional custom field 1 (max 255 characters). Stored with the transaction and returned by the status APIs.")
+  private String custom1;
+
+  @Schema (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.")
+  private String custom2;
+
+  @Schema (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.")
+  private String custom3;
+
   /** @return the sender participant ID */
   public String getSenderID ()
   {
@@ -277,5 +286,50 @@ public class OutboundS3SubmitRequest
   public void setPayloadMimeType (final String s)
   {
     payloadMimeType = s;
+  }
+
+  /** @return the optional custom field 1 */
+  public String getCustom1 ()
+  {
+    return custom1;
+  }
+
+  /**
+   * @param s
+   *        The custom field 1 to set.
+   */
+  public void setCustom1 (final String s)
+  {
+    custom1 = s;
+  }
+
+  /** @return the optional custom field 2 */
+  public String getCustom2 ()
+  {
+    return custom2;
+  }
+
+  /**
+   * @param s
+   *        The custom field 2 to set.
+   */
+  public void setCustom2 (final String s)
+  {
+    custom2 = s;
+  }
+
+  /** @return the optional custom field 3 */
+  public String getCustom3 ()
+  {
+    return custom3;
+  }
+
+  /**
+   * @param s
+   *        The custom field 3 to set.
+   */
+  public void setCustom3 (final String s)
+  {
+    custom3 = s;
   }
 }

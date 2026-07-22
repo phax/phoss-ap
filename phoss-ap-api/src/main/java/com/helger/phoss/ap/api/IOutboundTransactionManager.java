@@ -83,6 +83,12 @@ public interface IOutboundTransactionManager
    * @param sPayloadMimeType
    *        MIME type for binary payloads (e.g. {@code application/pdf}). May be <code>null</code>
    *        for XML payloads.
+   * @param sCustom1
+   *        First optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom2
+   *        Second optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom3
+   *        Third optional custom field (max 255 characters). May be <code>null</code>.
    * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
    */
   @Nullable
@@ -103,7 +109,10 @@ public interface IOutboundTransactionManager
                  @Nullable String sSbdhStandard,
                  @Nullable String sSbdhTypeVersion,
                  @Nullable String sSbdhType,
-                 @Nullable String sPayloadMimeType);
+                 @Nullable String sPayloadMimeType,
+                 @Nullable String sCustom1,
+                 @Nullable String sCustom2,
+                 @Nullable String sCustom3);
 
   /**
    * Look up a transaction by its unique ID.

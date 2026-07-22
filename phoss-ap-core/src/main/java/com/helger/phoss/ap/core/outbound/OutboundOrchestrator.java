@@ -141,6 +141,12 @@ public final class OutboundOrchestrator
    * @param sPayloadMimeType
    *        Optional payload MIME type (e.g. "application/pdf"). May be <code>null</code> for XML
    *        payloads.
+   * @param sCustom1
+   *        First optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom2
+   *        Second optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom3
+   *        Third optional custom field (max 255 characters). May be <code>null</code>.
    * @return The created {@link IOutboundTransaction} or <code>null</code> if the document could not
    *         be stored or verification failed.
    */
@@ -157,7 +163,10 @@ public final class OutboundOrchestrator
                                                         @Nullable final String sSbdhStandard,
                                                         @Nullable final String sSbdhTypeVersion,
                                                         @Nullable final String sSbdhType,
-                                                        @Nullable final String sPayloadMimeType)
+                                                        @Nullable final String sPayloadMimeType,
+                                                        @Nullable final String sCustom1,
+                                                        @Nullable final String sCustom2,
+                                                        @Nullable final String sCustom3)
   {
     LOGGER.info (sLogPrefix + "Submitting raw document with SBDH Instance ID '" + sSbdhInstanceID + "'");
 
@@ -263,7 +272,10 @@ public final class OutboundOrchestrator
                                                        sSbdhStandard,
                                                        sSbdhTypeVersion,
                                                        sSbdhType,
-                                                       sPayloadMimeType);
+                                                       sPayloadMimeType,
+                                                       sCustom1,
+                                                       sCustom2,
+                                                       sCustom3);
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onOutboundDocumentAccepted (sTransactionID,
                                            aSenderID.getURIEncoded (),
@@ -285,13 +297,22 @@ public final class OutboundOrchestrator
    *        The input stream containing the complete pre-built SBD. May not be <code>null</code>.
    * @param sMlsTo
    *        Optional MLS "To" address. May be <code>null</code>.
+   * @param sCustom1
+   *        First optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom2
+   *        Second optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sCustom3
+   *        Third optional custom field (max 255 characters). May be <code>null</code>.
    * @return The created {@link IOutboundTransaction} or <code>null</code> if the SBD could not be
    *         parsed.
    */
   @Nullable
   public static IOutboundTransaction submitPrebuiltSBD (@NonNull final String sLogPrefix,
                                                         @NonNull final InputStream aSbdIS,
-                                                        @Nullable final String sMlsTo)
+                                                        @Nullable final String sMlsTo,
+                                                        @Nullable final String sCustom1,
+                                                        @Nullable final String sCustom2,
+                                                        @Nullable final String sCustom3)
   {
     LOGGER.info (sLogPrefix + "Submitting pre-built SBD");
 
@@ -403,7 +424,10 @@ public final class OutboundOrchestrator
                                                sSbdhStandard,
                                                sSbdhTypeVersion,
                                                sSbdhType,
-                                               sPayloadMimeType);
+                                               sPayloadMimeType,
+                                               sCustom1,
+                                               sCustom2,
+                                               sCustom3);
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onOutboundDocumentAccepted (sTransactionID,
                                            aSbdData.getSenderURIEncoded (),

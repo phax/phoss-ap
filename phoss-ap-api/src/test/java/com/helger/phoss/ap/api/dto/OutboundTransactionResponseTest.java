@@ -60,6 +60,9 @@ public final class OutboundTransactionResponseTest
     assertNull (a.getNextRetryDT ());
     assertNull (a.getErrorDetails ());
     assertNull (a.getMlsStatus ());
+    assertNull (a.getCustom1 ());
+    assertNull (a.getCustom2 ());
+    assertNull (a.getCustom3 ());
   }
 
   @Test
@@ -81,6 +84,9 @@ public final class OutboundTransactionResponseTest
     a.setNextRetryDT ("2026-03-29T11:00:00Z");
     a.setErrorDetails ("some error");
     a.setMlsStatus ("received_ap");
+    a.setCustom1 ("c1");
+    a.setCustom2 ("c2");
+    a.setCustom3 ("c3");
 
     assertEquals ("id1", a.getID ());
     assertEquals ("business_document", a.getTransactionType ());
@@ -97,6 +103,9 @@ public final class OutboundTransactionResponseTest
     assertEquals ("2026-03-29T11:00:00Z", a.getNextRetryDT ());
     assertEquals ("some error", a.getErrorDetails ());
     assertEquals ("received_ap", a.getMlsStatus ());
+    assertEquals ("c1", a.getCustom1 ());
+    assertEquals ("c2", a.getCustom2 ());
+    assertEquals ("c3", a.getCustom3 ());
   }
 
   @Test
@@ -133,7 +142,10 @@ public final class OutboundTransactionResponseTest
                                                    null,
                                                    null,
                                                    null,
-                                                   null);
+                                                   null,
+                                                   "custom-a",
+                                                   "custom-b",
+                                                   "custom-c");
 
     final OutboundTransactionResponse aResp = OutboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -152,6 +164,9 @@ public final class OutboundTransactionResponseTest
     assertNotNull (aResp.getNextRetryDT ());
     assertEquals ("err details", aResp.getErrorDetails ());
     assertEquals ("received_ap", aResp.getMlsStatus ());
+    assertEquals ("custom-a", aResp.getCustom1 ());
+    assertEquals ("custom-b", aResp.getCustom2 ());
+    assertEquals ("custom-c", aResp.getCustom3 ());
   }
 
   @Test
@@ -176,6 +191,9 @@ public final class OutboundTransactionResponseTest
                                                    aCreated,
                                                    null,
                                                    EReportingStatus.PENDING,
+                                                   null,
+                                                   null,
+                                                   null,
                                                    null,
                                                    null,
                                                    null,
@@ -228,7 +246,10 @@ public final class OutboundTransactionResponseTest
                                                     @Nullable final String sSbdhStandard,
                                                     @Nullable final String sSbdhTypeVersion,
                                                     @Nullable final String sSbdhType,
-                                                    @Nullable final String sPayloadMimeType)
+                                                    @Nullable final String sPayloadMimeType,
+                                                    @Nullable final String sCustom1,
+                                                    @Nullable final String sCustom2,
+                                                    @Nullable final String sCustom3)
   {
     return new IOutboundTransaction ()
     {
@@ -260,6 +281,9 @@ public final class OutboundTransactionResponseTest
       public String getSbdhTypeVersion () { return sSbdhTypeVersion; }
       public String getSbdhType () { return sSbdhType; }
       public String getPayloadMimeType () { return sPayloadMimeType; }
+      public String getCustom1 () { return sCustom1; }
+      public String getCustom2 () { return sCustom2; }
+      public String getCustom3 () { return sCustom3; }
     };
   }
 }

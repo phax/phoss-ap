@@ -213,6 +213,11 @@ public final class MlsHandler
       final String sSbdhType = null;
       final String sPayloadMimeType = null;
 
+      // Custom fields do not apply to system-generated MLS responses
+      final String sCustom1 = null;
+      final String sCustom2 = null;
+      final String sCustom3 = null;
+
       // Create outbound transaction
       final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
                                                    aMLSSenderPID.getURIEncoded (),
@@ -231,7 +236,10 @@ public final class MlsHandler
                                                    sSbdhStandard,
                                                    sSbdhTypeVersion,
                                                    sSbdhType,
-                                                   sPayloadMimeType);
+                                                   sPayloadMimeType,
+                                                   sCustom1,
+                                                   sCustom2,
+                                                   sCustom3);
       final var aMlsTx = aOutboundMgr.getByID (sMlsTxID);
       if (aMlsTx == null)
       {

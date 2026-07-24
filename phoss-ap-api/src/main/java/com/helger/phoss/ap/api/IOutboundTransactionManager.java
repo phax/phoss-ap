@@ -267,4 +267,16 @@ public interface IOutboundTransactionManager
   @NonNull
   @ReturnsMutableCopy
   ICommonsList <IOutboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
+
+  /**
+   * Get historical transactions with pagination.
+   *
+   * @param nLimit
+   *        Maximum number of transactions to return. Must be &ge; 0.
+   * @param nOffset
+   *        Offset to start from. Must be &ge; 0.
+   * @return The list of transactions. Never <code>null</code>.
+   */
+  @NonNull
+  ICommonsList <IOutboundTransaction> getAllTransactions (@Nonnegative int nLimit, @Nonnegative int nOffset);
 }

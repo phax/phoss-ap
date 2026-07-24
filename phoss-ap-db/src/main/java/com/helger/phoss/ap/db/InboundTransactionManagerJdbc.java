@@ -471,6 +471,30 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     return ret;
   }
 
+  /** {@inheritDoc} */
+  @NonNull
+  public ICommonsList <IInboundTransaction> getAllTransactions (@Nonnegative final int nLimit,
+                                                                @Nonnegative final int nOffset)
+  {
+    ValueEnforcer.isGE0 (nLimit, "Limit");
+    ValueEnforcer.isGE0 (nOffset, "Offset");
+
+    final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
+                                                                      COLS +
+                                                                      " FROM " +
+                                                                      m_sTableName +
+                                                                      " ORDER BY received_dt DESC" +
+                                                                      " LIMIT " +
+                                                                      nLimit +
+                                                                      " OFFSET " +
+                                                                      nOffset);
+    final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
+    if (aRows != null)
+      for (final DBResultRow aRow : aRows)
+        ret.add (new InboundTransactionRow (aRow));
+    return ret;
+  }
+
   @Override
   public String toString ()
   {

@@ -379,6 +379,30 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     return ret;
   }
 
+  /** {@inheritDoc} */
+  @NonNull
+  public ICommonsList <IOutboundTransaction> getAllTransactions (@Nonnegative final int nLimit,
+                                                                 @Nonnegative final int nOffset)
+  {
+    ValueEnforcer.isGE0 (nLimit, "Limit");
+    ValueEnforcer.isGE0 (nOffset, "Offset");
+
+    final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
+                                                                      COLS +
+                                                                      " FROM " +
+                                                                      m_sTableName +
+                                                                      " ORDER BY init_dt DESC" +
+                                                                      " LIMIT " +
+                                                                      nLimit +
+                                                                      " OFFSET " +
+                                                                      nOffset);
+    final ICommonsList <IOutboundTransaction> ret = new CommonsArrayList <> ();
+    if (aRows != null)
+      for (final DBResultRow aRow : aRows)
+        ret.add (new OutboundTransactionRow (aRow));
+    return ret;
+  }
+
   @Override
   public String toString ()
   {

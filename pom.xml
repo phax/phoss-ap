@@ -52,11 +52,11 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.49.3</awssdk.version>
+    <awssdk.version>2.49.4</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>12.11.0</flyway.version>
+    <flyway.version>13.0.0</flyway.version>
     <h2.version>2.4.240</h2.version>
     <jackson.version>3.2.1</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>

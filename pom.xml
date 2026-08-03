@@ -77,7 +77,7 @@
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
     <ph-db.version>8.4.1</ph-db.version>
     <ph-web.version>11.4.3</ph-web.version>
-    <ph-oton.version>10.2.3</ph-oton.version>
+    <ph-oton.version>10.3.0</ph-oton.version>
     <peppol-commons.version>12.6.1</peppol-commons.version>
     <phive.version>12.1.0</phive.version>
     <phase4.version>4.5.4</phase4.version>
@@ -114,6 +114,13 @@
         <groupId>com.helger.web</groupId>
         <artifactId>ph-web-parent-pom</artifactId>
         <version>${ph-web.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.helger.photon</groupId>
+        <artifactId>ph-oton-parent-pom</artifactId>
+        <version>${ph-oton.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

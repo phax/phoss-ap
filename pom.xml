@@ -52,11 +52,11 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.49.6</awssdk.version>
+    <awssdk.version>2.50.2</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.20.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>13.0.0</flyway.version>
+    <flyway.version>13.1.0</flyway.version>
     <h2.version>2.4.240</h2.version>
     <jackson.version>3.2.1</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
@@ -68,17 +68,17 @@
     <postgres.version>42.7.13</postgres.version>
     <sentry.version>8.51.0</sentry.version>
     <spring-boot.version>4.1.0</spring-boot.version>
-    <springdoc.version>3.0.3</springdoc.version>
+    <springdoc.version>3.1.0</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->
-    <swagger-annotations.version>2.2.52</swagger-annotations.version>
+    <swagger-annotations.version>2.2.53</swagger-annotations.version>
     <sshd-sftp.version>2.19.0</sshd-sftp.version>
 
     <ph-commons.version>12.3.3</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
     <ph-db.version>8.4.1</ph-db.version>
-    <ph-web.version>11.4.2</ph-web.version>
+    <ph-web.version>11.4.3</ph-web.version>
     <ph-oton.version>10.2.3</ph-oton.version>
-    <peppol-commons.version>12.6.0</peppol-commons.version>
+    <peppol-commons.version>12.6.1</peppol-commons.version>
     <phive.version>12.1.0</phive.version>
     <phase4.version>4.5.4</phase4.version>
     <ddd.version>0.8.10</ddd.version>

@@ -74,7 +74,7 @@ final class OperationsControllerTest
     try (final MockedStatic <APJdbcMetaManager> aMock = mockStatic (APJdbcMetaManager.class))
     {
       final IInboundTransactionManager aTxMgr = mock (IInboundTransactionManager.class);
-      when (aTxMgr.getTransactionCount ()).thenReturn (42L);
+      when (Long.valueOf (aTxMgr.getTransactionCount ())).thenReturn (Long.valueOf (42));
       aMock.when (APJdbcMetaManager::getInboundTransactionMgr).thenReturn (aTxMgr);
 
       final ResponseEntity <Long> aResp = m_aController.getInboundSize ();
@@ -110,7 +110,7 @@ final class OperationsControllerTest
       aMockJdbc.when (APJdbcMetaManager::getInboundTransactionMgr).thenReturn (aTxMgr);
 
       final IDocumentPayloadManager aDocPayloadMgr = mock (IDocumentPayloadManager.class);
-      final byte [] aBytes = new byte [] { 1, 2, 3, 4 };
+      final byte [] aBytes = { 1, 2, 3, 4 };
       when (aDocPayloadMgr.readDocument ("doc/path/test.xml")).thenReturn (aBytes);
       aMockBasic.when (APBasicMetaManager::getDocPayloadMgr).thenReturn (aDocPayloadMgr);
 
@@ -148,7 +148,8 @@ final class OperationsControllerTest
       when (aTxMgr.getBySbdhInstanceIDIncludingArchive ("tx-123")).thenReturn (aTx);
       aMockJdbc.when (APJdbcMetaManager::getInboundTransactionMgr).thenReturn (aTxMgr);
 
-      aMockOrchestrator.when (() -> InboundOrchestrator.forwardDocument ("API Replay: ", aTx)).thenReturn (ESuccess.SUCCESS);
+      aMockOrchestrator.when (() -> InboundOrchestrator.forwardDocument ("API Replay: ", aTx))
+                       .thenReturn (ESuccess.SUCCESS);
 
       final ResponseEntity <InboundTransactionResponse> aResp = m_aController.replayInbound ("tx-123");
       assertEquals (HttpStatus.OK, aResp.getStatusCode ());
@@ -178,7 +179,7 @@ final class OperationsControllerTest
     try (final MockedStatic <APJdbcMetaManager> aMock = mockStatic (APJdbcMetaManager.class))
     {
       final IOutboundTransactionManager aTxMgr = mock (IOutboundTransactionManager.class);
-      when (aTxMgr.getTransactionCount ()).thenReturn (100L);
+      when (Long.valueOf (aTxMgr.getTransactionCount ())).thenReturn (Long.valueOf (100L));
       aMock.when (APJdbcMetaManager::getOutboundTransactionMgr).thenReturn (aTxMgr);
 
       final ResponseEntity <Long> aResp = m_aController.getOutboundSize ();
@@ -214,7 +215,7 @@ final class OperationsControllerTest
       aMockJdbc.when (APJdbcMetaManager::getOutboundTransactionMgr).thenReturn (aTxMgr);
 
       final IDocumentPayloadManager aDocPayloadMgr = mock (IDocumentPayloadManager.class);
-      final byte [] aBytes = new byte [] { 5, 6, 7, 8 };
+      final byte [] aBytes = { 5, 6, 7, 8 };
       when (aDocPayloadMgr.readDocument ("doc/path/outbound.xml")).thenReturn (aBytes);
       aMockBasic.when (APBasicMetaManager::getDocPayloadMgr).thenReturn (aDocPayloadMgr);
 

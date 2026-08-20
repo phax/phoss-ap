@@ -209,6 +209,28 @@ public interface IInboundTransactionManager
                                  @Nullable String sErrorDetails);
 
   /**
+   * Update the status and the next retry date/time of a transaction, without touching the attempt
+   * count. This is used for the deferred verification, because it is retried independently of the
+   * forwarding attempts.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eStatus
+   *        The new status. Never <code>null</code>.
+   * @param aNextRetryDT
+   *        The next retry date/time. May be <code>null</code> if no further retry is to be done.
+   * @param sErrorDetails
+   *        Error details. May be <code>null</code>.
+   * @return {@link ESuccess}
+   * @since 0.12.0
+   */
+  @NonNull
+  ESuccess updateStatusAndNextRetry (@NonNull String sID,
+                                     @NonNull EInboundStatus eStatus,
+                                     @Nullable OffsetDateTime aNextRetryDT,
+                                     @Nullable String sErrorDetails);
+
+  /**
    * Mark a transaction as completed.
    *
    * @param sID
@@ -275,6 +297,17 @@ public interface IInboundTransactionManager
    */
   @NonNull
   ICommonsList <IInboundTransaction> getAllForRetry (@Nonnegative int nBatchSize);
+
+  /**
+   * Get inbound transactions with a deferred verification that are eligible for re-verification.
+   *
+   * @param nBatchSize
+   *        Maximum number of transactions to return. Must be &gt; 0.
+   * @return The list of transactions. Never <code>null</code>.
+   * @since 0.12.0
+   */
+  @NonNull
+  ICommonsList <IInboundTransaction> getAllForVerificationRetry (@Nonnegative int nBatchSize);
 
   /**
    * Get completed inbound transactions eligible for archival.

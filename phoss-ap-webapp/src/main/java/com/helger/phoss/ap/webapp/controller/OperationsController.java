@@ -157,6 +157,39 @@ public class OperationsController
   }
 
   /**
+   * Re-verify an inbound transaction whose verification was deferred and forward it to C4.
+   *
+   * @param sbdhInstanceID
+   *        The SBDH Instance ID of the transaction to re-verify and forward.
+   * @return 200 on success, 404 if not found, 500 if the verification or the forwarding failed.
+   * @since 0.12.0
+   */
+  @PostMapping ("/inbound/{sbdhInstanceID}/reverify-and-forward")
+  @Operation (summary = "Re-verify and forward an inbound transaction",
+              description = "Re-evaluates all registered inbound document verifiers against the stored payload and forwards the document, if they all accept it. This is the manual trigger for documents in status 'verification_deferred'.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction re-verified and forwarded"),
+                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content),
+                   @ApiResponse (responseCode = "500",
+                                 description = "Re-verification or forwarding failed",
+                                 content = @Content) })
+  public ResponseEntity <InboundTransactionResponse> reverifyAndForwardInbound (@Parameter (description = "SBDH Instance ID", required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    // Deliberately not looking into the archive - an archived transaction is done
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
+    if (aTx == null)
+      return ResponseEntity.notFound ().build ();
+
+    final ESuccess eSuccess = InboundOrchestrator.resumeDeferredInboundDocument ("API ReverifyAndForward: ", aTx);
+    final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
+    final IInboundTransaction aFinalTx = aUpdatedTx != null ? aUpdatedTx : aTx;
+
+    if (eSuccess.isSuccess ())
+      return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aFinalTx));
+    return ResponseEntity.internalServerError ().body (InboundTransactionResponse.fromDomain (aFinalTx));
+  }
+
+  /**
    * Get historical outbound transactions with pagination.
    *
    * @param offset

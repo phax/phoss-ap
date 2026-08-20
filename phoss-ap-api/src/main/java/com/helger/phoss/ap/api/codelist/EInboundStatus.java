@@ -36,6 +36,13 @@ public enum EInboundStatus implements IHasID <String>
    * Failed optional verification &mdash; no forwarding attempt will be made.
    */
   REJECTED ("rejected"),
+  /**
+   * A document verifier was unavailable and the verification was deferred &mdash; scheduled for
+   * re-verification.
+   *
+   * @since 0.12.0
+   */
+  VERIFICATION_DEFERRED ("verification_deferred"),
   /** Forwarding to Receiver Backend (C3) is currently in progress. */
   FORWARDING ("forwarding"),
   /** Successfully forwarded to Receiver Backend (C3). */

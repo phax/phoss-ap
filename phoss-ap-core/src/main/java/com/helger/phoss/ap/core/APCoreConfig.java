@@ -40,6 +40,7 @@ import com.helger.phoss.ap.api.codelist.EAS4DumpMode;
 import com.helger.phoss.ap.api.codelist.EC4CountryCodeMode;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EReceiverCheckMode;
+import com.helger.phoss.ap.api.codelist.EVerificationFailMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 
@@ -59,6 +60,7 @@ public final class APCoreConfig
   // Remember the legacy keys for which a deprecation warning was already logged, so it is emitted
   // only once per key
   private static final Set <String> WARNED_DEPRECATED_KEYS = ConcurrentHashMap.newKeySet ();
+  private static final Set <String> WARNED_INVALID_VALUES = ConcurrentHashMap.newKeySet ();
 
   private APCoreConfig ()
   {}
@@ -658,6 +660,58 @@ public final class APCoreConfig
   {
     return _getConfig ().getAsBoolean (APConfigurationProperties.VERIFICATION_INBOUND_ENABLED,
                                        APConfigurationProperties.VERIFICATION_INBOUND_ENABLED_DEFAULT);
+  }
+
+  /**
+   * @return The configured behaviour for the case that a document verifier backend service is
+   *         unavailable. Defaults to {@link EVerificationFailMode#DEFAULT}. Never
+   *         <code>null</code>.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static EVerificationFailMode getVerificationFailMode ()
+  {
+    final String sVal = _getConfig ().getAsString (APConfigurationProperties.VERIFICATION_FAIL_MODE);
+    if (StringHelper.isEmpty (sVal))
+      return EVerificationFailMode.DEFAULT;
+
+    final EVerificationFailMode eRet = EVerificationFailMode.getFromIDOrNull (sVal);
+    if (eRet != null)
+      return eRet;
+
+    if (WARNED_INVALID_VALUES.add (APConfigurationProperties.VERIFICATION_FAIL_MODE))
+      LOGGER.warn ("The configuration key '" +
+                   APConfigurationProperties.VERIFICATION_FAIL_MODE +
+                   "' has the unsupported value '" +
+                   sVal +
+                   "' - falling back to '" +
+                   EVerificationFailMode.DEFAULT.getID () +
+                   "'");
+    return EVerificationFailMode.DEFAULT;
+  }
+
+  /**
+   * @return The interval in which a deferred verification is retried. Never <code>null</code>.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static Duration getVerificationDeferredRetryInterval ()
+  {
+    return _getDuration (APConfigurationProperties.VERIFICATION_DEFERRED_RETRY_INTERVAL,
+                         APConfigurationProperties.VERIFICATION_DEFERRED_RETRY_INTERVAL_DEFAULT);
+  }
+
+  /**
+   * @return The maximum duration, relative to the reception of a document, for which the
+   *         verification may be deferred. Afterwards the document is rejected. Never
+   *         <code>null</code>.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static Duration getVerificationDeferredMaxDuration ()
+  {
+    return _getDuration (APConfigurationProperties.VERIFICATION_DEFERRED_MAX_DURATION,
+                         APConfigurationProperties.VERIFICATION_DEFERRED_MAX_DURATION_DEFAULT);
   }
 
   /**

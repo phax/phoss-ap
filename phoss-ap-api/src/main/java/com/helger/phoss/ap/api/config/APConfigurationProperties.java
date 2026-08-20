@@ -298,6 +298,11 @@ public final class APConfigurationProperties
   public static final boolean VERIFICATION_OUTBOUND_ENABLED_DEFAULT = false;
   public static final String VERIFICATION_INBOUND_ENABLED = "verification.inbound.enabled";
   public static final boolean VERIFICATION_INBOUND_ENABLED_DEFAULT = false;
+  public static final String VERIFICATION_FAIL_MODE = "verification.verifier-fail-mode";
+  public static final String VERIFICATION_DEFERRED_RETRY_INTERVAL = "verification.deferred.retry-interval";
+  public static final Duration VERIFICATION_DEFERRED_RETRY_INTERVAL_DEFAULT = Duration.ofMinutes (5);
+  public static final String VERIFICATION_DEFERRED_MAX_DURATION = "verification.deferred.max-duration";
+  public static final Duration VERIFICATION_DEFERRED_MAX_DURATION_DEFAULT = Duration.ofHours (12);
   public static final String VERIFICATION_PHORM_URL = "verification.phorm.url";
   public static final String VERIFICATION_PHORM_TOKEN = "verification.phorm.token";
 

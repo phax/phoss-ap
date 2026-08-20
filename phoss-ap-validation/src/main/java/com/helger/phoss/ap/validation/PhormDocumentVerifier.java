@@ -78,10 +78,17 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     /** Phorm is not configured - skip verification */
     SKIPPED,
     /**
-     * Phorm call could not be completed (configuration error, HTTP, parse) - the service is
-     * considered unavailable
+     * The request could not be created or sent at all - Phorm is misconfigured or the document
+     * could not be read
      */
-    FAILED,
+    REQUEST_ERROR,
+    /** Phorm could not be reached or reported itself as unavailable */
+    SERVICE_UNAVAILABLE,
+    /** Phorm answered, but the response could not be used */
+    RESPONSE_ERROR,
+    // Note: REQUEST_ERROR, SERVICE_UNAVAILABLE and RESPONSE_ERROR all mean that the call did not
+    // produce a verdict about the document. They are therefore all mapped to
+    // VerificationOutcome.serviceUnavailable (...) and only differ in the message
     /** Phorm call completed - {@link PhormCallResult#results} is non-null */
     COMPLETED
   }
@@ -91,7 +98,11 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     @NonNull
     static final PhormCallResult SKIPPED = new PhormCallResult (EPhormCallState.SKIPPED, null);
     @NonNull
-    static final PhormCallResult FAILED = new PhormCallResult (EPhormCallState.FAILED, null);
+    static final PhormCallResult REQUEST_ERROR = new PhormCallResult (EPhormCallState.REQUEST_ERROR, null);
+    @NonNull
+    static final PhormCallResult SERVICE_UNAVAILABLE = new PhormCallResult (EPhormCallState.SERVICE_UNAVAILABLE, null);
+    @NonNull
+    static final PhormCallResult RESPONSE_ERROR = new PhormCallResult (EPhormCallState.RESPONSE_ERROR, null);
 
     @NonNull
     static PhormCallResult completed (@NonNull final ValidationResultList aResults)
@@ -120,20 +131,20 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     if (URLHelper.getAsURL (sPhormBaseURL) == null)
     {
       LOGGER.error ("Phorm URL '" + sPhormBaseURL + "' is not a valid URL");
-      return PhormCallResult.FAILED;
+      return PhormCallResult.REQUEST_ERROR;
     }
 
     if (StringHelper.isEmpty (sPhormToken))
     {
       LOGGER.error ("Phorm URL '" + sPhormBaseURL + "' looks okay but the Token is not configured");
-      return PhormCallResult.FAILED;
+      return PhormCallResult.REQUEST_ERROR;
     }
 
     final String sURL = StringHelper.trimEnd (sPhormBaseURL, '/') + "/api/dd_and_validate/";
     if (!aDocPayloadMgr.existsDocument (sDocumentPath))
     {
       LOGGER.error ("Document path '" + sDocumentPath + "' does not exist");
-      return PhormCallResult.FAILED;
+      return PhormCallResult.REQUEST_ERROR;
     }
 
     final HttpClientSettings aHCS = new HttpClientSettings ();
@@ -164,18 +175,20 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
       });
       if (aResponseBytes == null)
       {
+        // Server side error (HTTP >= 500) or an empty response entity
         LOGGER.error ("Phorm returned null response for '" + sDocumentPath + "' with code " + aStatusCode.intValue ());
-        return PhormCallResult.FAILED;
+        return PhormCallResult.SERVICE_UNAVAILABLE;
       }
 
       final IJsonObject aJson = JsonReader.builder ().source (aResponseBytes).readAsObject ();
       if (aJson == null)
       {
+        // Phorm answered, but not with something usable
         LOGGER.error ("Failed to parse Phorm response as JSON for '" +
                       sDocumentPath +
                       "' with code " +
                       aStatusCode.intValue ());
-        return PhormCallResult.FAILED;
+        return PhormCallResult.RESPONSE_ERROR;
       }
 
       // Parse JSON back to data structure
@@ -186,7 +199,7 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
                       sDocumentPath +
                       "' with code " +
                       aStatusCode.intValue ());
-        return PhormCallResult.FAILED;
+        return PhormCallResult.RESPONSE_ERROR;
       }
 
       if (aResultList.containsAtLeastOneError ())
@@ -218,8 +231,9 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
     catch (final ExtendedHttpResponseException ex)
     {
+      // A response was received, but with an error status code
       LOGGER.error ("Phorm returned HTTP error for '" + sDocumentPath + "': " + ex.getMessage ());
-      return PhormCallResult.FAILED;
+      return PhormCallResult.RESPONSE_ERROR;
     }
     catch (final IOException ex)
     {
@@ -230,12 +244,13 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
                     " (" +
                     ex.getClass ().getName () +
                     ")");
-      return PhormCallResult.FAILED;
+      return PhormCallResult.SERVICE_UNAVAILABLE;
     }
     catch (final Exception ex)
     {
+      // We don't know whether the request or the response was at fault
       LOGGER.error ("Unexpected error calling Phorm for '" + sDocumentPath + "'", ex);
-      return PhormCallResult.FAILED;
+      return PhormCallResult.SERVICE_UNAVAILABLE;
     }
   }
 
@@ -252,7 +267,9 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
       // The document was not validated at all, so this is no rejection of the document itself.
       // Depending on the configured EVerificationFailMode this leads to a deferral, a rejection or
       // an acceptance
-      case FAILED -> VerificationOutcome.serviceUnavailable ("Phorm validation service call failed - see server log for details");
+      case REQUEST_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service call could not be sent - see server log for details");
+      case SERVICE_UNAVAILABLE -> VerificationOutcome.serviceUnavailable ("Phorm validation service is not available - see server log for details");
+      case RESPONSE_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service response could not be used - see server log for details");
       case COMPLETED ->
       {
         final MlsOutcome aMlsOutcome = PhiveToMlsMapper.toMlsOutcome (aCall.results (),
@@ -274,7 +291,8 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     return switch (aCall.state ())
     {
       case SKIPPED -> ESuccess.SUCCESS;
-      case FAILED -> ESuccess.FAILURE;
+      // Outbound verification has no fail mode yet - a verifier without a verdict stays fail closed
+      case REQUEST_ERROR, SERVICE_UNAVAILABLE, RESPONSE_ERROR -> ESuccess.FAILURE;
       case COMPLETED -> ESuccess.valueOf (aCall.results ().getOverallValidity ().isValid ());
     };
   }

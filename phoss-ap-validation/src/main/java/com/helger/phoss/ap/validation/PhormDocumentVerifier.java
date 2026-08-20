@@ -45,7 +45,6 @@ import com.helger.httpclient.HttpClientSettings;
 import com.helger.httpclient.response.ExtendedHttpResponseException;
 import com.helger.json.IJsonObject;
 import com.helger.json.serialize.JsonReader;
-import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.phive.api.result.ValidationResultList;
@@ -55,7 +54,7 @@ import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.MlsOutcome;
-import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
@@ -241,24 +240,27 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
   }
 
   /** {@inheritDoc} */
-  @Nullable
-  public MlsOutcome verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
-                                           @NonNull final IDocumentTypeIdentifier aDocTypeID,
-                                           @NonNull final IProcessIdentifier aProcessID)
+  @NonNull
+  public VerificationOutcome verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
+                                                    @NonNull final IDocumentTypeIdentifier aDocTypeID,
+                                                    @NonNull final IProcessIdentifier aProcessID)
   {
     final PhormCallResult aCall = _callPhorm (sDocumentPath);
     return switch (aCall.state ())
     {
-      case SKIPPED -> null;
+      case SKIPPED -> VerificationOutcome.passed ();
       // The document was not validated at all, so this is no rejection of the document itself.
       // Depending on the configured EVerificationFailMode this leads to a deferral, a rejection or
       // an acceptance
-      case FAILED -> MlsOutcome.serviceUnavailable ("Document verifier call failed",
-                                                    MlsOutcomeIssue.ofNA (EPeppolMLSStatusReasonCode.FAILURE_OF_DELIVERY,
-                                                                          "Phorm validation service call failed - see server log for details"));
-      case COMPLETED -> PhiveToMlsMapper.toMlsOutcome (aCall.results (),
-                                                       CPhossAP.DEFAULT_LOCALE,
-                                                       "Document validation failed");
+      case FAILED -> VerificationOutcome.serviceUnavailable ("Phorm validation service call failed - see server log for details");
+      case COMPLETED ->
+      {
+        final MlsOutcome aMlsOutcome = PhiveToMlsMapper.toMlsOutcome (aCall.results (),
+                                                                      CPhossAP.DEFAULT_LOCALE,
+                                                                      "Document validation failed");
+        yield aMlsOutcome.getResponseCode ().isFailure () ? VerificationOutcome.rejected (aMlsOutcome)
+                                                          : VerificationOutcome.passed ();
+      }
     };
   }
 

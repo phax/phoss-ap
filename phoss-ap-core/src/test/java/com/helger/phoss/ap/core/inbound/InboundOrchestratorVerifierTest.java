@@ -18,7 +18,6 @@ package com.helger.phoss.ap.core.inbound;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -26,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 import com.helger.annotation.Nonempty;
@@ -34,10 +32,9 @@ import com.helger.collection.commons.CommonsArrayList;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
-import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
-import com.helger.phoss.ap.api.exception.InboundVerifierUnavailableException;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.core.inbound.InboundOrchestrator.VerifierResult;
 
@@ -58,24 +55,30 @@ public final class InboundOrchestratorVerifierTest
    */
   private static final class MockVerifier implements IInboundDocumentVerifierSPI
   {
-    private final MlsOutcome m_aOutcome;
-    private final InboundVerifierUnavailableException m_aEx;
+    private final String m_sName;
+    private final VerificationOutcome m_aOutcome;
     private boolean m_bCalled = false;
 
-    MockVerifier (@Nullable final MlsOutcome aOutcome, @Nullable final InboundVerifierUnavailableException aEx)
+    MockVerifier (@NonNull @Nonempty final String sName, @NonNull final VerificationOutcome aOutcome)
     {
+      m_sName = sName;
       m_aOutcome = aOutcome;
-      m_aEx = aEx;
     }
 
-    @Nullable
-    public MlsOutcome verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
-                                             @NonNull final IDocumentTypeIdentifier aDocTypeID,
-                                             @NonNull final IProcessIdentifier aProcessID) throws InboundVerifierUnavailableException
+    @Override
+    @NonNull
+    @Nonempty
+    public String getVerifierName ()
+    {
+      return m_sName;
+    }
+
+    @NonNull
+    public VerificationOutcome verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
+                                                      @NonNull final IDocumentTypeIdentifier aDocTypeID,
+                                                      @NonNull final IProcessIdentifier aProcessID)
     {
       m_bCalled = true;
-      if (m_aEx != null)
-        throw m_aEx;
       return m_aOutcome;
     }
   }
@@ -89,82 +92,77 @@ public final class InboundOrchestratorVerifierTest
   @Test
   public void testAllAccepting ()
   {
-    final VerifierResult aVR = _run (new CommonsArrayList <> (new MockVerifier (null, null),
-                                                              new MockVerifier (MlsOutcome.acceptance (), null)));
-    assertSame (EVerificationOutcomeCategory.PASSED, aVR.category ());
-    assertNull (aVR.outcome ());
+    final VerifierResult aVR = _run (new CommonsArrayList <> (new MockVerifier ("V1", VerificationOutcome.passed ()),
+                                                              new MockVerifier ("V2", VerificationOutcome.passed ())));
+    assertTrue (aVR.outcome ().isPassed ());
+    assertNull (aVR.outcome ().getMlsOutcome ());
     assertNull (aVR.verifierName ());
+  }
+
+  @Test
+  public void testDefaultVerifierName ()
+  {
+    // The default name of a verifier is its local class name
+    final IInboundDocumentVerifierSPI aVerifier = (sDocumentPath, aDocTypeID, aProcessID) -> VerificationOutcome
+                                                                                                                .serviceUnavailable ("down");
+    final VerifierResult aVR = InboundOrchestrator.runInboundVerifiers (LOG_PREFIX,
+                                                                        new CommonsArrayList <> (aVerifier),
+                                                                        DOC_PATH,
+                                                                        DOCTYPE_ID,
+                                                                        PROCESS_ID);
+    assertTrue (aVR.outcome ().isServiceUnavailable ());
+    assertTrue (aVR.verifierName ().contains ("InboundOrchestratorVerifierTest"));
   }
 
   @Test
   public void testRejectionWins ()
   {
     // The rejection of the second verifier must win over the unavailability of the first one
-    final MlsOutcome aRejection = MlsOutcome.rejection ("Malware found",
-                                                        MlsOutcomeIssue.businessRuleViolation ("NA", "Virus found"));
-    final MockVerifier aUnavailable = new MockVerifier (MlsOutcome.serviceUnavailable ("Scanner down",
-                                                                                        MlsOutcomeIssue.failureOfDelivery ("Connection refused")),
-                                                         null);
-    final MockVerifier aRejecting = new MockVerifier (aRejection, null);
+    final MlsOutcome aMls = MlsOutcome.rejection ("Malware found",
+                                                  MlsOutcomeIssue.businessRuleViolation ("NA", "Virus found"));
+    final MockVerifier aUnavailable = new MockVerifier ("Scanner",
+                                                        VerificationOutcome.serviceUnavailable ("Connection refused"));
+    final MockVerifier aRejecting = new MockVerifier ("Validator", VerificationOutcome.rejected (aMls));
     final VerifierResult aVR = _run (new CommonsArrayList <> (aUnavailable, aRejecting));
-    assertSame (EVerificationOutcomeCategory.REJECTION, aVR.category ());
-    assertSame (aRejection, aVR.outcome ());
-    assertEquals ("InboundOrchestratorVerifierTest$MockVerifier", aVR.verifierName ());
+    assertTrue (aVR.outcome ().isRejected ());
+    assertSame (aMls, aVR.outcome ().getMlsOutcome ());
+    assertEquals ("Validator", aVR.verifierName ());
   }
 
   @Test
   public void testRejectionStopsEvaluation ()
   {
-    final MockVerifier aRejecting = new MockVerifier (MlsOutcome.rejection ("Invalid",
-                                                                            MlsOutcomeIssue.businessRuleViolation ("NA",
-                                                                                                                   "Invalid document")),
-                                                       null);
-    final MockVerifier aNeverCalled = new MockVerifier (null, null);
+    final MockVerifier aRejecting = new MockVerifier ("Validator", VerificationOutcome.rejected ("Invalid document"));
+    final MockVerifier aNeverCalled = new MockVerifier ("Scanner", VerificationOutcome.passed ());
     final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting, aNeverCalled));
-    assertSame (EVerificationOutcomeCategory.REJECTION, aVR.category ());
+    assertTrue (aVR.outcome ().isRejected ());
+    // No MLS details were provided - they are created by the orchestrator on demand
+    assertNull (aVR.outcome ().getMlsOutcome ());
+    assertEquals ("Invalid document", aVR.outcome ().getMessage ());
     assertFalse (aNeverCalled.m_bCalled);
   }
 
   @Test
-  public void testUnavailableViaOutcome ()
+  public void testUnavailableKeepsEvaluating ()
   {
-    final MlsOutcome aUnavailable = MlsOutcome.serviceUnavailable ("Scanner down",
-                                                                   MlsOutcomeIssue.failureOfDelivery ("Connection refused"));
-    final MockVerifier aVerifier1 = new MockVerifier (aUnavailable, null);
-    // The remaining verifiers must still be evaluated
-    final MockVerifier aVerifier2 = new MockVerifier (null, null);
+    final MockVerifier aVerifier1 = new MockVerifier ("Scanner",
+                                                      VerificationOutcome.serviceUnavailable ("Connection refused"));
+    final MockVerifier aVerifier2 = new MockVerifier ("Validator", VerificationOutcome.passed ());
     final VerifierResult aVR = _run (new CommonsArrayList <> (aVerifier1, aVerifier2));
-    assertSame (EVerificationOutcomeCategory.SERVICE_UNAVAILABLE, aVR.category ());
-    assertSame (aUnavailable, aVR.outcome ());
-    assertEquals ("InboundOrchestratorVerifierTest$MockVerifier", aVR.verifierName ());
+    assertTrue (aVR.outcome ().isServiceUnavailable ());
+    assertEquals ("Connection refused", aVR.outcome ().getMessage ());
+    assertEquals ("Scanner", aVR.verifierName ());
+    // The remaining verifiers must still be evaluated
     assertTrue (aVerifier2.m_bCalled);
-  }
-
-  @Test
-  public void testUnavailableViaException ()
-  {
-    final MockVerifier aVerifier = new MockVerifier (null,
-                                                     new InboundVerifierUnavailableException ("VirusScanVerifier",
-                                                                                              "ICAP connection refused"));
-    final VerifierResult aVR = _run (new CommonsArrayList <> (aVerifier));
-    assertSame (EVerificationOutcomeCategory.SERVICE_UNAVAILABLE, aVR.category ());
-    assertEquals ("VirusScanVerifier", aVR.verifierName ());
-    // A synthetic outcome must be present, so that the fail modes "closed" and "deferred" have
-    // something to send as MLS
-    assertNotNull (aVR.outcome ());
-    assertSame (EVerificationOutcomeCategory.SERVICE_UNAVAILABLE, aVR.outcome ().getCategory ());
-    assertEquals (1, aVR.outcome ().getIssues ().size ());
   }
 
   @Test
   public void testFirstUnavailableWins ()
   {
-    final MockVerifier aVerifier1 = new MockVerifier (null,
-                                                      new InboundVerifierUnavailableException ("First", "down"));
-    final MockVerifier aVerifier2 = new MockVerifier (null,
-                                                      new InboundVerifierUnavailableException ("Second", "down"));
+    final MockVerifier aVerifier1 = new MockVerifier ("First", VerificationOutcome.serviceUnavailable ("down"));
+    final MockVerifier aVerifier2 = new MockVerifier ("Second", VerificationOutcome.serviceUnavailable ("down"));
     final VerifierResult aVR = _run (new CommonsArrayList <> (aVerifier1, aVerifier2));
-    assertSame (EVerificationOutcomeCategory.SERVICE_UNAVAILABLE, aVR.category ());
+    assertTrue (aVR.outcome ().isServiceUnavailable ());
     assertEquals ("First", aVR.verifierName ());
   }
 }

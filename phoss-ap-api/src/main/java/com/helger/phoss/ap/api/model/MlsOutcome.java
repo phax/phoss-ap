@@ -32,7 +32,6 @@ import com.helger.collection.commons.ICommonsOrderedMap;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSLineResponseBuilder;
-import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
  * Immutable DTO that captures the outcome of inbound document processing, used to drive MLS
@@ -62,7 +61,6 @@ public final class MlsOutcome
 {
   private final EPeppolMLSResponseCode m_eResponseCode;
   private final String m_sResponseText;
-  private final EVerificationOutcomeCategory m_eCategory;
   private final ICommonsOrderedMap <String, ICommonsList <MlsOutcomeIssue>> m_aIssues = new CommonsLinkedHashMap <> ();
 
   /**
@@ -80,37 +78,9 @@ public final class MlsOutcome
                      @Nullable final String sResponseText,
                      @Nullable final Iterable <? extends MlsOutcomeIssue> aIssues)
   {
-    this (eResponseCode,
-          sResponseText,
-          aIssues,
-          eResponseCode.isFailure () ? EVerificationOutcomeCategory.REJECTION
-                                     : EVerificationOutcomeCategory.PASSED);
-  }
-
-  /**
-   * Full constructor with an explicit verification outcome category.
-   *
-   * @param eResponseCode
-   *        The overall MLS response code. May not be <code>null</code>.
-   * @param sResponseText
-   *        Optional human-readable response text. May be <code>null</code>.
-   * @param aIssues
-   *        Optional list of issues. May be <code>null</code> or empty for non-rejection responses.
-   *        For rejection responses at least one issue is required.
-   * @param eCategory
-   *        The verification outcome category. May not be <code>null</code>.
-   * @since 0.12.0
-   */
-  public MlsOutcome (@NonNull final EPeppolMLSResponseCode eResponseCode,
-                     @Nullable final String sResponseText,
-                     @Nullable final Iterable <? extends MlsOutcomeIssue> aIssues,
-                     @NonNull final EVerificationOutcomeCategory eCategory)
-  {
     ValueEnforcer.notNull (eResponseCode, "ResponseCode");
-    ValueEnforcer.notNull (eCategory, "Category");
     m_eResponseCode = eResponseCode;
     m_sResponseText = sResponseText;
-    m_eCategory = eCategory;
     // Group by error field
     if (aIssues != null)
       for (final var aIssue : aIssues)
@@ -143,28 +113,6 @@ public final class MlsOutcome
   public String getResponseText ()
   {
     return m_sResponseText;
-  }
-
-  /**
-   * @return The verification outcome category. Never <code>null</code>. For outcomes that were not
-   *         created via {@link #serviceUnavailable(String, MlsOutcomeIssue)} this is derived from
-   *         the response code.
-   * @since 0.12.0
-   */
-  @NonNull
-  public EVerificationOutcomeCategory getCategory ()
-  {
-    return m_eCategory;
-  }
-
-  /**
-   * @return <code>true</code> if this outcome indicates that the verifier backend service was
-   *         unavailable and the document was therefore not verified at all.
-   * @since 0.12.0
-   */
-  public boolean isServiceUnavailable ()
-  {
-    return m_eCategory == EVerificationOutcomeCategory.SERVICE_UNAVAILABLE;
   }
 
   /**
@@ -286,55 +234,5 @@ public final class MlsOutcome
   {
     ValueEnforcer.notEmpty (aIssues, "Issues");
     return new MlsOutcome (EPeppolMLSResponseCode.REJECTION, sResponseText, aIssues);
-  }
-
-  /**
-   * Create an outcome stating that the verifier backend service was unavailable, so that the
-   * document could not be verified at all. Depending on the configured
-   * {@link com.helger.phoss.ap.api.codelist.EVerificationFailMode} this leads to a deferred
-   * re-verification, to a rejection or to an acceptance. If it ends up as a rejection, the provided
-   * issues are used for the MLS response.
-   *
-   * @param sResponseText
-   *        Human-readable response text. May be <code>null</code>.
-   * @param aIssue
-   *        The issue to be used, if this outcome ends up as a rejection. May not be
-   *        <code>null</code>.
-   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}
-   *         and category {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE}.
-   * @since 0.12.0
-   */
-  @NonNull
-  public static MlsOutcome serviceUnavailable (@Nullable final String sResponseText,
-                                               @NonNull final MlsOutcomeIssue aIssue)
-  {
-    return serviceUnavailable (sResponseText, new CommonsArrayList <> (aIssue));
-  }
-
-  /**
-   * Create an outcome stating that the verifier backend service was unavailable, so that the
-   * document could not be verified at all. Depending on the configured
-   * {@link com.helger.phoss.ap.api.codelist.EVerificationFailMode} this leads to a deferred
-   * re-verification, to a rejection or to an acceptance. If it ends up as a rejection, the provided
-   * issues are used for the MLS response.
-   *
-   * @param sResponseText
-   *        Human-readable response text. May be <code>null</code>.
-   * @param aIssues
-   *        The issues to be used, if this outcome ends up as a rejection. May neither be
-   *        <code>null</code> nor empty.
-   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}
-   *         and category {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE}.
-   * @since 0.12.0
-   */
-  @NonNull
-  public static MlsOutcome serviceUnavailable (@Nullable final String sResponseText,
-                                               @NonNull @Nonempty final List <MlsOutcomeIssue> aIssues)
-  {
-    ValueEnforcer.notEmpty (aIssues, "Issues");
-    return new MlsOutcome (EPeppolMLSResponseCode.REJECTION,
-                           sResponseText,
-                           aIssues,
-                           EVerificationOutcomeCategory.SERVICE_UNAVAILABLE);
   }
 }

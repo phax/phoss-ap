@@ -33,6 +33,8 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSLineResponseBuilder;
 
+import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
+
 /**
  * Immutable DTO that captures the outcome of inbound document processing, used to drive MLS
  * response creation. Carries the overall response code, an optional human-readable response text,
@@ -61,6 +63,7 @@ public final class MlsOutcome
 {
   private final EPeppolMLSResponseCode m_eResponseCode;
   private final String m_sResponseText;
+  private final EVerificationOutcomeCategory m_eCategory;
   private final ICommonsOrderedMap <String, ICommonsList <MlsOutcomeIssue>> m_aIssues = new CommonsLinkedHashMap <> ();
 
   /**
@@ -78,9 +81,37 @@ public final class MlsOutcome
                      @Nullable final String sResponseText,
                      @Nullable final Iterable <? extends MlsOutcomeIssue> aIssues)
   {
+    this (eResponseCode,
+          sResponseText,
+          aIssues,
+          eResponseCode.isFailure () ? EVerificationOutcomeCategory.REJECTION
+                                     : EVerificationOutcomeCategory.PASSED);
+  }
+
+  /**
+   * Full constructor with explicit category.
+   *
+   * @param eResponseCode
+   *        The overall MLS response code. May not be <code>null</code>.
+   * @param sResponseText
+   *        Optional human-readable response text. May be <code>null</code>.
+   * @param aIssues
+   *        Optional list of issues. May be <code>null</code> or empty for non-rejection responses.
+   *        For rejection responses at least one issue is required.
+   * @param eCategory
+   *        The verification outcome category. May not be <code>null</code>.
+   * @since 0.11.1
+   */
+  public MlsOutcome (@NonNull final EPeppolMLSResponseCode eResponseCode,
+                     @Nullable final String sResponseText,
+                     @Nullable final Iterable <? extends MlsOutcomeIssue> aIssues,
+                     @NonNull final EVerificationOutcomeCategory eCategory)
+  {
     ValueEnforcer.notNull (eResponseCode, "ResponseCode");
+    ValueEnforcer.notNull (eCategory, "Category");
     m_eResponseCode = eResponseCode;
     m_sResponseText = sResponseText;
+    m_eCategory = eCategory;
     // Group by error field
     if (aIssues != null)
       for (final var aIssue : aIssues)
@@ -205,6 +236,16 @@ public final class MlsOutcome
   }
 
   /**
+   * @return The verification outcome category. Never <code>null</code>.
+   * @since 0.11.1
+   */
+  @NonNull
+  public EVerificationOutcomeCategory getCategory ()
+  {
+    return m_eCategory;
+  }
+
+  /**
    * Create a rejection outcome (response code RE) with a single issue.
    *
    * @param sResponseText
@@ -234,5 +275,47 @@ public final class MlsOutcome
   {
     ValueEnforcer.notEmpty (aIssues, "Issues");
     return new MlsOutcome (EPeppolMLSResponseCode.REJECTION, sResponseText, aIssues);
+  }
+
+  /**
+   * Create a service unavailable outcome (response code RE) for verifier backend infrastructure
+   * outages.
+   *
+   * @param sResponseText
+   *        Human-readable response text. May be <code>null</code>.
+   * @param aIssue
+   *        The rejection issue. May not be <code>null</code>.
+   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}
+   *         and category {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE}.
+   * @since 0.11.1
+   */
+  @NonNull
+  public static MlsOutcome serviceUnavailable (@Nullable final String sResponseText,
+                                               @NonNull final MlsOutcomeIssue aIssue)
+  {
+    return serviceUnavailable (sResponseText, new CommonsArrayList <> (aIssue));
+  }
+
+  /**
+   * Create a service unavailable outcome (response code RE) for verifier backend infrastructure
+   * outages.
+   *
+   * @param sResponseText
+   *        Human-readable response text. May be <code>null</code>.
+   * @param aIssues
+   *        The rejection issues. May not be <code>null</code> or empty.
+   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#REJECTION}
+   *         and category {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE}.
+   * @since 0.11.1
+   */
+  @NonNull
+  public static MlsOutcome serviceUnavailable (@Nullable final String sResponseText,
+                                               @NonNull @Nonempty final List <MlsOutcomeIssue> aIssues)
+  {
+    ValueEnforcer.notEmpty (aIssues, "Issues");
+    return new MlsOutcome (EPeppolMLSResponseCode.REJECTION,
+                           sResponseText,
+                           aIssues,
+                           EVerificationOutcomeCategory.SERVICE_UNAVAILABLE);
   }
 }

@@ -661,6 +661,18 @@ public final class APCoreConfig
   }
 
   /**
+   * @return The system-wide verifier failure handling mode (e.g. <code>"closed"</code>,
+   *         <code>"open"</code>, <code>"deferred"</code>). Never <code>null</code>.
+   * @since 0.11.1
+   */
+  @NonNull
+  public static String getVerificationVerifierFailMode ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.VERIFICATION_VERIFIER_FAIL_MODE,
+                                      APConfigurationProperties.VERIFICATION_VERIFIER_FAIL_MODE_DEFAULT);
+  }
+
+  /**
    * @return {@code true} if MLS sending is globally enabled. Defaults to {@code true}.
    * @since v0.1.2
    */

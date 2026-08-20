@@ -151,6 +151,35 @@ public class OperationsController
     final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
     final IInboundTransaction aFinalTx = aUpdatedTx != null ? aUpdatedTx : aTx;
 
+  if (eSuccess.isSuccess ())
+      return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aFinalTx));
+    return ResponseEntity.internalServerError ().body (InboundTransactionResponse.fromDomain (aFinalTx));
+  }
+
+  /**
+   * Re-verify against all registered SPI verifiers and forward an inbound transaction.
+   *
+   * @param sbdhInstanceID
+   *        The SBDH Instance ID of the transaction to re-verify and forward.
+   * @return 200 on success, 404 if not found, 500 on failure.
+   * @since 0.11.1
+   */
+  @PostMapping ("/inbound/{sbdhInstanceID}/reverify-and-forward")
+  @Operation (summary = "Re-verify and forward an inbound transaction",
+              description = "Re-evaluates all registered SPI verifiers against the stored payload before forwarding.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction re-verification and forwarding initiated"),
+                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content) })
+  public ResponseEntity <InboundTransactionResponse> reverifyAndForwardInbound (@Parameter (description = "SBDH Instance ID", required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+    if (aTx == null)
+      return ResponseEntity.notFound ().build ();
+
+    final ESuccess eSuccess = InboundOrchestrator.reverifyAndForwardInboundDocument ("API ReverifyAndForward: ", aTx);
+    final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+    final IInboundTransaction aFinalTx = aUpdatedTx != null ? aUpdatedTx : aTx;
+
     if (eSuccess.isSuccess ())
       return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aFinalTx));
     return ResponseEntity.internalServerError ().body (InboundTransactionResponse.fromDomain (aFinalTx));

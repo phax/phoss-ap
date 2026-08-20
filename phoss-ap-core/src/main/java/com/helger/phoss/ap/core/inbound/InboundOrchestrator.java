@@ -44,6 +44,7 @@ import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.CIdentifier;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
+import com.helger.peppolid.factory.IIdentifierFactory;
 import com.helger.peppolid.peppol.PeppolIdentifierHelper;
 import com.helger.peppolid.peppol.spis.SPIDHelper;
 import com.helger.phoss.ap.api.CPhossAP;
@@ -51,6 +52,8 @@ import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
+import com.helger.phoss.ap.api.exception.InboundVerifierDeferredException;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
@@ -400,39 +403,95 @@ public final class InboundOrchestrator
                                                            .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
                                                                           sSbdhInstanceID))
           {
-            // Call callbacks
-            for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
+            try
             {
-              final MlsOutcome aVerifierOutcome = aVerifier.verifyInboundDocument (sDocumentPath,
-                                                                                   aDocTypeID,
-                                                                                   aProcessID);
-              if (aVerifierOutcome != null && aVerifierOutcome.getResponseCode ().isFailure ())
+              // Call registered SPI verifiers
+              for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
               {
-                aVerifySpan.setStatusError ("Inbound verification failed");
-                LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
-                aInboundMgr.updateStatus (sTxID, EInboundStatus.REJECTED);
-
-                // Dop't send MLS as response to MLR or MLS
-                if (!CPhossAP.isMLR (aDocTypeID, aProcessID) && !CPhossAP.isMLS (aDocTypeID, aProcessID))
+                final MlsOutcome aVerifierOutcome = aVerifier.verifyInboundDocument (sDocumentPath,
+                                                                                     aDocTypeID,
+                                                                                     aProcessID);
+                if (aVerifierOutcome != null && aVerifierOutcome.getResponseCode ().isFailure ())
                 {
-                  // Send asynchronously
-                  PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-                    // Send negative MLS (RE) back to C2 with the verifier's detailed outcome
-                    MlsHandler.triggerSendingInboundResultMls (aInboundTx, aVerifierOutcome);
-                  });
+                  final String sOutcomeText = aVerifierOutcome.getResponseText ();
+
+                  // Check if verifier service is unavailable under deferred fail-mode
+                  if (aVerifierOutcome.getCategory () == EVerificationOutcomeCategory.SERVICE_UNAVAILABLE &&
+                      "deferred".equalsIgnoreCase (APCoreConfig.getVerificationVerifierFailMode ()))
+                  {
+                    aVerifySpan.setStatusError ("Inbound verification service unavailable (deferred)");
+                    LOGGER.warn (sLogPrefix +
+                                 "Inbound verifier service unavailable for '" +
+                                 sSbdhInstanceID +
+                                 "' (deferred for retry)");
+
+                    // Queue for automatic retry with backoff schedule (do NOT send immediate MLS rejection)
+                    final var aNextRetry = BackoffCalculator.calculateNextRetry (1,
+                                                                                APCoreConfig.getRetryForwardingInitialBackoff (),
+                                                                                APCoreConfig.getRetryForwardingBackoffMultiplier (),
+                                                                                APCoreConfig.getRetryForwardingMaxBackoff ());
+                    aInboundMgr.updateStatusAndRetry (sTxID,
+                                                      EInboundStatus.FORWARD_FAILED,
+                                                      1,
+                                                      aNextRetry,
+                                                      "VERIFIER_UNAVAILABLE: " + sOutcomeText);
+                    return aProcessingErrors;
+                  }
+
+                  // Hard rejection (invalid business rules, malware) or fail-closed mode
+                  aVerifySpan.setStatusError ("Inbound verification failed");
+                  LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "'");
+                  aInboundMgr.updateStatusAndRetry (sTxID,
+                                                    EInboundStatus.REJECTED,
+                                                    0,
+                                                    null,
+                                                    "VERIFICATION_REJECTED: " + sOutcomeText);
+
+                  // Don't send MLS as response to MLR or MLS
+                  if (!CPhossAP.isMLR (aDocTypeID, aProcessID) && !CPhossAP.isMLS (aDocTypeID, aProcessID))
+                  {
+                    // Send negative MLS (RE) back to C2 asynchronously
+                    PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                      MlsHandler.triggerSendingInboundResultMls (aInboundTx, aVerifierOutcome);
+                    });
+                  }
+
+                  // Notify lifecycle listeners of rejection
+                  for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                    aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
+
+                  return aProcessingErrors;
                 }
-
-                // No processing error - MLS
-
-                for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-                  aHandler.onInboundVerificationRejection (sTxID, sSbdhInstanceID, "Inbound verification failed");
-                return aProcessingErrors;
               }
-            }
 
-            // All verifiers accepted
-            for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-              aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
+              // All verifiers accepted
+              for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
+                aHandler.onInboundVerificationAccepted (sTxID, sSbdhInstanceID);
+            }
+            catch (final InboundVerifierDeferredException ex)
+            {
+              // Catch SPI verifiers that explicitly throw InboundVerifierDeferredException
+              aVerifySpan.setStatusError ("Inbound verification deferred: " + ex.getMessage ());
+              LOGGER.warn (sLogPrefix +
+                           "Inbound document verification deferred for '" +
+                           sSbdhInstanceID +
+                           "': " +
+                           ex.getMessage ());
+
+              final var aNextRetry = BackoffCalculator.calculateNextRetry (1,
+                                                                          APCoreConfig.getRetryForwardingInitialBackoff (),
+                                                                          APCoreConfig.getRetryForwardingBackoffMultiplier (),
+                                                                          APCoreConfig.getRetryForwardingMaxBackoff ());
+              aInboundMgr.updateStatusAndRetry (sTxID,
+                                                EInboundStatus.FORWARD_FAILED,
+                                                1,
+                                                aNextRetry,
+                                                "VERIFIER_UNAVAILABLE [" +
+                                                            ex.getVerifierName () +
+                                                            "]: " +
+                                                            ex.getMessage ());
+              return aProcessingErrors;
+            }
           }
         }
 
@@ -796,5 +855,109 @@ public final class InboundOrchestrator
     }
 
     return bForwardSuccess ? ESuccess.SUCCESS : ESuccess.FAILURE;
+  }
+
+  /**
+   * Re-verify an inbound document against all SPI verifiers before attempting forwarding to C4.
+   *
+   * @param sLogPrefix
+   *        Log message prefix for traceability. May not be <code>null</code>.
+   * @param aInboundTx
+   *        The inbound transaction to re-verify and forward. May not be <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if re-verification and forwarding succeeded,
+   *         {@link ESuccess#FAILURE} otherwise.
+   * @since 0.11.1
+   */
+  @NonNull
+  public static ESuccess reverifyAndForwardInboundDocument (@NonNull final String sLogPrefix,
+                                                            @NonNull final IInboundTransaction aInboundTx)
+  {
+    if (APCoreConfig.isVerificationInboundEnabled ())
+    {
+      final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+      final String sTxID = aInboundTx.getID ();
+      final String sSbdhInstanceID = aInboundTx.getSbdhInstanceID ();
+      final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
+      final IDocumentTypeIdentifier aDocTypeID = aIF.createDocumentTypeIdentifierWithDefaultScheme (aInboundTx.getDocTypeID ());
+      final IProcessIdentifier aProcessID = aIF.createProcessIdentifierWithDefaultScheme (aInboundTx.getProcessID ());
+      final String sDocumentPath = aInboundTx.getDocumentPath ();
+      final int nNewAttemptCount = aInboundTx.getAttemptCount () + 1;
+
+      try
+      {
+        // Re-evaluate all registered SPI verifiers
+        for (final IInboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllInboundVerifiers ())
+        {
+          final MlsOutcome aVerifierOutcome = aVerifier.verifyInboundDocument (sDocumentPath,
+                                                                               aDocTypeID,
+                                                                               aProcessID);
+          if (aVerifierOutcome != null && aVerifierOutcome.getResponseCode ().isFailure ())
+          {
+            final String sOutcomeText = aVerifierOutcome.getResponseText ();
+
+            // Check if verifier service is unavailable under deferred fail-mode
+            if (aVerifierOutcome.getCategory () == EVerificationOutcomeCategory.SERVICE_UNAVAILABLE &&
+                "deferred".equalsIgnoreCase (APCoreConfig.getVerificationVerifierFailMode ()))
+            {
+              LOGGER.warn (sLogPrefix +
+                           "Re-verification service unavailable for '" +
+                           sSbdhInstanceID +
+                           "' (deferred for retry)");
+
+              // Re-schedule for next retry interval
+              final var aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
+                                                                          APCoreConfig.getRetryForwardingInitialBackoff (),
+                                                                          APCoreConfig.getRetryForwardingBackoffMultiplier (),
+                                                                          APCoreConfig.getRetryForwardingMaxBackoff ());
+              aTxMgr.updateStatusAndRetry (sTxID,
+                                           EInboundStatus.FORWARD_FAILED,
+                                           nNewAttemptCount,
+                                           aNextRetry,
+                                           "VERIFIER_UNAVAILABLE: " + sOutcomeText);
+              return ESuccess.FAILURE;
+            }
+
+            // Hard rejection (invalid business rules, malware) or fail-closed mode
+            LOGGER.warn (sLogPrefix + "Re-verification failed for '" + sSbdhInstanceID + "'");
+            aTxMgr.updateStatusAndRetry (sTxID,
+                                         EInboundStatus.REJECTED,
+                                         nNewAttemptCount,
+                                         null,
+                                         "VERIFICATION_REJECTED: " + sOutcomeText);
+            if (!CPhossAP.isMLR (aDocTypeID, aProcessID) && !CPhossAP.isMLS (aDocTypeID, aProcessID))
+            {
+              // Send negative MLS (RE) back to C2 asynchronously
+              PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aVerifierOutcome);
+              });
+            }
+            return ESuccess.FAILURE;
+          }
+        }
+      }
+      catch (final InboundVerifierDeferredException ex)
+      {
+        // Catch SPI verifiers that explicitly throw InboundVerifierDeferredException
+        LOGGER.warn (sLogPrefix +
+                     "Re-verification deferred for '" +
+                     sSbdhInstanceID +
+                     "': " +
+                     ex.getMessage ());
+
+        final var aNextRetry = BackoffCalculator.calculateNextRetry (nNewAttemptCount,
+                                                                    APCoreConfig.getRetryForwardingInitialBackoff (),
+                                                                    APCoreConfig.getRetryForwardingBackoffMultiplier (),
+                                                                    APCoreConfig.getRetryForwardingMaxBackoff ());
+        aTxMgr.updateStatusAndRetry (sTxID,
+                                     EInboundStatus.FORWARD_FAILED,
+                                     nNewAttemptCount,
+                                     aNextRetry,
+                                     "VERIFIER_UNAVAILABLE [" + ex.getVerifierName () + "]: " + ex.getMessage ());
+        return ESuccess.FAILURE;
+      }
+    }
+
+    // Forward document to C4 if all verifiers passed
+    return forwardDocument (sLogPrefix, aInboundTx);
   }
 }

@@ -298,6 +298,8 @@ public final class APConfigurationProperties
   public static final boolean VERIFICATION_OUTBOUND_ENABLED_DEFAULT = false;
   public static final String VERIFICATION_INBOUND_ENABLED = "verification.inbound.enabled";
   public static final boolean VERIFICATION_INBOUND_ENABLED_DEFAULT = false;
+  public static final String VERIFICATION_VERIFIER_FAIL_MODE = "verification.verifier-fail-mode";
+  public static final String VERIFICATION_VERIFIER_FAIL_MODE_DEFAULT = "closed";
   public static final String VERIFICATION_PHORM_URL = "verification.phorm.url";
   public static final String VERIFICATION_PHORM_TOKEN = "verification.phorm.token";
 

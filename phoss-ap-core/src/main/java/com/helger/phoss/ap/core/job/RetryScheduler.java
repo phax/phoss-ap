@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.state.ESuccess;
+import com.helger.base.string.StringHelper;
 import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
@@ -140,8 +142,15 @@ public final class RetryScheduler
           for (final IInboundTransaction aInboundTx : aTransactions)
           {
             nProcessed++;
-            // Re-forward using the original InboundOrchestrator logic
-            if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+            final String sErrorDetails = aInboundTx.getErrorDetails ();
+            final boolean bWasDeferred = StringHelper.hasText (sErrorDetails) &&
+                                         sErrorDetails.startsWith ("VERIFIER_UNAVAILABLE");
+
+            final ESuccess eSuccess = bWasDeferred ? InboundOrchestrator.reverifyAndForwardInboundDocument (sLogPrefix,
+                                                                                                           aInboundTx)
+                                                   : InboundOrchestrator.forwardDocument (sLogPrefix,
+                                                                                          aInboundTx);
+            if (eSuccess.isFailure ())
             {
               for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
                 aHandler.onInboundForwardingError (aInboundTx.getID (), true);

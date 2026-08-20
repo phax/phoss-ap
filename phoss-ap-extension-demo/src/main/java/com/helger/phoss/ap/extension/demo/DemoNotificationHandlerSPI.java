@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.extension.demo;
 
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 
 import org.jspecify.annotations.NonNull;
@@ -76,6 +77,26 @@ public final class DemoNotificationHandlerSPI implements IAPNotificationHandlerS
                  sTransactionID +
                  ", sbdhInstanceID=" +
                  sSbdhInstanceID +
+                 ", errorDetails=" +
+                 sErrorDetails);
+  }
+
+  /** {@inheritDoc} */
+  public void onInboundVerificationDeferred (@NonNull final String sTransactionID,
+                                             @NonNull final String sSbdhInstanceID,
+                                             @NonNull final String sVerifierName,
+                                             @NonNull final OffsetDateTime aNextRetryDT,
+                                             @Nullable final String sErrorDetails)
+  {
+    LOGGER.info (PREFIX +
+                 "onInboundVerificationDeferred: transactionID=" +
+                 sTransactionID +
+                 ", sbdhInstanceID=" +
+                 sSbdhInstanceID +
+                 ", verifierName=" +
+                 sVerifierName +
+                 ", nextRetryDT=" +
+                 aNextRetryDT +
                  ", errorDetails=" +
                  sErrorDetails);
   }

@@ -405,6 +405,14 @@ public final class InboundOrchestrator
                                      EInboundStatus.VERIFICATION_DEFERRED,
                                      aNextRetry,
                                      sErrorDetails);
+
+    // Fired on every deferral - this is the signal that a verifier needs operator attention
+    for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+      aHandler.onInboundVerificationDeferred (aInboundTx.getID (),
+                                              aInboundTx.getSbdhInstanceID (),
+                                              aVR.verifierName (),
+                                              aNextRetry,
+                                              sErrorDetails);
   }
 
   /**

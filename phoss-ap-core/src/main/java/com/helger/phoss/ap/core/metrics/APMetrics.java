@@ -50,6 +50,9 @@ public final class APMetrics
   public static final ITelemetryCounter INBOUND_VERIFICATION_ACCEPTED = TelemetryMetrics.counter (CPhossAPOtel.METRIC_INBOUND_VERIFICATION_ACCEPTED,
                                                                                                   "Inbound documents that passed verification",
                                                                                                   "{document}");
+  public static final ITelemetryCounter INBOUND_VERIFICATION_DEFERRED = TelemetryMetrics.counter (CPhossAPOtel.METRIC_INBOUND_VERIFICATION_DEFERRED,
+                                                                                                 "Inbound documents whose verification was deferred, because a verifier made no verdict",
+                                                                                                 "{document}");
   public static final ITelemetryCounter INBOUND_VERIFICATION_REJECTIONS = TelemetryMetrics.counter (CPhossAPOtel.METRIC_INBOUND_VERIFICATION_REJECTIONS,
                                                                                                     "Inbound transactions rejected by verification",
                                                                                                     "{transaction}");

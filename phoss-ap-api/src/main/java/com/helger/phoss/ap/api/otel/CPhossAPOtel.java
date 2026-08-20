@@ -42,6 +42,8 @@ public final class CPhossAPOtel
 
   // === Failure-side counters ===
   public static final String METRIC_INBOUND_VERIFICATION_REJECTIONS = "phoss.ap.inbound.verification.rejections";
+  /** @since 0.12.0 */
+  public static final String METRIC_INBOUND_VERIFICATION_DEFERRED = "phoss.ap.inbound.verification.deferred";
   public static final String METRIC_OUTBOUND_VERIFICATION_REJECTIONS = "phoss.ap.outbound.verification.rejections";
   public static final String METRIC_INBOUND_RECEIVER_NOT_SERVICED = "phoss.ap.inbound.receiver.not_serviced";
   /** @since 0.10.0 */

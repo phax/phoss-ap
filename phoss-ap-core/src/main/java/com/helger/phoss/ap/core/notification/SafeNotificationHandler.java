@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.core.notification;
 
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 
 import org.jspecify.annotations.NonNull;
@@ -65,6 +66,27 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
     catch (final Exception ex)
     {
       LOGGER.error ("Internal error invoking onInboundVerificationRejection on " + m_aHdl, ex);
+    }
+  }
+
+  /** {@inheritDoc} */
+  public void onInboundVerificationDeferred (@NonNull final String sTransactionID,
+                                             @NonNull final String sSbdhInstanceID,
+                                             @NonNull final String sVerifierName,
+                                             @NonNull final OffsetDateTime aNextRetryDT,
+                                             @Nullable final String sErrorDetails)
+  {
+    try
+    {
+      m_aHdl.onInboundVerificationDeferred (sTransactionID,
+                                            sSbdhInstanceID,
+                                            sVerifierName,
+                                            aNextRetryDT,
+                                            sErrorDetails);
+    }
+    catch (final Exception ex)
+    {
+      LOGGER.error ("Internal error invoking onInboundVerificationDeferred on " + m_aHdl, ex);
     }
   }
 

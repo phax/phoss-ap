@@ -123,43 +123,56 @@ public final class RetryScheduler
     final var aInboundMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     int nProcessed = 0;
 
-    try
+    // Note: deliberately no "onRetrySchedulerCycle" callback - that SPI method only distinguishes
+    // inbound from outbound, and the re-verification is neither of the two existing cycles
+    try (final ITelemetrySpan aSpan = Telemetry.startSpan (CPhossAPOtel.SPAN_SCHEDULER_CYCLE,
+                                                           ETelemetrySpanKind.INTERNAL)
+                                               .setAttribute (CPhossAPOtel.ATTR_SCHEDULER_NAME, "reverify")
+                                               .setAttribute (CPhossAPOtel.ATTR_IS_OUTBOUND, false))
     {
-      final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForVerificationRetry (nBatchSize);
-
-      if (aTransactions.isNotEmpty ())
+      try
       {
-        LOGGER.info ("Re-verifying " + aTransactions.size () + " inbound transactions");
-        final String sLogPrefix = "[RetryVerification] ";
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForVerificationRetry (nBatchSize);
 
-        for (final IInboundTransaction aInboundTx : aTransactions)
+        if (aTransactions.isNotEmpty ())
         {
-          nProcessed++;
-          if (InboundOrchestrator.resumeDeferredInboundDocument (sLogPrefix, aInboundTx).isFailure ())
+          LOGGER.info ("Re-verifying " + aTransactions.size () + " inbound transactions");
+          final String sLogPrefix = "[RetryVerification] ";
+
+          for (final IInboundTransaction aInboundTx : aTransactions)
           {
-            // A still unavailable verifier is not a forwarding error, so the notification handlers
-            // are only called, if the document left the deferred state
-            final IInboundTransaction aUpdatedTx = aInboundMgr.getByID (aInboundTx.getID ());
-            if (aUpdatedTx != null && aUpdatedTx.getStatus () != EInboundStatus.VERIFICATION_DEFERRED)
-              for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-                aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            nProcessed++;
+            if (InboundOrchestrator.resumeDeferredInboundDocument (sLogPrefix, aInboundTx).isFailure ())
+            {
+              // A still unavailable verifier is not a forwarding error, so the notification
+              // handlers are only called, if the document left the deferred state
+              final IInboundTransaction aUpdatedTx = aInboundMgr.getByID (aInboundTx.getID ());
+              if (aUpdatedTx != null && aUpdatedTx.getStatus () != EInboundStatus.VERIFICATION_DEFERRED)
+                for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+                  aHandler.onInboundForwardingError (aInboundTx.getID (), true);
+            }
           }
         }
+        else
+        {
+          if (LOGGER.isDebugEnabled ())
+            LOGGER.debug ("Found no inbound transactions for re-verification");
+        }
       }
-      else
+      catch (final Exception ex)
       {
-        if (LOGGER.isDebugEnabled ())
-          LOGGER.debug ("Found no inbound transactions for re-verification");
-      }
-    }
-    catch (final Exception ex)
-    {
-      LOGGER.error ("Internal error in inbound re-verification cycle", ex);
+        LOGGER.error ("Internal error in inbound re-verification cycle", ex);
+        aSpan.recordException (ex).setStatusError (ex.getMessage ());
 
-      for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-        aHandler.onUnexpectedException ("RetryScheduler._retryDeferredVerification",
-                                        "Internal error in inbound re-verification cycle",
-                                        ex);
+        for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+          aHandler.onUnexpectedException ("RetryScheduler._retryDeferredVerification",
+                                          "Internal error in inbound re-verification cycle",
+                                          ex);
+      }
+      finally
+      {
+        aSpan.setAttribute (CPhossAPOtel.ATTR_SCHEDULER_ITEMS, nProcessed);
+      }
     }
   }
 

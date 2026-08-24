@@ -271,6 +271,16 @@ public final class InboundOrchestrator
     {
       final String sVerifierName = aVerifier.getVerifierName ();
       final VerificationOutcome aOutcome = aVerifier.verifyInboundDocument (sDocumentPath, aDocTypeID, aProcessID);
+      if (aOutcome == null)
+      {
+        // The SPI contract demands a non-null outcome, but it is not enforced at runtime - be
+        // resilient and treat it like a passed verification, as the old API did for "null"
+        LOGGER.warn (sLogPrefix +
+                     "The inbound document verifier '" +
+                     sVerifierName +
+                     "' returned no outcome - treating the document as verified");
+        continue;
+      }
 
       switch (aOutcome.getCategory ())
       {
@@ -375,8 +385,9 @@ public final class InboundOrchestrator
                                  "]: " +
                                  StringHelper.getNotNull (aVR.outcome ().getMessage (), "Verifier unavailable");
     final Duration aMaxDuration = APCoreConfig.getVerificationDeferredMaxDuration ();
+    final OffsetDateTime aDeadline = aInboundTx.getReceivedDT ().plus (aMaxDuration);
 
-    if (!aNow.isBefore (aInboundTx.getReceivedDT ().plus (aMaxDuration)))
+    if (!aNow.isBefore (aDeadline))
     {
       // Deferring forever is not an option - C2 needs a final answer
       final String sReason = "The document verifier '" +
@@ -391,7 +402,12 @@ public final class InboundOrchestrator
       return;
     }
 
-    final OffsetDateTime aNextRetry = aNow.plus (APCoreConfig.getVerificationDeferredRetryInterval ());
+    // Never schedule the next re-verification beyond the deadline, so that the rejection happens at
+    // the first scheduler cycle at or after it and not one full retry interval later
+    OffsetDateTime aNextRetry = aNow.plus (APCoreConfig.getVerificationDeferredRetryInterval ());
+    if (aNextRetry.isAfter (aDeadline))
+      aNextRetry = aDeadline;
+
     LOGGER.warn (sLogPrefix +
                  "Deferring the verification of inbound document '" +
                  aInboundTx.getSbdhInstanceID () +
@@ -642,6 +658,38 @@ public final class InboundOrchestrator
         });
       }
     }
+  }
+
+  /**
+   * Handle an inbound document that will never be forwarded to C4: send the MLS to C2 and call the
+   * notification handlers. The status of the transaction must already have been updated by the
+   * caller.
+   *
+   * @param aInboundTx
+   *        The affected inbound transaction. May not be <code>null</code>.
+   * @param sReason
+   *        The human readable reason, passed on to the notification handlers. May not be
+   *        <code>null</code>.
+   */
+  private static void _handlePermanentForwardingFailure (@NonNull final IInboundTransaction aInboundTx,
+                                                         @NonNull final String sReason)
+  {
+    // Don't send MLS as response to MLR or MLS
+    if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
+        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+    {
+      // Send asynchronously
+      PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+        // Deliberately "acknowledging" (AB) and not a rejection with the status reason code "FD".
+        // The PNP reserves "FD" for a permanent inability to deliver, and we still assume that this
+        // problem is resolvable later - so phoss AP never sends "FD"
+        MlsHandler.triggerSendingInboundResultMls (aInboundTx,
+                                                   MlsOutcome.acknowledging ("Forwarding to C4 failed for now"));
+      });
+    }
+
+    for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+      aHandler.onInboundPermanentForwardingFailure (aInboundTx.getID (), aInboundTx.getSbdhInstanceID (), sReason);
   }
 
   /**
@@ -950,8 +998,16 @@ public final class InboundOrchestrator
           final IDocumentForwarder aForwarder = APCoreMetaManager.getForwarder ();
           if (aForwarder == null)
           {
-            LOGGER.error (sLogPrefix + "Internal error - No document forwarder configured");
-            aTxMgr.updateStatus (aInboundTx.getID (), EInboundStatus.PERMANENTLY_FAILED);
+            final String sReason = "No document forwarder configured";
+            LOGGER.error (sLogPrefix + "Internal error - " + sReason);
+            // The attempt count is left unchanged, because no forwarding was attempted
+            aTxMgr.updateStatusAndRetry (aInboundTx.getID (),
+                                         EInboundStatus.PERMANENTLY_FAILED,
+                                         aInboundTx.getAttemptCount (),
+                                         null,
+                                         sReason);
+            // C2 must get an answer, even though this is a local configuration error
+            _handlePermanentForwardingFailure (aInboundTx, sReason);
             return ESuccess.FAILURE;
           }
 
@@ -1124,30 +1180,9 @@ public final class InboundOrchestrator
                                          null,
                                          sFailureReason);
 
-            // Don't send MLS as response to MLS
-            if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-                !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
-            {
-              // Send asynchronously
-              PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
-                // Send negative MLS (RE) with AB reason back to C2
-                // The PNP states, that "FD" can only be used in case of "permanent failure". We
-                // still expect that this error is a "temporary failure", so we are supposed to send
-                // "acknowledging" as we assume it will be resolved later
-                final MlsOutcome aOutcome = true ? MlsOutcome.acknowledging ("Forwarding to C4 failed for now")
-                                                 : MlsOutcome.rejection ("Forwarding to C4 failed",
-                                                                         MlsOutcomeIssue.failureOfDelivery ("Permanent inability to forward document to C4"));
-                MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
-              });
-            }
-
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            {
-              aHandler.onInboundPermanentForwardingFailure (aInboundTx.getID (),
-                                                            aInboundTx.getSbdhInstanceID (),
-                                                            aResult.isRetryAllowed () ? "Max retries exhausted"
-                                                                                      : "Retry disallowed by receiver");
-            }
+            _handlePermanentForwardingFailure (aInboundTx,
+                                               aResult.isRetryAllowed () ? "Max retries exhausted"
+                                                                         : "Retry disallowed by receiver");
           }
           else
           {
@@ -1162,6 +1197,28 @@ public final class InboundOrchestrator
                                          aNextRetry,
                                          aResult.getErrorDetails ());
           }
+        }
+        else
+        {
+          // The circuit breaker is open, so no forwarding was attempted at all. The transaction
+          // must nevertheless be scheduled for a retry - otherwise it would stay in its current
+          // status forever, because only "forward_failed" is picked up by the retry scheduler.
+          // No forwarding attempt row is created and the attempt count is left unchanged, because
+          // nothing was tried
+          final OffsetDateTime aNextRetry = aTimestampMgr.getCurrentDateTimeUTC ()
+                                                         .plus (APCoreConfig.getRetryForwardingInitialBackoff ());
+          LOGGER.warn (sLogPrefix +
+                       "The circuit breaker '" +
+                       sCircuitBreakerID +
+                       "' is open - not forwarding transaction '" +
+                       aInboundTx.getID () +
+                       "' now, retrying at " +
+                       aNextRetry);
+          aTxMgr.updateStatusAndRetry (aInboundTx.getID (),
+                                       EInboundStatus.FORWARD_FAILED,
+                                       aInboundTx.getAttemptCount (),
+                                       aNextRetry,
+                                       "The circuit breaker '" + sCircuitBreakerID + "' is open");
         }
       }
       catch (final RuntimeException ex)

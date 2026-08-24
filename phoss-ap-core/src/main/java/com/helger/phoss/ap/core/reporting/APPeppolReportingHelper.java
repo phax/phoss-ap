@@ -160,6 +160,16 @@ public final class APPeppolReportingHelper
       if (aTx == null)
         throw new IllegalArgumentException ("The provided transaction ID '" + sTransactionID + "' does not exist");
 
+      if (aTx.getReportingStatus () == EReportingStatus.REPORTED)
+      {
+        // A document that is forwarded a second time - e.g. via the replay API - must not be
+        // counted a second time in the Peppol Reporting
+        LOGGER.info ("Inbound transaction '" +
+                     sTransactionID +
+                     "' was already counted for Peppol Reporting - not counting it again");
+        return ESuccess.SUCCESS;
+      }
+
       if (StringHelper.isEmpty (aTx.getC4CountryCode ()))
         throw new IllegalStateException ("Inbound transaction '" + sTransactionID + "' has no C4 country code yet");
 

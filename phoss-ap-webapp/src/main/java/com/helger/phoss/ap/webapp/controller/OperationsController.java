@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.helger.base.state.ESuccess;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
+import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.api.dto.OutboundTransactionResponse;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
@@ -161,14 +163,18 @@ public class OperationsController
    *
    * @param sbdhInstanceID
    *        The SBDH Instance ID of the transaction to re-verify and forward.
-   * @return 200 on success, 404 if not found, 500 if the verification or the forwarding failed.
+   * @return 200 on success, 404 if not found, 409 if the transaction is not in status
+   *         <code>verification_deferred</code>, 500 if the verification or the forwarding failed.
    * @since 0.12.0
    */
   @PostMapping ("/inbound/{sbdhInstanceID}/reverify-and-forward")
   @Operation (summary = "Re-verify and forward an inbound transaction",
-              description = "Re-evaluates all registered inbound document verifiers against the stored payload and forwards the document, if they all accept it. This is the manual trigger for documents in status 'verification_deferred'.")
+              description = "Re-evaluates all registered inbound document verifiers against the stored payload and forwards the document, if they all accept it. This is the manual trigger for documents in status 'verification_deferred'; transactions in any other status are rejected with 409.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction re-verified and forwarded"),
                    @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content),
+                   @ApiResponse (responseCode = "409",
+                                 description = "Transaction is not in status 'verification_deferred'",
+                                 content = @Content),
                    @ApiResponse (responseCode = "500",
                                  description = "Re-verification or forwarding failed",
                                  content = @Content) })
@@ -179,6 +185,21 @@ public class OperationsController
     final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
+
+    // Only a deferred verification may be resumed. Re-verifying anything else would forward an
+    // already forwarded document a second time and could send an MLS that contradicts the one that
+    // was already sent for this document
+    if (aTx.getStatus () != EInboundStatus.VERIFICATION_DEFERRED)
+    {
+      LOGGER.warn ("The inbound transaction '" +
+                   sbdhInstanceID +
+                   "' is in status '" +
+                   aTx.getStatus ().getID () +
+                   "' and not in status '" +
+                   EInboundStatus.VERIFICATION_DEFERRED.getID () +
+                   "' - not re-verifying it");
+      return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aTx));
+    }
 
     final ESuccess eSuccess = InboundOrchestrator.resumeDeferredInboundDocument ("API ReverifyAndForward: ", aTx);
     final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);

@@ -325,9 +325,12 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
   @NonNull
   public ESuccess updateStatusCompleted (@NonNull final String sID, @NonNull final EInboundStatus eStatus)
   {
+    // The next retry and the error details of the previous failure or deferral are cleared, so that
+    // a completed transaction does not look like it still has something pending
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
-                                                                      " SET status=?, completed_dt=?" +
+                                                                      " SET status=?, completed_dt=?," +
+                                                                      " next_retry_dt=NULL, error_details=NULL" +
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eStatus.getID (),
                                                                                                                  DBValueHelper.toTimestamp (now ()),

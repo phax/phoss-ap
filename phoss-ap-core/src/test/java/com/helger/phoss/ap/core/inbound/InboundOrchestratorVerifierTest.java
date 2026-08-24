@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import com.helger.annotation.Nonempty;
 import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
@@ -152,6 +153,25 @@ public final class InboundOrchestratorVerifierTest
     assertTrue (aVR.outcome ().isServiceUnavailable ());
     assertEquals ("Connection refused", aVR.outcome ().getMessage ());
     assertEquals ("Scanner", aVR.verifierName ());
+    // The remaining verifiers must still be evaluated
+    assertTrue (aVerifier2.m_bCalled);
+  }
+
+  @Test
+  public void testNullOutcomeIsTreatedAsPassed ()
+  {
+    // The SPI contract demands a non-null outcome, but it is not enforced at runtime - such a
+    // verifier may not abort the processing of the document
+    final IInboundDocumentVerifierSPI aBroken = (sDocumentPath, aDocTypeID, aProcessID) -> null;
+    final MockVerifier aVerifier2 = new MockVerifier ("Validator", VerificationOutcome.passed ());
+    final ICommonsList <IInboundDocumentVerifierSPI> aVerifiers = new CommonsArrayList <> (aBroken, aVerifier2);
+    final VerifierResult aVR = InboundOrchestrator.runInboundVerifiers (LOG_PREFIX,
+                                                                        aVerifiers,
+                                                                        DOC_PATH,
+                                                                        DOCTYPE_ID,
+                                                                        PROCESS_ID);
+    assertTrue (aVR.outcome ().isPassed ());
+    assertNull (aVR.verifierName ());
     // The remaining verifiers must still be evaluated
     assertTrue (aVerifier2.m_bCalled);
   }

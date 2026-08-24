@@ -21,7 +21,6 @@ import org.jspecify.annotations.NonNull;
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
-import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
@@ -202,6 +201,9 @@ public final class MlsOutcomeIssue
   {
     ValueEnforcer.notNull (aIssue, "Issue");
 
+    // MLS requires a non-empty error field
+    final String sErrorField = aIssue.hasLocation () ? aIssue.getLocation () : CPeppolMLS.LINE_ID_NOT_AVAILABLE;
+
     final EPeppolMLSStatusReasonCode eReason;
     if (!aIssue.isError ())
       eReason = EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_WARNING;
@@ -210,13 +212,7 @@ public final class MlsOutcomeIssue
                                                                    : EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_FATAL;
 
     // MLS has no dedicated field for the rule identifier
-    final String sCode = aIssue.getCode ();
-    final String sDescription = StringHelper.isNotEmpty (sCode) ? "[" + sCode + "] " + aIssue.getDescription ()
-                                                                : aIssue.getDescription ();
-
-    // MLS requires a non-empty error field
-    final String sLocation = aIssue.getLocation ();
-    final String sErrorField = StringHelper.isNotEmpty (sLocation) ? sLocation : CPeppolMLS.LINE_ID_NOT_AVAILABLE;
+    final String sDescription = (aIssue.hasCode () ? "[" + aIssue.getCode () + "] " : "") + aIssue.getDescription ();
 
     return new MlsOutcomeIssue (sErrorField, eReason, sDescription);
   }

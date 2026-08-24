@@ -38,8 +38,7 @@ import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 
 /**
- * Maps a phive {@link ValidationResultList} to transport-neutral
- * {@link VerificationIssue}s.
+ * Maps a phive {@link ValidationResultList} to transport-neutral {@link VerificationIssue}s.
  * <p>
  * The validation artefact's base type selects the {@link EVerificationIssueType} (XSD yields
  * {@link EVerificationIssueType#SYNTAX}, Schematron and others yield
@@ -95,7 +94,7 @@ public final class PhiveToVerificationMapper
     final EVerificationIssueType eType = eBaseType.isXSD () ? EVerificationIssueType.SYNTAX
                                                             : EVerificationIssueType.BUSINESS_RULE;
     final EVerificationIssueLevel eLevel = aError.getErrorLevel ().isError () ? EVerificationIssueLevel.ERROR
-                                                                             : EVerificationIssueLevel.WARNING;
+                                                                              : EVerificationIssueLevel.WARNING;
 
     final String sText = aError.getErrorText (aDisplayLocale);
     // VerificationIssue requires a non-empty description

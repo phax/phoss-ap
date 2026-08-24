@@ -126,6 +126,11 @@ public final class VerificationIssue
     return m_eType;
   }
 
+  public boolean hasCode ()
+  {
+    return StringHelper.isNotEmpty (m_sCode);
+  }
+
   /**
    * @return The machine-readable identifier of the violated rule, or <code>null</code> if the
    *         verifier does not provide one. This is what a client should branch on - never the
@@ -135,6 +140,11 @@ public final class VerificationIssue
   public String getCode ()
   {
     return m_sCode;
+  }
+
+  public boolean hasLocation ()
+  {
+    return StringHelper.isNotEmpty (m_sLocation);
   }
 
   /**
@@ -164,9 +174,9 @@ public final class VerificationIssue
   public IJsonObject getAsJson ()
   {
     final IJsonObject ret = new JsonObject ().add ("level", m_eLevel.getID ()).add ("type", m_eType.getID ());
-    if (StringHelper.isNotEmpty (m_sCode))
+    if (hasCode ())
       ret.add ("code", m_sCode);
-    if (StringHelper.isNotEmpty (m_sLocation))
+    if (hasLocation ())
       ret.add ("location", m_sLocation);
     ret.add ("description", m_sDescription);
     return ret;

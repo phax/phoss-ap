@@ -40,7 +40,7 @@ import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
-import com.helger.phoss.ap.core.inbound.InboundOrchestrator.VerifierResult;
+import com.helger.phoss.ap.api.model.VerifierResult;
 
 /**
  * Test class for the inbound document verifier evaluation of {@link InboundOrchestrator}.
@@ -134,7 +134,7 @@ public final class InboundOrchestratorVerifierTest
     assertEquals ("Validator", aVR.verifierName ());
 
     // The issues are projected onto MLS only when the MLS response is built
-    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
+    final MlsOutcome aMls = InboundOrchestrator.getRejectionMlsOutcome (aVR);
     assertEquals ("Malware found", aMls.getResponseText ());
     assertEquals (1, aMls.getIssues ().size ());
     assertEquals ("Virus found", aMls.getIssues ().get (0).getDescription ());
@@ -165,7 +165,7 @@ public final class InboundOrchestratorVerifierTest
                                                                                     new CommonsArrayList <> (aWarning)));
     final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting));
 
-    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
+    final MlsOutcome aMls = InboundOrchestrator.getRejectionMlsOutcome (aVR);
     assertSame (EPeppolMLSResponseCode.REJECTION, aMls.getResponseCode ());
     // The synthesized fatal issue plus the original warning
     assertEquals (2, aMls.getIssues ().size ());
@@ -192,7 +192,7 @@ public final class InboundOrchestratorVerifierTest
                                                                                                              aError)));
     final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting));
 
-    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
+    final MlsOutcome aMls = InboundOrchestrator.getRejectionMlsOutcome (aVR);
     assertSame (EPeppolMLSResponseCode.REJECTION, aMls.getResponseCode ());
     assertEquals ("Nope", aMls.getResponseText ());
     assertEquals (2, aMls.getIssues ().size ());
@@ -209,7 +209,7 @@ public final class InboundOrchestratorVerifierTest
     final VerifierResult aVR = _run (new CommonsArrayList <> (aPassing));
 
     assertTrue (aVR.outcome ().isPassed ());
-    final ICommonsList <MlsOutcomeIssue> aMlsIssues = aVR.getAllMlsIssues ();
+    final ICommonsList <MlsOutcomeIssue> aMlsIssues = InboundOrchestrator.getAllMlsIssues (aVR);
     assertEquals (1, aMlsIssues.size ());
     assertSame (EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_WARNING,
                 aMlsIssues.getFirstOrNull ().getStatusReasonCode ());

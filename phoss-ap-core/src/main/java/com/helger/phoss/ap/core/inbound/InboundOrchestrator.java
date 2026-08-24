@@ -71,6 +71,7 @@ import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
+import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IPeppolReceiverCheckSPI;
@@ -191,84 +192,66 @@ public final class InboundOrchestrator
   }
 
   /**
-   * The aggregated result of running all registered inbound document verifiers.
+   * Get all findings of the provided verifier result as MLS line responses, independent of the
+   * response code they will be attached to. This is the single point where the transport-neutral
+   * {@link VerificationIssue}s are projected onto the Peppol MLS format - deliberately here and not
+   * on {@link VerifierResult} itself, because MLS is how C3 answers C2 about a <em>received</em>
+   * document and is meaningless for the outbound direction, which shares that type.
    *
-   * @param outcome
-   *        The decisive outcome: {@link EVerificationOutcomeCategory#PASSED} if all verifiers
-   *        accepted the document, {@link EVerificationOutcomeCategory#REJECTION} if at least one
-   *        verifier rejected it and {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE} if no
-   *        verifier rejected it, but at least one of them was unavailable. May not be
-   *        <code>null</code>.
-   * @param verifierName
-   *        The name of the verifier that led to this result. <code>null</code> if and only if the
-   *        outcome is {@link EVerificationOutcomeCategory#PASSED}.
+   * @param aVR
+   *        The verifier result. May not be <code>null</code>.
+   * @return Never <code>null</code> but maybe empty.
    */
-  static record VerifierResult (@NonNull VerificationOutcome outcome, @Nullable String verifierName)
+  @NonNull
+  @ReturnsMutableCopy
+  @VisibleForTesting
+  static ICommonsList <MlsOutcomeIssue> getAllMlsIssues (@NonNull final VerifierResult aVR)
   {
-    /**
-     * Get all findings of this verifier result as MLS line responses, independent of the response
-     * code they will be attached to. This is the single point where the transport-neutral
-     * {@link com.helger.phoss.ap.api.model.VerificationIssue}s are projected onto the Peppol MLS
-     * format.
-     *
-     * @return Never <code>null</code> but maybe empty.
-     */
-    @NonNull
-    @ReturnsMutableCopy
-    ICommonsList <MlsOutcomeIssue> getAllMlsIssues ()
+    return aVR.outcome ().getAllIssues ().getAllMapped (MlsOutcomeIssue::fromVerificationIssue);
+  }
+
+  /**
+   * Get the MLS details to be sent to C2 when the AP rejects the document. The response code is
+   * always RE, because this is only called once the rejection has been decided - but the findings
+   * only become the <em>reason</em> of the rejection if at least one of them is an
+   * {@link EVerificationIssueLevel#ERROR}. Warnings alone never explain a rejection, so in that case
+   * a synthesized error line response naming the verifier is used and the warnings are appended to
+   * it.
+   * <p>
+   * The individual severities survive the projection: an error becomes SV or BV and a warning
+   * becomes BW.
+   * </p>
+   *
+   * @param aVR
+   *        The verifier result. May not be <code>null</code>.
+   * @return Never <code>null</code>.
+   */
+  @NonNull
+  @VisibleForTesting
+  static MlsOutcome getRejectionMlsOutcome (@NonNull final VerifierResult aVR)
+  {
+    final ICommonsList <VerificationIssue> aIssues = aVR.outcome ().getAllIssues ();
+    if (aIssues.containsAny (VerificationIssue::isError))
     {
-      return outcome ().getAllIssues ().getAllMapped (MlsOutcomeIssue::fromVerificationIssue);
+      // At least one fatal finding - those are the reason of the rejection
+      final String sResponseText = StringHelper.getNotNull (aVR.outcome ().getMessage (),
+                                                            "Document verification failed");
+      return MlsOutcome.rejection (sResponseText, getAllMlsIssues (aVR));
     }
 
-    /**
-     * Get the MLS details to be sent to C2 when the AP rejects the document. The response code is
-     * always RE, because this is only called once the rejection has been decided - but the findings
-     * only become the <em>reason</em> of the rejection if at least one of them is an
-     * {@link EVerificationIssueLevel#ERROR}. Warnings alone never explain a rejection, so in that
-     * case a synthesized error line response naming the verifier is used and the warnings are
-     * appended to it.
-     * <p>
-     * The individual severities survive the projection: an error becomes SV or BV and a warning
-     * becomes BW.
-     * </p>
-     *
-     * @return Never <code>null</code>.
-     */
-    @NonNull
-    MlsOutcome getRejectionMlsOutcome ()
-    {
-      final ICommonsList <VerificationIssue> aIssues = outcome ().getAllIssues ();
-      if (aIssues.containsAny (VerificationIssue::isError))
-      {
-        // At least one fatal finding - those are the reason of the rejection
-        final String sResponseText = StringHelper.getNotNull (outcome ().getMessage (),
-                                                              "Document verification failed");
-        return MlsOutcome.rejection (sResponseText, getAllMlsIssues ());
-      }
-
-      final String sMessage = StringHelper.getNotNull (outcome ().getMessage (), "no details available");
-      if (outcome ().isServiceUnavailable ())
-      {
-        // Yes, Business Rule Violation is a stretch ...
-        final ICommonsList <MlsOutcomeIssue> aMlsIssues = new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
-                                                                                                                          "The document verifier '" +
-                                                                                                                                                            verifierName () +
-                                                                                                                                                            "' is unavailable: " +
-                                                                                                                                                            sMessage));
-        aMlsIssues.addAll (getAllMlsIssues ());
-        return MlsOutcome.rejection ("Document verification could not be performed", aMlsIssues);
-      }
-
-      // Yes, Business Rule Violation is a stretch ...
-      final ICommonsList <MlsOutcomeIssue> aMlsIssues = new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
-                                                                                                                        "The document verifier '" +
-                                                                                                                                                          verifierName () +
-                                                                                                                                                          "' rejected the document: " +
-                                                                                                                                                          sMessage));
-      // A verifier that rejects with warnings only is contradictory - keep them as extra details
-      aMlsIssues.addAll (getAllMlsIssues ());
-      return MlsOutcome.rejection ("Document verification failed", aMlsIssues);
-    }
+    final String sMessage = StringHelper.getNotNull (aVR.outcome ().getMessage (), "no details available");
+    final String sReason = aVR.outcome ().isServiceUnavailable () ? "' is unavailable: " : "' rejected the document: ";
+    // Yes, Business Rule Violation is a stretch ...
+    final ICommonsList <MlsOutcomeIssue> aMlsIssues = new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
+                                                                                                                      "The document verifier '" +
+                                                                                                                                                        aVR.verifierName () +
+                                                                                                                                                        sReason +
+                                                                                                                                                        sMessage));
+    // A verifier that rejects with warnings only is contradictory - keep them as extra details
+    aMlsIssues.addAll (getAllMlsIssues (aVR));
+    return MlsOutcome.rejection (aVR.outcome ().isServiceUnavailable () ? "Document verification could not be performed"
+                                                                       : "Document verification failed",
+                                 aMlsIssues);
   }
 
   /**
@@ -347,7 +330,7 @@ public final class InboundOrchestrator
     if (aUnavailable != null)
       return aUnavailable;
 
-    return new VerifierResult (VerificationOutcome.passed (aWarnings), null);
+    return VerifierResult.passed (VerificationOutcome.passed (aWarnings));
   }
 
   /**
@@ -434,7 +417,7 @@ public final class InboundOrchestrator
                              aMaxDuration;
       _rejectAfterVerification (sLogPrefix,
                                 aInboundTx,
-                                aVR.getRejectionMlsOutcome (),
+                                getRejectionMlsOutcome (aVR),
                                 sErrorDetails + " (maximum deferral duration of " + aMaxDuration + " exceeded)",
                                 sReason);
       return;
@@ -492,7 +475,7 @@ public final class InboundOrchestrator
       final String sText = StringHelper.getNotNull (aVR.outcome ().getMessage (), "Verification failed");
       _rejectAfterVerification (sLogPrefix,
                                 aInboundTx,
-                                aVR.getRejectionMlsOutcome (),
+                                getRejectionMlsOutcome (aVR),
                                 ERROR_DETAILS_VERIFICATION_REJECTED + " [" + aVR.verifierName () + "]: " + sText,
                                 "The document verifier '" + aVR.verifierName () + "' rejected the document");
       return EContinue.BREAK;
@@ -532,7 +515,7 @@ public final class InboundOrchestrator
                                  "'";
           _rejectAfterVerification (sLogPrefix,
                                     aInboundTx,
-                                    aVR.getRejectionMlsOutcome (),
+                                    getRejectionMlsOutcome (aVR),
                                     ERROR_DETAILS_VERIFIER_UNAVAILABLE + " [" + aVR.verifierName () + "]: " + sText,
                                     sReason);
           yield EContinue.BREAK;
@@ -596,7 +579,7 @@ public final class InboundOrchestrator
       {
         // The document was accepted - any remaining findings are warnings and are reported to C2
         // as line responses of the positive MLS
-        aMlsWarningsHolder.set (aVR.getAllMlsIssues ());
+        aMlsWarningsHolder.set (getAllMlsIssues (aVR));
       }
       return eContinue;
     }

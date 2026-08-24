@@ -59,6 +59,7 @@ import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.OutboundSubmitResult;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
+import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.ddd.DDDHelper;
@@ -128,8 +129,11 @@ public class OutboundController
     final IJsonObject ret = new JsonObject ();
     if (aSubmitResult.isVerificationRejected ())
     {
-      final VerificationOutcome aOutcome = aSubmitResult.getVerificationOutcome ();
+      final VerifierResult aVR = aSubmitResult.getVerifierResult ();
+      final VerificationOutcome aOutcome = aVR.outcome ();
       ret.add ("errorMessage", StringHelper.getNotNull (aOutcome.getMessage (), "Document verification failed"));
+      if (aVR.hasVerifierName ())
+        ret.add ("verifierName", aVR.verifierName ());
       // Tell the submitter whether the document was actually found to be invalid, or whether the
       // verifier could not make a verdict at all - the reaction to those is very different
       ret.add ("verificationPerformed", !aOutcome.isServiceUnavailable ());

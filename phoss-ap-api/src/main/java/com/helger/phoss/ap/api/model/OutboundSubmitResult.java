@@ -46,15 +46,15 @@ import com.helger.base.tostring.ToStringGenerator;
 public final class OutboundSubmitResult implements ISuccessIndicator
 {
   private final IOutboundTransaction m_aTransaction;
-  private final VerificationOutcome m_aVerificationOutcome;
+  private final VerifierResult m_aVerifierResult;
   private final String m_sErrorMessage;
 
   private OutboundSubmitResult (@Nullable final IOutboundTransaction aTransaction,
-                                @Nullable final VerificationOutcome aVerificationOutcome,
+                                @Nullable final VerifierResult aVerifierResult,
                                 @Nullable final String sErrorMessage)
   {
     m_aTransaction = aTransaction;
-    m_aVerificationOutcome = aVerificationOutcome;
+    m_aVerifierResult = aVerifierResult;
     m_sErrorMessage = sErrorMessage;
   }
 
@@ -70,7 +70,7 @@ public final class OutboundSubmitResult implements ISuccessIndicator
    */
   public boolean isVerificationRejected ()
   {
-    return m_aTransaction == null && m_aVerificationOutcome != null;
+    return m_aTransaction == null && m_aVerifierResult != null;
   }
 
   /**
@@ -83,13 +83,24 @@ public final class OutboundSubmitResult implements ISuccessIndicator
   }
 
   /**
+   * @return The result of the document verification including the name of the decisive verifier, or
+   *         <code>null</code> if no verification was performed. On success its outcome may carry
+   *         warnings.
+   */
+  @Nullable
+  public VerifierResult getVerifierResult ()
+  {
+    return m_aVerifierResult;
+  }
+
+  /**
    * @return The outcome of the document verification, or <code>null</code> if no verification was
-   *         performed or it produced no findings. On success this may carry warnings.
+   *         performed. Shorthand for {@link #getVerifierResult()}.
    */
   @Nullable
   public VerificationOutcome getVerificationOutcome ()
   {
-    return m_aVerificationOutcome;
+    return m_aVerifierResult != null ? m_aVerifierResult.outcome () : null;
   }
 
   /**
@@ -107,7 +118,7 @@ public final class OutboundSubmitResult implements ISuccessIndicator
   public String toString ()
   {
     return new ToStringGenerator (null).appendIfNotNull ("Transaction", m_aTransaction)
-                                       .appendIfNotNull ("VerificationOutcome", m_aVerificationOutcome)
+                                       .appendIfNotNull ("VerifierResult", m_aVerifierResult)
                                        .appendIfNotNull ("ErrorMessage", m_sErrorMessage)
                                        .getToString ();
   }
@@ -117,32 +128,33 @@ public final class OutboundSubmitResult implements ISuccessIndicator
    *
    * @param aTransaction
    *        The created outbound transaction. May not be <code>null</code>.
-   * @param aVerificationOutcome
-   *        The outcome of the verification, if one was performed. May be <code>null</code>. If it
-   *        carries issues, those are warnings that did not prevent the submission.
+   * @param aVerifierResult
+   *        The result of the verification, if one was performed. May be <code>null</code>. If its
+   *        outcome carries issues, those are warnings that did not prevent the submission.
    * @return Never <code>null</code>.
    */
   @NonNull
   public static OutboundSubmitResult success (@NonNull final IOutboundTransaction aTransaction,
-                                              @Nullable final VerificationOutcome aVerificationOutcome)
+                                              @Nullable final VerifierResult aVerifierResult)
   {
     ValueEnforcer.notNull (aTransaction, "Transaction");
-    return new OutboundSubmitResult (aTransaction, aVerificationOutcome, null);
+    return new OutboundSubmitResult (aTransaction, aVerifierResult, null);
   }
 
   /**
    * Create a result stating that a document verifier rejected the document. No outbound transaction
    * is created in this case.
    *
-   * @param aVerificationOutcome
-   *        The rejecting outcome, carrying the individual findings. May not be <code>null</code>.
+   * @param aVerifierResult
+   *        The rejecting result, carrying the individual findings and the name of the verifier that
+   *        produced them. May not be <code>null</code>.
    * @return Never <code>null</code>.
    */
   @NonNull
-  public static OutboundSubmitResult verificationRejected (@NonNull final VerificationOutcome aVerificationOutcome)
+  public static OutboundSubmitResult verificationRejected (@NonNull final VerifierResult aVerifierResult)
   {
-    ValueEnforcer.notNull (aVerificationOutcome, "VerificationOutcome");
-    return new OutboundSubmitResult (null, aVerificationOutcome, null);
+    ValueEnforcer.notNull (aVerifierResult, "VerifierResult");
+    return new OutboundSubmitResult (null, aVerifierResult, null);
   }
 
   /**

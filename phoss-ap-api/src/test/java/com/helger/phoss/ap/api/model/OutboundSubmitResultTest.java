@@ -42,12 +42,16 @@ public final class OutboundSubmitResultTest
                                                                        new CommonsArrayList <> (VerificationIssue.businessRuleViolation ("R-1",
                                                                                                                                          "/a",
                                                                                                                                          "d")));
-    final OutboundSubmitResult a = OutboundSubmitResult.verificationRejected (aOutcome);
+    final VerifierResult aVR = new VerifierResult (aOutcome, "Validator");
+    final OutboundSubmitResult a = OutboundSubmitResult.verificationRejected (aVR);
     assertFalse (a.isSuccess ());
     assertTrue (a.isFailure ());
     assertTrue (a.isVerificationRejected ());
     // No transaction is created for a rejected document - it is never sent
     assertNull (a.getTransaction ());
+    assertSame (aVR, a.getVerifierResult ());
+    // The decisive verifier is known, so the submitter can be told who objected
+    assertEquals ("Validator", a.getVerifierResult ().verifierName ());
     assertSame (aOutcome, a.getVerificationOutcome ());
     assertNull (a.getErrorMessage ());
     assertNotNull (a.toString ());
@@ -61,6 +65,7 @@ public final class OutboundSubmitResultTest
     // A generic failure must not look like a verification rejection
     assertFalse (a.isVerificationRejected ());
     assertNull (a.getTransaction ());
+    assertNull (a.getVerifierResult ());
     assertNull (a.getVerificationOutcome ());
     assertEquals ("Cannot parse", a.getErrorMessage ());
   }

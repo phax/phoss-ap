@@ -48,6 +48,7 @@ import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundSendingAttempt;
@@ -797,6 +798,65 @@ public final class JdbcManagerIntegrationTest
   }
 
   @Test
+  public void testInboundUpdateVerificationResult ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    // Nothing verified yet
+    assertNull (aMgr.getByID (sID).getVerificationResult ());
+    assertNull (aMgr.getByID (sID).getVerificationDetails ());
+
+    final String sDetails = "{\"responseCode\":\"RE\",\"responseText\":\"Verification failed\"}";
+    assertTrue (aMgr.updateVerificationResult (sID, EVerificationResult.REJECTED, sDetails).isSuccess ());
+
+    final IInboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals (EVerificationResult.REJECTED, aTx.getVerificationResult ());
+    assertEquals (sDetails, aTx.getVerificationDetails ());
+  }
+
+  @Test
+  public void testInboundUpdateVerificationResultWithoutDetails ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    assertTrue (aMgr.updateVerificationResult (sID, EVerificationResult.PASSED, null).isSuccess ());
+
+    final IInboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals (EVerificationResult.PASSED, aTx.getVerificationResult ());
+    assertNull (aTx.getVerificationDetails ());
+  }
+
+  @Test
+  public void testInboundVerificationResultSurvivesStatusCompleted ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    final String sDetails = "{\"responseCode\":\"RE\"}";
+    assertTrue (aMgr.updateVerificationResult (sID, EVerificationResult.REJECTED, sDetails).isSuccess ());
+    assertTrue (aMgr.updateStatusAndNextRetry (sID, EInboundStatus.FORWARD_FAILED, _now (), "some error").isSuccess ());
+
+    // "updateStatusCompleted" deliberately clears the error details and the next retry - but it
+    // must not touch the verification verdict, because that has to outlive the forwarding
+    assertTrue (aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED).isSuccess ());
+
+    final IInboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals (EInboundStatus.FORWARDED, aTx.getStatus ());
+    assertNull (aTx.getErrorDetails ());
+    assertNull (aTx.getNextRetryDT ());
+    assertEquals (EVerificationResult.REJECTED, aTx.getVerificationResult ());
+    assertEquals (sDetails, aTx.getVerificationDetails ());
+  }
+
+  @Test
   public void testInboundUpdateC4CountryCode ()
   {
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
@@ -1102,6 +1162,31 @@ public final class JdbcManagerIntegrationTest
 
     assertNull (aTxMgr.getByID (sTxID));
     assertTrue (aAttemptMgr.getByTransactionID (sTxID).isEmpty ());
+  }
+
+  @Test
+  public void testArchiveInboundTransactionKeepsVerificationResult ()
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+
+    final String sTxID = _createInboundTx ();
+    assertNotNull (sTxID);
+    final String sSbdhInstanceID = aTxMgr.getByID (sTxID).getSbdhInstanceID ();
+
+    final String sDetails = "{\"responseCode\":\"RE\",\"issues\":[{\"errorField\":\"NA\"}]}";
+    assertTrue (aTxMgr.updateVerificationResult (sTxID, EVerificationResult.REJECTED, sDetails).isSuccess ());
+    aTxMgr.updateStatusCompleted (sTxID, EInboundStatus.FORWARDED);
+
+    // Archival copies rows with "INSERT INTO ..._archive SELECT * FROM ...", so a column order
+    // mismatch between the two tables would surface here
+    assertTrue (aArchivalMgr.archiveInboundTransaction (sTxID).isSuccess ());
+    assertNull (aTxMgr.getByID (sTxID));
+
+    final IInboundTransaction aArchived = aTxMgr.getBySbdhInstanceIDIncludingArchive (sSbdhInstanceID);
+    assertNotNull (aArchived);
+    assertEquals (EVerificationResult.REJECTED, aArchived.getVerificationResult ());
+    assertEquals (sDetails, aArchived.getVerificationDetails ());
   }
 
   @Test

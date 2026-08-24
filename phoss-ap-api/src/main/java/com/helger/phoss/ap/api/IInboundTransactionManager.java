@@ -28,6 +28,7 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
@@ -269,6 +270,26 @@ public interface IInboundTransactionManager
   ESuccess updateMlsFields (@NonNull String sID,
                             @Nullable EPeppolMLSResponseCode eMlsResponseCode,
                             @Nullable String sMlsOutboundTransactionID);
+
+  /**
+   * Update the verdict of the inbound document verification. The verdict is deliberately stored
+   * independently of the transaction status, so that it survives the forwarding state machine and
+   * is not cleared by {@link #updateStatusCompleted(String, EInboundStatus)}.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eVerificationResult
+   *        The verification verdict. Never <code>null</code>.
+   * @param sVerificationDetails
+   *        The details of the verdict as the JSON representation of an
+   *        {@link com.helger.phoss.ap.api.model.MlsOutcome}. May be <code>null</code>.
+   * @return {@link ESuccess}
+   * @since 0.12.0
+   */
+  @NonNull
+  ESuccess updateVerificationResult (@NonNull String sID,
+                                     @NonNull EVerificationResult eVerificationResult,
+                                     @Nullable String sVerificationDetails);
 
   /**
    * Update the reporting status for a transaction.

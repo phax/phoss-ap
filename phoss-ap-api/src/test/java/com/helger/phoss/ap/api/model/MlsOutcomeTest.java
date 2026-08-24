@@ -29,6 +29,9 @@ import java.util.UUID;
 import org.junit.Test;
 
 import com.helger.collection.commons.CommonsArrayList;
+import com.helger.json.IJsonArray;
+import com.helger.json.IJsonObject;
+import com.helger.json.serialize.JsonReader;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
@@ -178,5 +181,53 @@ public final class MlsOutcomeTest
     final MlsOutcome a = MlsOutcome.acceptance ();
     final PeppolMLSBuilder aBuilder = a.getAsMLSBuilder ();
     assertNotNull (aBuilder);
+  }
+
+  @Test
+  public void testGetAsJsonMinimal ()
+  {
+    // Neither a response text nor issues - both entries must be absent
+    final IJsonObject aJson = MlsOutcome.acceptance ().getAsJson ();
+    assertNotNull (aJson);
+    assertEquals ("AP", aJson.getAsString ("responseCode"));
+    assertNull (aJson.get ("responseText"));
+    assertNull (aJson.get ("issues"));
+  }
+
+  @Test
+  public void testGetAsJsonWithIssues ()
+  {
+    final MlsOutcome a = MlsOutcome.rejection ("Verification failed",
+                                               new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation ("/Invoice/cbc:ID",
+                                                                                                               "Missing ID"),
+                                                                        MlsOutcomeIssue.syntaxViolation ("/Invoice/cbc:Note",
+                                                                                                         "Bad syntax")));
+    final IJsonObject aJson = a.getAsJson ();
+    assertEquals ("RE", aJson.getAsString ("responseCode"));
+    assertEquals ("Verification failed", aJson.getAsString ("responseText"));
+
+    final IJsonArray aIssues = aJson.getAsArray ("issues");
+    assertNotNull (aIssues);
+    assertEquals (2, aIssues.size ());
+
+    final IJsonObject aIssue0 = aIssues.getObjectAtIndex (0);
+    assertEquals ("/Invoice/cbc:ID", aIssue0.getAsString ("errorField"));
+    assertEquals (EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_FATAL.getID (),
+                  aIssue0.getAsString ("statusReasonCode"));
+    assertEquals ("Missing ID", aIssue0.getAsString ("description"));
+  }
+
+  @Test
+  public void testGetAsJsonIsParseable ()
+  {
+    // This is what ends up in the "verification_details" DB column
+    final MlsOutcome a = MlsOutcome.rejection ("Nope", MlsOutcomeIssue.failureOfDelivery ("Delivery failed"));
+    final String sJson = a.getAsJson ().getAsJsonString ();
+    assertNotNull (sJson);
+
+    final IJsonObject aReadBack = JsonReader.builder ().source (sJson).readAsObject ();
+    assertNotNull (aReadBack);
+    assertEquals ("RE", aReadBack.getAsString ("responseCode"));
+    assertEquals (1, aReadBack.getAsArray ("issues").size ());
   }
 }

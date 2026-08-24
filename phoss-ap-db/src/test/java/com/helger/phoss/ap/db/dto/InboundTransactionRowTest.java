@@ -32,6 +32,7 @@ import com.helger.db.jdbc.executor.DBResultRow;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.db.testhelper.DBResultRowHelper;
 import com.helger.scope.mock.ScopeTestRule;
@@ -51,7 +52,7 @@ public final class InboundTransactionRowTest
   {
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
-    // 30 columns, matching InboundTransactionRow constructor order
+    // 32 columns, matching InboundTransactionRow constructor order
     // 0 id
     // 1 incomingID
     // 2 c2SeatID
@@ -82,6 +83,8 @@ public final class InboundTransactionRowTest
     // 27 mlsType
     // 28 mlsResponseCode (nullable)
     // 29 mlsOutboundTransactionID (nullable)
+    // 30 verificationResult (nullable)
+    // 31 verificationDetails (nullable)
     return DBResultRowHelper.createRow ("ib-001",
                                         "incoming-001",
                                         "POP000001",
@@ -110,6 +113,8 @@ public final class InboundTransactionRowTest
                                         null,
                                         null,
                                         "ALWAYS_SEND",
+                                        null,
+                                        null,
                                         null,
                                         null);
   }
@@ -156,6 +161,53 @@ public final class InboundTransactionRowTest
     assertNull (aTx.getMlsTo ());
     assertNull (aTx.getMlsResponseCode ());
     assertNull (aTx.getMlsOutboundTransactionID ());
+    assertNull (aTx.getVerificationResult ());
+    assertNull (aTx.getVerificationDetails ());
+  }
+
+  @Test
+  public void testVerificationFieldsMapped ()
+  {
+    final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
+
+    final DBResultRow aRow = DBResultRowHelper.createRow ("ib-ver",
+                                                          "inc-ver",
+                                                          "POP000001",
+                                                          "POP000002",
+                                                          "CN=Ver Cert",
+                                                          "sender-ver",
+                                                          "recv-ver",
+                                                          "doctype-ver",
+                                                          "process-ver",
+                                                          "/tmp/test-ver.sbd",
+                                                          Long.valueOf (1L),
+                                                          "hash-ver",
+                                                          "as4-ver@test",
+                                                          aNow,
+                                                          "sbdh-ver",
+                                                          "AT",
+                                                          "DE",
+                                                          Boolean.FALSE,
+                                                          Boolean.FALSE,
+                                                          "forwarded",
+                                                          Integer.valueOf (1),
+                                                          aNow,
+                                                          aNow,
+                                                          "pending",
+                                                          null,
+                                                          null,
+                                                          null,
+                                                          "ALWAYS_SEND",
+                                                          "RE",
+                                                          "mls-out-ver",
+                                                          "rejected",
+                                                          "{\"responseCode\":\"RE\"}");
+    final InboundTransactionRow aTx = new InboundTransactionRow (aRow);
+
+    // The verdict is independent of the status - a rejected document may well be "forwarded"
+    assertEquals (EInboundStatus.FORWARDED, aTx.getStatus ());
+    assertEquals (EVerificationResult.REJECTED, aTx.getVerificationResult ());
+    assertEquals ("{\"responseCode\":\"RE\"}", aTx.getVerificationDetails ());
   }
 
   @Test
@@ -191,6 +243,8 @@ public final class InboundTransactionRowTest
                                                           null,
                                                           null,
                                                           "ALWAYS_SEND",
+                                                          null,
+                                                          null,
                                                           null,
                                                           null);
     final InboundTransactionRow aTx = new InboundTransactionRow (aRow);

@@ -28,6 +28,7 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 
 /**
  * Read-only view of an inbound transaction. Inbound transactions represent documents received at
@@ -235,4 +236,22 @@ public interface IInboundTransaction extends IHasID <String>
    */
   @Nullable
   String getMlsOutboundTransactionID ();
+
+  /**
+   * @return The verdict of the inbound document verification, or <code>null</code> if no
+   *         verification was performed (yet). Deliberately independent of {@link #getStatus ()},
+   *         so that it survives the forwarding state machine.
+   * @since 0.12.0
+   */
+  @Nullable
+  EVerificationResult getVerificationResult ();
+
+  /**
+   * @return The details of the verification verdict as the JSON representation of an
+   *         {@link MlsOutcome}, or <code>null</code> if no details are available. Only filled for a
+   *         rejection.
+   * @since 0.12.0
+   */
+  @Nullable
+  String getVerificationDetails ();
 }

@@ -29,6 +29,7 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
@@ -68,6 +69,8 @@ public class InboundTransactionRow implements IInboundTransaction
   private final EPeppolMLSType m_eMlsType;
   private final EPeppolMLSResponseCode m_eMlsResponseCode;
   private final String m_sMlsOutboundTransactionID;
+  private final EVerificationResult m_eVerificationResult;
+  private final String m_sVerificationDetails;
 
   /**
    * Construct an inbound transaction row from a JDBC result row.
@@ -107,6 +110,8 @@ public class InboundTransactionRow implements IInboundTransaction
     m_eMlsType = EPeppolMLSType.getFromIDOrNull (aRow.getAsString (27));
     m_eMlsResponseCode = EPeppolMLSResponseCode.getFromIDOrNull (aRow.getAsString (28));
     m_sMlsOutboundTransactionID = aRow.getAsString (29);
+    m_eVerificationResult = EVerificationResult.getFromIDOrNull (aRow.getAsString (30));
+    m_sVerificationDetails = aRow.getAsString (31);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notEmpty (m_sIncomingID, "IncomingID");
     ValueEnforcer.notEmpty (m_sC2SeatID, "C2SeatID");
@@ -348,5 +353,19 @@ public class InboundTransactionRow implements IInboundTransaction
   public String getMlsOutboundTransactionID ()
   {
     return m_sMlsOutboundTransactionID;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public EVerificationResult getVerificationResult ()
+  {
+    return m_eVerificationResult;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getVerificationDetails ()
+  {
+    return m_sVerificationDetails;
   }
 }

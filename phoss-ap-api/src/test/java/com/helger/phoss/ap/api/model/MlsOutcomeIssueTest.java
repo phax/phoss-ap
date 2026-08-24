@@ -17,10 +17,12 @@
 package com.helger.phoss.ap.api.model;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
 
+import com.helger.json.IJsonObject;
 import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 
@@ -74,5 +76,17 @@ public final class MlsOutcomeIssueTest
     assertEquals (CPeppolMLS.LINE_ID_NOT_AVAILABLE, a.getErrorField ());
     assertSame (EPeppolMLSStatusReasonCode.FAILURE_OF_DELIVERY, a.getStatusReasonCode ());
     assertEquals ("desc5", a.getDescription ());
+  }
+
+  @Test
+  public void testGetAsJson ()
+  {
+    final MlsOutcomeIssue a = MlsOutcomeIssue.businessRuleViolation ("/Invoice/cbc:ID", "Missing ID");
+    final IJsonObject aJson = a.getAsJson ();
+    assertNotNull (aJson);
+    assertEquals ("/Invoice/cbc:ID", aJson.getAsString ("errorField"));
+    assertEquals (EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_FATAL.getID (),
+                  aJson.getAsString ("statusReasonCode"));
+    assertEquals ("Missing ID", aJson.getAsString ("description"));
   }
 }

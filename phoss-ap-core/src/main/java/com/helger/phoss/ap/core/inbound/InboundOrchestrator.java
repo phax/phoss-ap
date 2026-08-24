@@ -62,6 +62,7 @@ import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationFailMode;
 import com.helger.phoss.ap.api.codelist.EVerificationIssueLevel;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
@@ -361,6 +362,10 @@ public final class InboundOrchestrator
 
     LOGGER.warn (sLogPrefix + "Inbound document verification failed for '" + sSbdhInstanceID + "': " + sReason);
 
+    // Record the verdict separately from the status, so that it survives a later forwarding and is
+    // not cleared together with the error details on completion
+    aTxMgr.updateVerificationResult (sTxID, EVerificationResult.REJECTED, aOutcome.getAsJson ().getAsJsonString ());
+
     // Don't touch the forwarding attempt count - the document is never forwarded
     aTxMgr.updateStatusAndNextRetry (sTxID, EInboundStatus.REJECTED, null, sErrorDetails);
 
@@ -502,6 +507,12 @@ public final class InboundOrchestrator
                        "' - forwarding the unverified document '" +
                        aInboundTx.getSbdhInstanceID () +
                        "'");
+          // Remember that this document was never inspected - otherwise a forwarded document is
+          // indistinguishable from a properly verified one
+          APJdbcMetaManager.getInboundTransactionMgr ()
+                           .updateVerificationResult (aInboundTx.getID (),
+                                                      EVerificationResult.UNVERIFIED,
+                                                      null);
           yield EContinue.CONTINUE;
         }
         default ->
@@ -524,6 +535,9 @@ public final class InboundOrchestrator
     }
 
     // All verifiers accepted
+    APJdbcMetaManager.getInboundTransactionMgr ()
+                     .updateVerificationResult (aInboundTx.getID (), EVerificationResult.PASSED, null);
+
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onInboundVerificationAccepted (aInboundTx.getID (), aInboundTx.getSbdhInstanceID ());
     return EContinue.CONTINUE;

@@ -65,6 +65,7 @@ public class InboundTransactionResponse
   @Schema (description = "Current transaction status",
            allowableValues = { "received",
                                "rejected",
+                               "verification_deferred",
                                "forwarding",
                                "forwarded",
                                "forward_failed",
@@ -108,6 +109,17 @@ public class InboundTransactionResponse
            nullable = true)
   private String mlsResponseCode;
 
+  @Schema (description = "Verdict of the inbound document verification; null if no verification was performed (yet). " +
+                         "Independent of the status, so it also survives a forwarding. Since v0.12.0.",
+           allowableValues = { "passed", "rejected", "unverified" },
+           nullable = true)
+  private String verificationResult;
+
+  @Schema (description = "Details of the verification verdict as the JSON representation of an MlsOutcome; " +
+                         "null if no details are available. Only filled for a rejection. Since v0.12.0.",
+           nullable = true)
+  private String verificationDetails;
+
   /**
    * Default constructor for JSON deserialization.
    */
@@ -145,6 +157,8 @@ public class InboundTransactionResponse
     ret.isDuplicateAS4 = aTx.isDuplicateAS4 ();
     ret.isDuplicateSBDH = aTx.isDuplicateSBDH ();
     ret.mlsResponseCode = aTx.getMlsResponseCode () != null ? aTx.getMlsResponseCode ().getID () : null;
+    ret.verificationResult = aTx.getVerificationResult () != null ? aTx.getVerificationResult ().getID () : null;
+    ret.verificationDetails = aTx.getVerificationDetails ();
     return ret;
   }
 
@@ -461,6 +475,45 @@ public class InboundTransactionResponse
   }
 
   /**
+   * @return the verification verdict, or <code>null</code> if no verification was performed
+   * @since v0.12.0
+   */
+  public String getVerificationResult ()
+  {
+    return verificationResult;
+  }
+
+  /**
+   * @param s
+   *        The verification verdict to set.
+   * @since v0.12.0
+   */
+  public void setVerificationResult (final String s)
+  {
+    verificationResult = s;
+  }
+
+  /**
+   * @return the details of the verification verdict as an MlsOutcome JSON string, or
+   *         <code>null</code> if not available
+   * @since v0.12.0
+   */
+  public String getVerificationDetails ()
+  {
+    return verificationDetails;
+  }
+
+  /**
+   * @param s
+   *        The details of the verification verdict to set.
+   * @since v0.12.0
+   */
+  public void setVerificationDetails (final String s)
+  {
+    verificationDetails = s;
+  }
+
+  /**
    * @return This response as a ph-json {@link IJsonObject}. Never <code>null</code>.
    * @since v0.12.0 - was previously called <code>getAsJson</code>
    */
@@ -506,6 +559,10 @@ public class InboundTransactionResponse
     ret.add ("isDuplicateSBDH", isDuplicateSBDH);
     if (mlsResponseCode != null)
       ret.add ("mlsResponseCode", mlsResponseCode);
+    if (verificationResult != null)
+      ret.add ("verificationResult", verificationResult);
+    if (verificationDetails != null)
+      ret.add ("verificationDetails", verificationDetails);
     return ret;
   }
 }

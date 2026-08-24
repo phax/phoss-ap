@@ -36,6 +36,7 @@ import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 
 /**
@@ -194,7 +195,9 @@ public final class InboundTransactionResponseTest
                                                   "mls-to-1",
                                                   EPeppolMLSType.ALWAYS_SEND,
                                                   EPeppolMLSResponseCode.ACCEPTANCE,
-                                                  "mls-out-1");
+                                                  "mls-out-1",
+                                                  EVerificationResult.REJECTED,
+                                                  "{\"responseCode\":\"RE\"}");
 
     final InboundTransactionResponse aResp = InboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -218,6 +221,8 @@ public final class InboundTransactionResponseTest
     assertTrue (aResp.isDuplicateAS4 ());
     assertFalse (aResp.isDuplicateSBDH ());
     assertEquals ("AP", aResp.getMlsResponseCode ());
+    assertEquals ("rejected", aResp.getVerificationResult ());
+    assertEquals ("{\"responseCode\":\"RE\"}", aResp.getVerificationDetails ());
   }
 
   @Test
@@ -254,6 +259,8 @@ public final class InboundTransactionResponseTest
                                                   null,
                                                   EPeppolMLSType.ALWAYS_SEND,
                                                   null,
+                                                  null,
+                                                  null,
                                                   null);
 
     final InboundTransactionResponse aResp = InboundTransactionResponse.fromDomain (aTx);
@@ -263,6 +270,8 @@ public final class InboundTransactionResponseTest
     assertNull (aResp.getErrorDetails ());
     assertNull (aResp.getC4CountryCode ());
     assertNull (aResp.getMlsResponseCode ());
+    assertNull (aResp.getVerificationResult ());
+    assertNull (aResp.getVerificationDetails ());
     assertFalse (aResp.isDuplicateAS4 ());
     assertFalse (aResp.isDuplicateSBDH ());
     assertEquals ("received", aResp.getStatus ());
@@ -299,7 +308,9 @@ public final class InboundTransactionResponseTest
                                                    @Nullable final String sMlsTo,
                                                    @NonNull final EPeppolMLSType eMlsType,
                                                    @Nullable final EPeppolMLSResponseCode eMlsResponseCode,
-                                                   @Nullable final String sMlsOutboundTransactionID)
+                                                   @Nullable final String sMlsOutboundTransactionID,
+                                                   @Nullable final EVerificationResult eVerificationResult,
+                                                   @Nullable final String sVerificationDetails)
   {
     return new IInboundTransaction ()
     {
@@ -333,6 +344,8 @@ public final class InboundTransactionResponseTest
       public EPeppolMLSType getMlsType () { return eMlsType; }
       public EPeppolMLSResponseCode getMlsResponseCode () { return eMlsResponseCode; }
       public String getMlsOutboundTransactionID () { return sMlsOutboundTransactionID; }
+      public EVerificationResult getVerificationResult () { return eVerificationResult; }
+      public String getVerificationDetails () { return sVerificationDetails; }
     };
   }
 }

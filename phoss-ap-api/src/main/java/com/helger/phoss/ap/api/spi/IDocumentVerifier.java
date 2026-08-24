@@ -31,11 +31,16 @@ import com.helger.base.lang.clazz.ClassHelper;
  * different semantics (fail modes, deferral and MLS responses apply to inbound only), so the
  * verification methods stay separate.
  * </p>
+ * <p>
+ * It deliberately carries no <code>SPI</code> suffix and no
+ * {@link com.helger.annotation.style.IsSPIInterface} annotation: it is never loaded via
+ * {@link java.util.ServiceLoader} itself, only its two sub-interfaces are.
+ * </p>
  *
  * @author Philip Helger
  * @since 0.12.0
  */
-public interface IDocumentVerifierSPI
+public interface IDocumentVerifier
 {
   /**
    * @return The name of this verifier, as used in log messages, in the transaction error details,

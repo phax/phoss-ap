@@ -36,7 +36,7 @@ import com.helger.base.string.StringHelper;
  *        The decisive outcome. May not be <code>null</code>.
  * @param verifierName
  *        The name of the verifier that led to this result, as returned by
- *        {@link com.helger.phoss.ap.api.spi.IDocumentVerifierSPI#getVerifierName()}.
+ *        {@link com.helger.phoss.ap.api.spi.IDocumentVerifier#getVerifierName()}.
  *        <code>null</code> if and only if all verifiers accepted the document, because then no
  *        single verifier is decisive.
  * @author Philip Helger

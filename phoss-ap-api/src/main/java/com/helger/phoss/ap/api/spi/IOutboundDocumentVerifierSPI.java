@@ -32,7 +32,7 @@ import com.helger.phoss.ap.api.model.VerificationOutcome;
  * @author Philip Helger
  */
 @IsSPIInterface
-public interface IOutboundDocumentVerifierSPI extends IDocumentVerifierSPI
+public interface IOutboundDocumentVerifierSPI extends IDocumentVerifier
 {
   /**
    * Verify a document's content against the given document type and process identifiers.

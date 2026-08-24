@@ -24,15 +24,11 @@ import org.jspecify.annotations.Nullable;
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
-import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.CommonsLinkedHashMap;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.collection.commons.ICommonsOrderedMap;
-import com.helger.json.IJsonObject;
-import com.helger.json.JsonArray;
-import com.helger.json.JsonObject;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSLineResponseBuilder;
@@ -155,27 +151,6 @@ public final class MlsOutcome
         aBuilder.addResponse (b -> b.statusReasonCode (aIssue.getStatusReasonCode ())
                                     .description (aIssue.getDescription ()));
       ret.addLineResponse (aBuilder);
-    }
-    return ret;
-  }
-
-  /**
-   * @return This outcome in the JSON format documented on this class. Never <code>null</code>. The
-   *         "responseText" and "issues" entries are only present if they contain data.
-   * @since 0.12.0
-   */
-  @NonNull
-  public IJsonObject getAsJson ()
-  {
-    final IJsonObject ret = new JsonObject ().add ("responseCode", m_eResponseCode.getID ());
-    if (StringHelper.isNotEmpty (m_sResponseText))
-      ret.add ("responseText", m_sResponseText);
-    if (m_aIssues.isNotEmpty ())
-    {
-      final JsonArray aIssues = new JsonArray ();
-      for (final var aIssue : getIssues ())
-        aIssues.add (aIssue.getAsJson ());
-      ret.add ("issues", aIssues);
     }
     return ret;
   }

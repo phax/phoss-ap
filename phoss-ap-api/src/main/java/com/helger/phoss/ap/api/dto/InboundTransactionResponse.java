@@ -115,8 +115,8 @@ public class InboundTransactionResponse
            nullable = true)
   private String verificationResult;
 
-  @Schema (description = "Details of the verification verdict as the JSON representation of an MlsOutcome; " +
-                         "null if no details are available. Only filled for a rejection. Since v0.12.0.",
+  @Schema (description = "Findings of the verification as a JSON array of VerificationIssue objects; " +
+                         "null if the verifier provided none. On a passed verification these are warnings. Since v0.12.0.",
            nullable = true)
   private String verificationDetails;
 
@@ -494,8 +494,8 @@ public class InboundTransactionResponse
   }
 
   /**
-   * @return the details of the verification verdict as an MlsOutcome JSON string, or
-   *         <code>null</code> if not available
+   * @return the findings of the verification as a JSON array string, or <code>null</code> if the
+   *         verifier provided none
    * @since v0.12.0
    */
   public String getVerificationDetails ()

@@ -247,9 +247,9 @@ public interface IInboundTransaction extends IHasID <String>
   EVerificationResult getVerificationResult ();
 
   /**
-   * @return The details of the verification verdict as the JSON representation of an
-   *         {@link MlsOutcome}, or <code>null</code> if no details are available. Only filled for a
-   *         rejection.
+   * @return The findings of the verification as a JSON array of {@link VerificationIssue}, or
+   *         <code>null</code> if the verifier provided none. Filled for any verdict - on a passed
+   *         verification the findings are warnings.
    * @since 0.12.0
    */
   @Nullable

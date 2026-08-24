@@ -22,8 +22,6 @@ import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
-import com.helger.json.IJsonObject;
-import com.helger.json.JsonObject;
 import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
@@ -104,18 +102,6 @@ public final class MlsOutcomeIssue
   public String getDescription ()
   {
     return m_sDescription;
-  }
-
-  /**
-   * @return This issue in the JSON format documented on this class. Never <code>null</code>.
-   * @since 0.12.0
-   */
-  @NonNull
-  public IJsonObject getAsJson ()
-  {
-    return new JsonObject ().add ("errorField", m_sErrorField)
-                            .add ("statusReasonCode", m_eStatusReasonCode.getID ())
-                            .add ("description", m_sDescription);
   }
 
   /** {@inheritDoc} */

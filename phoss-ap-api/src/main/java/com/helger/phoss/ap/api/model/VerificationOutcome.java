@@ -26,6 +26,8 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.json.IJsonArray;
+import com.helger.json.JsonArray;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
@@ -131,6 +133,21 @@ public final class VerificationOutcome
   public boolean hasIssues ()
   {
     return m_aIssues.isNotEmpty ();
+  }
+
+  /**
+   * @return All findings as a JSON array, each element in the format documented on
+   *         {@link VerificationIssue}. Never <code>null</code> but maybe empty. This is what ends up
+   *         in the <code>verification_details</code> column of an inbound transaction.
+   */
+  @NonNull
+  @ReturnsMutableCopy
+  public IJsonArray getAllIssuesAsJson ()
+  {
+    final JsonArray ret = new JsonArray ();
+    for (final VerificationIssue aIssue : m_aIssues)
+      ret.add (aIssue.getAsJson ());
+    return ret;
   }
 
   @Override

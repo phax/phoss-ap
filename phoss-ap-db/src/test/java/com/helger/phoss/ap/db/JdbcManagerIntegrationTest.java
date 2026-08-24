@@ -808,7 +808,7 @@ public final class JdbcManagerIntegrationTest
     assertNull (aMgr.getByID (sID).getVerificationResult ());
     assertNull (aMgr.getByID (sID).getVerificationDetails ());
 
-    final String sDetails = "{\"responseCode\":\"RE\",\"responseText\":\"Verification failed\"}";
+    final String sDetails = "[{\"level\":\"error\",\"type\":\"business_rule\",\"code\":\"PEPPOL-EN16931-R001\",\"description\":\"Missing ID\"}]";
     assertTrue (aMgr.updateVerificationResult (sID, EVerificationResult.REJECTED, sDetails).isSuccess ());
 
     final IInboundTransaction aTx = aMgr.getByID (sID);
@@ -839,7 +839,7 @@ public final class JdbcManagerIntegrationTest
     final String sID = _createInboundTx ();
     assertNotNull (sID);
 
-    final String sDetails = "{\"responseCode\":\"RE\"}";
+    final String sDetails = "[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]";
     assertTrue (aMgr.updateVerificationResult (sID, EVerificationResult.REJECTED, sDetails).isSuccess ());
     assertTrue (aMgr.updateStatusAndNextRetry (sID, EInboundStatus.FORWARD_FAILED, _now (), "some error").isSuccess ());
 
@@ -1174,7 +1174,7 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (sTxID);
     final String sSbdhInstanceID = aTxMgr.getByID (sTxID).getSbdhInstanceID ();
 
-    final String sDetails = "{\"responseCode\":\"RE\",\"issues\":[{\"errorField\":\"NA\"}]}";
+    final String sDetails = "[{\"level\":\"error\",\"type\":\"business_rule\",\"code\":\"PEPPOL-EN16931-R001\",\"description\":\"Missing ID\"}]";
     assertTrue (aTxMgr.updateVerificationResult (sTxID, EVerificationResult.REJECTED, sDetails).isSuccess ());
     aTxMgr.updateStatusCompleted (sTxID, EInboundStatus.FORWARDED);
 

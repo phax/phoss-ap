@@ -201,13 +201,13 @@ public final class InboundTransactionRowTest
                                                           "RE",
                                                           "mls-out-ver",
                                                           "rejected",
-                                                          "{\"responseCode\":\"RE\"}");
+                                                          "[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]");
     final InboundTransactionRow aTx = new InboundTransactionRow (aRow);
 
     // The verdict is independent of the status - a rejected document may well be "forwarded"
     assertEquals (EInboundStatus.FORWARDED, aTx.getStatus ());
     assertEquals (EVerificationResult.REJECTED, aTx.getVerificationResult ());
-    assertEquals ("{\"responseCode\":\"RE\"}", aTx.getVerificationDetails ());
+    assertEquals ("[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]", aTx.getVerificationDetails ());
   }
 
   @Test

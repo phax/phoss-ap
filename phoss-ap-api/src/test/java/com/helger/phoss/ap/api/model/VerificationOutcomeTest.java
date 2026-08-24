@@ -18,6 +18,7 @@ package com.helger.phoss.ap.api.model;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -26,6 +27,9 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import com.helger.collection.commons.CommonsArrayList;
+import com.helger.json.IJsonArray;
+import com.helger.json.IJsonObject;
+import com.helger.json.serialize.JsonReader;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
@@ -97,6 +101,35 @@ public final class VerificationOutcomeTest
     assertTrue (a.isRejected ());
     assertEquals ("Malware found", a.getMessage ());
     assertFalse (a.hasIssues ());
+  }
+
+  @Test
+  public void testGetAllIssuesAsJson ()
+  {
+    // This is what ends up in the "verification_details" column of an inbound transaction
+    final VerificationOutcome a = VerificationOutcome.rejected ("Invalid",
+                                                                new CommonsArrayList <> (VerificationIssue.businessRuleViolation ("PEPPOL-EN16931-R001",
+                                                                                                                                  "/Invoice/cbc:ID",
+                                                                                                                                  "Missing ID"),
+                                                                                         VerificationIssue.businessRuleWarning (null,
+                                                                                                                                null,
+                                                                                                                                "Just a warning")));
+    final IJsonArray aJson = a.getAllIssuesAsJson ();
+    assertEquals (2, aJson.size ());
+
+    final IJsonObject aFirst = aJson.getObjectAtIndex (0);
+    assertEquals ("error", aFirst.getAsString ("level"));
+    assertEquals ("PEPPOL-EN16931-R001", aFirst.getAsString ("code"));
+
+    // Round-trips through the DB column as a string
+    final String sJson = aJson.getAsJsonString ();
+    assertNotNull (JsonReader.builder ().source (sJson).read ());
+  }
+
+  @Test
+  public void testGetAllIssuesAsJsonEmpty ()
+  {
+    assertTrue (VerificationOutcome.passed ().getAllIssuesAsJson ().isEmpty ());
   }
 
   @Test

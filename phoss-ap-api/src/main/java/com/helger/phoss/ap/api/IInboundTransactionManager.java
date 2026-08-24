@@ -281,8 +281,9 @@ public interface IInboundTransactionManager
    * @param eVerificationResult
    *        The verification verdict. Never <code>null</code>.
    * @param sVerificationDetails
-   *        The details of the verdict as the JSON representation of an
-   *        {@link com.helger.phoss.ap.api.model.MlsOutcome}. May be <code>null</code>.
+   *        The findings of the verification as a JSON array of
+   *        {@link com.helger.phoss.ap.api.model.VerificationIssue}. May be <code>null</code> if the
+   *        verifier provided no individual findings.
    * @return {@link ESuccess}
    * @since 0.12.0
    */

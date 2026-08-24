@@ -197,7 +197,7 @@ public final class InboundTransactionResponseTest
                                                   EPeppolMLSResponseCode.ACCEPTANCE,
                                                   "mls-out-1",
                                                   EVerificationResult.REJECTED,
-                                                  "{\"responseCode\":\"RE\"}");
+                                                  "[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]");
 
     final InboundTransactionResponse aResp = InboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -222,7 +222,7 @@ public final class InboundTransactionResponseTest
     assertFalse (aResp.isDuplicateSBDH ());
     assertEquals ("AP", aResp.getMlsResponseCode ());
     assertEquals ("rejected", aResp.getVerificationResult ());
-    assertEquals ("{\"responseCode\":\"RE\"}", aResp.getVerificationDetails ());
+    assertEquals ("[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]", aResp.getVerificationDetails ());
   }
 
   @Test

@@ -34,7 +34,6 @@ import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.phoss.ap.api.model.MlsOutcome;
-import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
@@ -145,7 +144,8 @@ public final class InboundOrchestratorVerifierTest
     final MockVerifier aNeverCalled = new MockVerifier ("Scanner", VerificationOutcome.passed ());
     final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting, aNeverCalled));
     assertTrue (aVR.outcome ().isRejected ());
-    // No individual issues were provided - the MLS details are created by the orchestrator on demand
+    // No individual issues were provided - the MLS details are created by the orchestrator on
+    // demand
     assertFalse (aVR.outcome ().hasIssues ());
     assertEquals ("Invalid document", aVR.outcome ().getMessage ());
     assertFalse (aNeverCalled.m_bCalled);

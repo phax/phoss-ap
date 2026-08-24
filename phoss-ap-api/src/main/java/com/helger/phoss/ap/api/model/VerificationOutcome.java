@@ -30,7 +30,8 @@ import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
  * Immutable DTO with the outcome of a single document verification, as returned by
- * {@link com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI}.
+ * {@link com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI} and
+ * {@link com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI}.
  * <p>
  * It distinguishes a verdict about the document itself ({@link #passed()} and
  * {@link #rejected(String, Iterable)}) from the inability to make a verdict at all, because the

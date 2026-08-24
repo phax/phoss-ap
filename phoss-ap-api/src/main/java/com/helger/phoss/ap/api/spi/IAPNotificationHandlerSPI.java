@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.style.IsSPIInterface;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 
 /**
@@ -106,11 +107,16 @@ public interface IAPNotificationHandlerSPI
    *
    * @param sSbdhInstanceID
    *        The SBDH Instance Identifier. Never <code>null</code>.
-   * @param sErrorDetails
-   *        Optional error details. May be <code>null</code>.
-   * @since 0.9.0
+   * @param aVerificationOutcome
+   *        The outcome that led to the rejection, carrying the human-readable reason and the
+   *        individual {@link com.helger.phoss.ap.api.model.VerificationIssue}s. Never
+   *        <code>null</code>. Its category also states whether the document was actually found to
+   *        be invalid or whether a verifier could not make a verdict at all.
+   * @since 0.9.0 - carries the {@link VerificationOutcome} instead of a flat error string since
+   *        0.12.0
    */
-  void onOutboundVerificationRejection (@NonNull String sSbdhInstanceID, @Nullable String sErrorDetails);
+  void onOutboundVerificationRejection (@NonNull String sSbdhInstanceID,
+                                        @NonNull VerificationOutcome aVerificationOutcome);
 
   /**
    * Called when an inbound AS4 message is rejected because it was detected as a duplicate before an

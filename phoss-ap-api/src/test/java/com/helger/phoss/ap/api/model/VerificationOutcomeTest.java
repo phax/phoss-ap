@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import com.helger.collection.commons.CommonsArrayList;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
@@ -43,24 +44,49 @@ public final class VerificationOutcomeTest
     assertFalse (a.isRejected ());
     assertFalse (a.isServiceUnavailable ());
     assertNull (a.getMessage ());
-    assertNull (a.getMlsOutcome ());
+    assertFalse (a.hasIssues ());
+    assertTrue (a.getAllIssues ().isEmpty ());
     // Always the same instance
     assertSame (a, VerificationOutcome.passed ());
   }
 
   @Test
-  public void testRejectedWithMlsOutcome ()
+  public void testPassedWithWarnings ()
   {
-    final MlsOutcome aMls = MlsOutcome.rejection ("Invalid document",
-                                                   MlsOutcomeIssue.businessRuleViolation ("NA", "Rule failed"));
-    final VerificationOutcome a = VerificationOutcome.rejected (aMls);
+    final VerificationIssue aIssue = VerificationIssue.businessRuleWarning ("R-042", "/Invoice", "Better avoid this");
+    final VerificationOutcome a = VerificationOutcome.passed (new CommonsArrayList <> (aIssue));
+    assertTrue (a.isPassed ());
+    assertNull (a.getMessage ());
+    // A passed outcome may carry warnings - MLS cannot express those, but an outbound submitter
+    // can be told about them
+    assertTrue (a.hasIssues ());
+    assertEquals (1, a.getAllIssues ().size ());
+    assertSame (aIssue, a.getAllIssues ().getFirstOrNull ());
+  }
+
+  @Test
+  public void testPassedWithNullIssues ()
+  {
+    final VerificationOutcome a = VerificationOutcome.passed (null);
+    assertTrue (a.isPassed ());
+    assertFalse (a.hasIssues ());
+  }
+
+  @Test
+  public void testRejectedWithIssues ()
+  {
+    final VerificationIssue aIssue = VerificationIssue.businessRuleViolation ("PEPPOL-EN16931-R001",
+                                                                              "/Invoice/cbc:ID",
+                                                                              "Rule failed");
+    final VerificationOutcome a = VerificationOutcome.rejected ("Invalid document",
+                                                                 new CommonsArrayList <> (aIssue));
     assertSame (EVerificationOutcomeCategory.REJECTION, a.getCategory ());
     assertTrue (a.isRejected ());
     assertFalse (a.isPassed ());
     assertFalse (a.isServiceUnavailable ());
-    assertSame (aMls, a.getMlsOutcome ());
-    // The message is taken from the MLS response text
     assertEquals ("Invalid document", a.getMessage ());
+    assertTrue (a.hasIssues ());
+    assertSame (aIssue, a.getAllIssues ().getFirstOrNull ());
   }
 
   @Test
@@ -70,7 +96,16 @@ public final class VerificationOutcomeTest
     assertSame (EVerificationOutcomeCategory.REJECTION, a.getCategory ());
     assertTrue (a.isRejected ());
     assertEquals ("Malware found", a.getMessage ());
-    assertNull (a.getMlsOutcome ());
+    assertFalse (a.hasIssues ());
+  }
+
+  @Test
+  public void testIssuesAreACopy ()
+  {
+    final VerificationIssue aIssue = VerificationIssue.businessRuleViolation (null, null, "Rule failed");
+    final VerificationOutcome a = VerificationOutcome.rejected ("Nope", new CommonsArrayList <> (aIssue));
+    a.getAllIssues ().clear ();
+    assertTrue (a.hasIssues ());
   }
 
   @Test
@@ -82,7 +117,7 @@ public final class VerificationOutcomeTest
     assertFalse (a.isPassed ());
     assertFalse (a.isRejected ());
     assertEquals ("Connection refused", a.getMessage ());
-    assertNull (a.getMlsOutcome ());
+    assertFalse (a.hasIssues ());
   }
 
   @Test
@@ -90,7 +125,18 @@ public final class VerificationOutcomeTest
   {
     try
     {
-      VerificationOutcome.rejected ((MlsOutcome) null);
+      VerificationOutcome.rejected ((String) null);
+      fail ();
+    }
+    catch (final NullPointerException | IllegalArgumentException ex)
+    {
+      // expected
+    }
+
+    try
+    {
+      // A rejection with an explicitly empty issue list makes no sense
+      VerificationOutcome.rejected ("Nope", new CommonsArrayList <> ());
       fail ();
     }
     catch (final NullPointerException | IllegalArgumentException ex)

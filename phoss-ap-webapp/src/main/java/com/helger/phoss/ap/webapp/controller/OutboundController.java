@@ -40,6 +40,9 @@ import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.ddd.DocumentDetails;
+import com.helger.json.IJsonObject;
+import com.helger.json.JsonArray;
+import com.helger.json.JsonObject;
 import com.helger.json.JsonValue;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.IDocumentTypeIdentifier;
@@ -53,6 +56,9 @@ import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.dto.OutboundS3SubmitRequest;
 import com.helger.phoss.ap.api.dto.OutboundTransactionResponse;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.OutboundSubmitResult;
+import com.helger.phoss.ap.api.model.VerificationIssue;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.ddd.DDDHelper;
@@ -107,6 +113,67 @@ public class OutboundController
    *         if all fields are valid.
    */
   @Nullable
+  /**
+   * Build the JSON error body for a failed outbound submission. Before 0.12.0 this was a bare JSON
+   * string with a generic message, which gave the submitter no way to learn <em>why</em> a document
+   * was rejected.
+   *
+   * @param aSubmitResult
+   *        The failed submit result. May not be <code>null</code>.
+   * @return The JSON body. Never <code>null</code>.
+   */
+  @NonNull
+  private static String _submitErrorJson (@NonNull final OutboundSubmitResult aSubmitResult)
+  {
+    final IJsonObject ret = new JsonObject ();
+    if (aSubmitResult.isVerificationRejected ())
+    {
+      final VerificationOutcome aOutcome = aSubmitResult.getVerificationOutcome ();
+      ret.add ("errorMessage", StringHelper.getNotNull (aOutcome.getMessage (), "Document verification failed"));
+      // Tell the submitter whether the document was actually found to be invalid, or whether the
+      // verifier could not make a verdict at all - the reaction to those is very different
+      ret.add ("verificationPerformed", !aOutcome.isServiceUnavailable ());
+      if (aOutcome.hasIssues ())
+      {
+        final JsonArray aIssues = new JsonArray ();
+        for (final VerificationIssue aIssue : aOutcome.getAllIssues ())
+          aIssues.add (aIssue.getAsJson ());
+        ret.add ("verificationIssues", aIssues);
+      }
+    }
+    else
+      ret.add ("errorMessage",
+               StringHelper.getNotNull (aSubmitResult.getErrorMessage (), "Failed to submit outbound transaction"));
+    return ret.getAsJsonString ();
+  }
+
+  /**
+   * Render the sending report, adding the verification warnings if the document was accepted but
+   * the verifiers had remarks. If there are no warnings the response is byte-identical to the
+   * report itself, so the common case keeps its shape.
+   *
+   * @param aSendingReport
+   *        The sending report. May not be <code>null</code>.
+   * @param aSubmitResult
+   *        The successful submit result. May not be <code>null</code>.
+   * @return The JSON body. Never <code>null</code>.
+   */
+  @NonNull
+  private static String _sendingReportJson (@NonNull final Phase4PeppolSendingReport aSendingReport,
+                                            @NonNull final OutboundSubmitResult aSubmitResult)
+  {
+    final VerificationOutcome aOutcome = aSubmitResult.getVerificationOutcome ();
+    if (aOutcome == null || !aOutcome.hasIssues ())
+      return aSendingReport.getAsJsonString ();
+
+    final IJsonObject ret = aSendingReport.getAsJsonObject ();
+    final JsonArray aWarnings = new JsonArray ();
+    for (final VerificationIssue aIssue : aOutcome.getAllIssues ())
+      aWarnings.add (aIssue.getAsJson ());
+    ret.add ("verificationWarnings", aWarnings);
+    return ret.getAsJsonString ();
+  }
+
   private static ResponseEntity <String> _validateCustomFields (@Nullable final String sCustom1,
                                                                 @Nullable final String sCustom2,
                                                                 @Nullable final String sCustom3)
@@ -383,7 +450,7 @@ public class OutboundController
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[SubmitRaw] ",
+      final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitRawDocument ("[SubmitRaw] ",
                                                                                aSenderID,
                                                                                aReceiverID,
                                                                                aDocTypeID,
@@ -399,22 +466,22 @@ public class OutboundController
                                                                                sCustom1,
                                                                                sCustom2,
                                                                                sCustom3);
-      if (aTx == null)
+      if (aSubmitResult.isFailure ())
       {
-        return ResponseEntity.unprocessableContent ()
-                             .body (JsonValue.create ("Failed to submit outbound transaction").getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_submitErrorJson (aSubmitResult));
       }
+      final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitRaw] ",
                                                                                                     aTx);
       if (!aSendingReport.isOverallSuccess ())
       {
-        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
       }
 
       // Sending success
-      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
+      return ResponseEntity.ok (_sendingReportJson (aSendingReport, aSubmitResult));
     }
   }
 
@@ -473,28 +540,29 @@ public class OutboundController
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitPrebuiltSBD ("[SubmitPrebuiltSBD] ",
+      final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitPrebuiltSBD ("[SubmitPrebuiltSBD] ",
                                                                                aIS,
                                                                                sMlsTo,
                                                                                sCustom1,
                                                                                sCustom2,
                                                                                sCustom3);
-      if (aTx == null)
+      if (aSubmitResult.isFailure ())
       {
-        return ResponseEntity.badRequest ()
-                             .body (JsonValue.create ("Failed to submit outbound SBD transaction").getAsJsonString ());
+        // Deliberately kept at 400 - this endpoint answered 400 before the structured error body
+        return ResponseEntity.badRequest ().body (_submitErrorJson (aSubmitResult));
       }
+      final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitPrebuiltSBD] ",
                                                                                                     aTx);
       if (!aSendingReport.isOverallSuccess ())
       {
-        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
       }
 
       // Sending success
-      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
+      return ResponseEntity.ok (_sendingReportJson (aSendingReport, aSubmitResult));
     }
   }
 
@@ -653,7 +721,7 @@ public class OutboundController
     // Submit via the standard outbound pipeline
     try (final InputStream aPayloadIS = new java.io.ByteArrayInputStream (aPayloadBytes))
     {
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument (sLogPrefix,
+      final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitRawDocument (sLogPrefix,
                                                                                aSenderID,
                                                                                aReceiverID,
                                                                                aDocTypeID,
@@ -669,16 +737,19 @@ public class OutboundController
                                                                                sCustom1,
                                                                                sCustom2,
                                                                                sCustom3);
-      if (aTx == null)
-        return ResponseEntity.badRequest ()
-                             .body (JsonValue.create ("Failed to submit outbound transaction").getAsJsonString ());
+      if (aSubmitResult.isFailure ())
+      {
+        // Deliberately kept at 400 - this endpoint answered 400 before the structured error body
+        return ResponseEntity.badRequest ().body (_submitErrorJson (aSubmitResult));
+      }
+      final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
       if (!aSendingReport.isOverallSuccess ())
-        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
 
-      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
+      return ResponseEntity.ok (_sendingReportJson (aSendingReport, aSubmitResult));
     }
   }
 
@@ -851,7 +922,7 @@ public class OutboundController
                                                                       .build ()))
     {
       // Store in DB
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[SubmitS3] ",
+      final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitRawDocument ("[SubmitS3] ",
                                                                                aSenderID,
                                                                                aReceiverID,
                                                                                aDocTypeID,
@@ -867,21 +938,20 @@ public class OutboundController
                                                                                aRequest.getCustom1 (),
                                                                                aRequest.getCustom2 (),
                                                                                aRequest.getCustom3 ());
-      if (aTx == null)
+      if (aSubmitResult.isFailure ())
       {
-        return ResponseEntity.unprocessableContent ()
-                             .body (JsonValue.create ("Failed to submit outbound transaction from S3")
-                                             .getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_submitErrorJson (aSubmitResult));
       }
+      final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitS3] ", aTx);
       if (!aSendingReport.isOverallSuccess ())
       {
-        return ResponseEntity.unprocessableContent ().body (aSendingReport.getAsJsonString ());
+        return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
       }
 
-      return ResponseEntity.ok (aSendingReport.getAsJsonString ());
+      return ResponseEntity.ok (_sendingReportJson (aSendingReport, aSubmitResult));
     }
     catch (final Exception ex)
     {

@@ -33,10 +33,10 @@ import org.slf4j.LoggerFactory;
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.base.numeric.mutable.MutableInt;
-import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
 import com.helger.base.url.URLHelper;
 import com.helger.config.IConfig;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.diagnostics.error.IError;
 import com.helger.diagnostics.error.level.EErrorLevel;
 import com.helger.http.CHttpHeader;
@@ -53,7 +53,7 @@ import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
-import com.helger.phoss.ap.api.model.MlsOutcome;
+import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
@@ -254,6 +254,29 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
     }
   }
 
+  /**
+   * Turn a completed Phorm call into a verification outcome. The issues are the same in both
+   * directions - only how they are reported to the outside world differs.
+   *
+   * @param aCall
+   *        The completed Phorm call. May not be <code>null</code>.
+   * @return Never <code>null</code>.
+   */
+  @NonNull
+  private static VerificationOutcome _toOutcome (@NonNull final PhormCallResult aCall)
+  {
+    final ICommonsList <VerificationIssue> aIssues = PhiveToVerificationMapper.toVerificationIssues (aCall.results (),
+                                                                                                     CPhossAP.DEFAULT_LOCALE);
+    if (aCall.results ().containsNoError ())
+    {
+      // Valid - any remaining issues are warnings
+      return VerificationOutcome.passed (aIssues);
+    }
+
+    // The result list said there is at least one error, so the mapping must have produced issues
+    return VerificationOutcome.rejected ("Document validation failed", aIssues);
+  }
+
   /** {@inheritDoc} */
   @NonNull
   public VerificationOutcome verifyInboundDocument (@NonNull @Nonempty final String sDocumentPath,
@@ -270,30 +293,27 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
       case REQUEST_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service call could not be sent - see server log for details");
       case SERVICE_UNAVAILABLE -> VerificationOutcome.serviceUnavailable ("Phorm validation service is not available - see server log for details");
       case RESPONSE_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service response could not be used - see server log for details");
-      case COMPLETED ->
-      {
-        final MlsOutcome aMlsOutcome = PhiveToMlsMapper.toMlsOutcome (aCall.results (),
-                                                                      CPhossAP.DEFAULT_LOCALE,
-                                                                      "Document validation failed");
-        yield aMlsOutcome.getResponseCode ().isFailure () ? VerificationOutcome.rejected (aMlsOutcome)
-                                                          : VerificationOutcome.passed ();
-      }
+      case COMPLETED -> _toOutcome (aCall);
     };
   }
 
   /** {@inheritDoc} */
   @NonNull
-  public ESuccess verifyOutboundDocument (@NonNull @Nonempty final String sDocumentPath,
-                                          @NonNull final IDocumentTypeIdentifier aDocTypeID,
-                                          @NonNull final IProcessIdentifier aProcessID)
+  public VerificationOutcome verifyOutboundDocument (@NonNull @Nonempty final String sDocumentPath,
+                                                     @NonNull final IDocumentTypeIdentifier aDocTypeID,
+                                                     @NonNull final IProcessIdentifier aProcessID)
   {
     final PhormCallResult aCall = _callPhorm (sDocumentPath);
     return switch (aCall.state ())
     {
-      case SKIPPED -> ESuccess.SUCCESS;
-      // Outbound verification has no fail mode yet - a verifier without a verdict stays fail closed
-      case REQUEST_ERROR, SERVICE_UNAVAILABLE, RESPONSE_ERROR -> ESuccess.FAILURE;
-      case COMPLETED -> ESuccess.valueOf (aCall.results ().getOverallValidity ().isValid ());
+      case SKIPPED -> VerificationOutcome.passed ();
+      // Outbound verification has no fail mode - a verifier without a verdict stays fail closed.
+      // The outcome is nevertheless "service unavailable" and not "rejected", so that the caller
+      // can tell the submitter that the document was not actually found to be invalid
+      case REQUEST_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service call could not be sent - see server log for details");
+      case SERVICE_UNAVAILABLE -> VerificationOutcome.serviceUnavailable ("Phorm validation service is not available - see server log for details");
+      case RESPONSE_ERROR -> VerificationOutcome.serviceUnavailable ("Phorm validation service response could not be used - see server log for details");
+      case COMPLETED -> _toOutcome (aCall);
     };
   }
 }

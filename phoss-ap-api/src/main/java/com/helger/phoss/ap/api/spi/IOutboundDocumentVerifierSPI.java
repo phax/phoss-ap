@@ -20,9 +20,9 @@ import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.style.IsSPIInterface;
-import com.helger.base.state.ESuccess;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 
 /**
  * SPI interface for optional document verification. Implementations are loaded via
@@ -32,7 +32,7 @@ import com.helger.peppolid.IProcessIdentifier;
  * @author Philip Helger
  */
 @IsSPIInterface
-public interface IOutboundDocumentVerifierSPI
+public interface IOutboundDocumentVerifierSPI extends IDocumentVerifierSPI
 {
   /**
    * Verify a document's content against the given document type and process identifiers.
@@ -44,11 +44,20 @@ public interface IOutboundDocumentVerifierSPI
    *        The Peppol Document Type Identifier. Never <code>null</code>.
    * @param aProcessID
    *        The Peppol Process Identifier. Never <code>null</code>.
-   * @return {@link ESuccess#SUCCESS} if the document is valid, {@link ESuccess#FAILURE} if
-   *         verification failed.
+   * @return The outcome of the verification. May not be <code>null</code>. Use
+   *         {@link VerificationOutcome#passed()} if the verifier has no objection,
+   *         {@link VerificationOutcome#passed(Iterable)} to accept the document but report
+   *         warnings, and {@link VerificationOutcome#rejected(String, Iterable)} to reject it - the
+   *         {@link com.helger.phoss.ap.api.model.VerificationIssue}s are returned to the submitter,
+   *         so that a client can react to a specific rule without parsing human-readable text.
+   *         {@link VerificationOutcome#serviceUnavailable(String)} is treated like a rejection
+   *         here: unlike the inbound direction, outbound verification has no fail mode, so a
+   *         verifier that cannot make a verdict stays fail-closed.
+   * @since 0.12.0 - was previously returning {@link com.helger.base.state.ESuccess}, which could
+   *        not carry any detail about <em>why</em> a document was rejected
    */
   @NonNull
-  ESuccess verifyOutboundDocument (@NonNull @Nonempty String sDocumentPath,
-                                   @NonNull IDocumentTypeIdentifier aDocTypeID,
-                                   @NonNull IProcessIdentifier aProcessID);
+  VerificationOutcome verifyOutboundDocument (@NonNull @Nonempty String sDocumentPath,
+                                              @NonNull IDocumentTypeIdentifier aDocTypeID,
+                                              @NonNull IProcessIdentifier aProcessID);
 }

@@ -38,6 +38,8 @@ import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 import com.helger.base.timing.StopWatch;
 import com.helger.base.wrapper.Wrapper;
+import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.io.file.FilenameHelper;
 import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
@@ -75,6 +77,9 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.OutboundSubmitResult;
+import com.helger.phoss.ap.api.model.VerificationIssue;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 import com.helger.phoss.ap.basic.APBasicConfig;
@@ -203,6 +208,39 @@ public final class OutboundOrchestrator
   {}
 
   /**
+   * Run all registered outbound document verifiers. A verifier that does not pass wins immediately
+   * and its outcome is returned as-is, so the caller can tell a genuine rejection from a verifier
+   * that could not make a verdict at all. Unlike the inbound direction there is no fail mode: an
+   * unavailable verifier keeps the document from being sent.
+   *
+   * @param sDocumentPath
+   *        The path of the stored document. May not be <code>null</code>.
+   * @param aDocTypeID
+   *        The document type identifier. May not be <code>null</code>.
+   * @param aProcessID
+   *        The process identifier. May not be <code>null</code>.
+   * @return The aggregated outcome. A passed outcome carries the accumulated warnings of all
+   *         verifiers. Never <code>null</code>.
+   */
+  @NonNull
+  private static VerificationOutcome _runOutboundVerifiers (@NonNull final String sDocumentPath,
+                                                            @NonNull final IDocumentTypeIdentifier aDocTypeID,
+                                                            @NonNull final IProcessIdentifier aProcessID)
+  {
+    final ICommonsList <VerificationIssue> aWarnings = new CommonsArrayList <> ();
+    for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
+    {
+      final VerificationOutcome aOutcome = aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID);
+      if (!aOutcome.isPassed ())
+        return aOutcome;
+
+      // Keep the warnings of an accepting verifier - they are reported back on success
+      aWarnings.addAll (aOutcome.getAllIssues ());
+    }
+    return VerificationOutcome.passed (aWarnings);
+  }
+
+  /**
    * Submit a raw (payload-only) document for outbound sending. The document is stored to disk,
    * optionally verified, and a new outbound transaction is created in
    * {@link EOutboundStatus#PENDING} state.
@@ -241,11 +279,15 @@ public final class OutboundOrchestrator
    *        Second optional custom field (max 255 characters). May be <code>null</code>.
    * @param sCustom3
    *        Third optional custom field (max 255 characters). May be <code>null</code>.
-   * @return The created {@link IOutboundTransaction} or <code>null</code> if the document could not
-   *         be stored or verification failed.
+   * @return The result of the submission, never <code>null</code>. On a verification rejection it
+   *         carries the individual findings and <b>no</b> outbound transaction is created, because
+   *         the document is never sent.
+   * @since 0.12.0 - returns {@link OutboundSubmitResult} instead of a nullable
+   *        {@link IOutboundTransaction}, which could not tell a verification rejection from an
+   *        internal error
    */
-  @Nullable
-  public static IOutboundTransaction submitRawDocument (@NonNull final String sLogPrefix,
+  @NonNull
+  public static OutboundSubmitResult submitRawDocument (@NonNull final String sLogPrefix,
                                                         @NonNull final IParticipantIdentifier aSenderID,
                                                         @NonNull final IParticipantIdentifier aReceiverID,
                                                         @NonNull final IDocumentTypeIdentifier aDocTypeID,
@@ -300,7 +342,7 @@ public final class OutboundOrchestrator
         StreamHelper.close (aFileOS);
         if (aTempPathHolder.isSet ())
           aDocPayloadMgr.deleteDocument (aTempPathHolder.get ());
-        return null;
+        return OutboundSubmitResult.failure ("Failed to store the document to disk");
       }
       nDocumentBytes = aCountingIS.getBytesRead ();
     }
@@ -316,13 +358,14 @@ public final class OutboundOrchestrator
         aHandler.onUnexpectedException ("OutboundOrchestrator.submitRawDocument",
                                         "Failed to process document to submit",
                                         ex);
-      return null;
+      return OutboundSubmitResult.failure ("Failed to process the document to submit: " + ex.getMessage ());
     }
 
     final String sDocumentHash = HashHelper.getDigestHex (aMD);
     final String sDocumentPath = aTempPathHolder.get ();
 
     // Optional verification
+    VerificationOutcome aVerificationOutcome = null;
     if (APCoreConfig.isVerificationOutboundEnabled ())
     {
       try (final ITelemetrySpan aVerifySpan = Telemetry.startSpan (CPhossAPOtel.SPAN_VERIFICATION,
@@ -331,15 +374,19 @@ public final class OutboundOrchestrator
                                                        .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
                                                                       sSbdhInstanceID))
       {
-        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-          {
-            aVerifySpan.setStatusError ("Outbound verification failed");
-            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
-            return null;
-          }
+        aVerificationOutcome = _runOutboundVerifiers (sDocumentPath, aDocTypeID, aProcessID);
+        if (!aVerificationOutcome.isPassed ())
+        {
+          aVerifySpan.setStatusError ("Outbound verification failed");
+          LOGGER.warn (sLogPrefix +
+                       "Outbound document verification failed for SBDH ID '" +
+                       sSbdhInstanceID +
+                       "': " +
+                       aVerificationOutcome.getMessage ());
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, aVerificationOutcome);
+          return OutboundSubmitResult.verificationRejected (aVerificationOutcome);
+        }
 
         // All verifiers accepted
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
@@ -377,7 +424,13 @@ public final class OutboundOrchestrator
                                            aDocTypeID.getURIEncoded (),
                                            aProcessID.getURIEncoded (),
                                            sSbdhInstanceID);
-    return aOutboundMgr.getByID (sTransactionID);
+    final IOutboundTransaction aTx = aOutboundMgr.getByID (sTransactionID);
+    if (aTx == null)
+    {
+      LOGGER.error (sLogPrefix + "Failed to read back the just created outbound transaction '" + sTransactionID + "'");
+      return OutboundSubmitResult.failure ("Failed to store the outbound transaction");
+    }
+    return OutboundSubmitResult.success (aTx, aVerificationOutcome);
   }
 
   /**
@@ -397,11 +450,15 @@ public final class OutboundOrchestrator
    *        Second optional custom field (max 255 characters). May be <code>null</code>.
    * @param sCustom3
    *        Third optional custom field (max 255 characters). May be <code>null</code>.
-   * @return The created {@link IOutboundTransaction} or <code>null</code> if the SBD could not be
-   *         parsed.
+   * @return The result of the submission, never <code>null</code>. On a verification rejection it
+   *         carries the individual findings and <b>no</b> outbound transaction is created, because
+   *         the document is never sent.
+   * @since 0.12.0 - returns {@link OutboundSubmitResult} instead of a nullable
+   *        {@link IOutboundTransaction}, which could not tell a verification rejection from an
+   *        internal error
    */
-  @Nullable
-  public static IOutboundTransaction submitPrebuiltSBD (@NonNull final String sLogPrefix,
+  @NonNull
+  public static OutboundSubmitResult submitPrebuiltSBD (@NonNull final String sLogPrefix,
                                                         @NonNull final InputStream aSbdIS,
                                                         @Nullable final String sMlsTo,
                                                         @Nullable final String sCustom1,
@@ -447,7 +504,7 @@ public final class OutboundOrchestrator
 
       for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
         aHandler.onUnexpectedException ("OutboundOrchestrator.submitPrebuiltSBD", "Failed to parse provided SBDH", ex);
-      return null;
+      return OutboundSubmitResult.failure ("Failed to parse the provided SBDH: " + ex.getMessage ());
     }
 
     // Get Document hash in the correct version
@@ -465,6 +522,7 @@ public final class OutboundOrchestrator
     }
 
     // Optional verification
+    VerificationOutcome aVerificationOutcome = null;
     if (APCoreConfig.isVerificationOutboundEnabled ())
     {
       final IDocumentTypeIdentifier aDocTypeID = aSbdData.getDocumentTypeAsIdentifier ();
@@ -475,15 +533,19 @@ public final class OutboundOrchestrator
                                                        .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
                                                                       sSbdhInstanceID))
       {
-        for (final IOutboundDocumentVerifierSPI aVerifier : APCoreMetaManager.getAllOutboundVerifiers ())
-          if (aVerifier.verifyOutboundDocument (sDocumentPath, aDocTypeID, aProcessID).isFailure ())
-          {
-            aVerifySpan.setStatusError ("Outbound verification failed");
-            LOGGER.warn (sLogPrefix + "Outbound document verification failed for SBDH ID '" + sSbdhInstanceID + "'");
-            for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-              aHandler.onOutboundVerificationRejection (sSbdhInstanceID, "Outbound verification failed");
-            return null;
-          }
+        aVerificationOutcome = _runOutboundVerifiers (sDocumentPath, aDocTypeID, aProcessID);
+        if (!aVerificationOutcome.isPassed ())
+        {
+          aVerifySpan.setStatusError ("Outbound verification failed");
+          LOGGER.warn (sLogPrefix +
+                       "Outbound document verification failed for SBDH ID '" +
+                       sSbdhInstanceID +
+                       "': " +
+                       aVerificationOutcome.getMessage ());
+          for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
+            aHandler.onOutboundVerificationRejection (sSbdhInstanceID, aVerificationOutcome);
+          return OutboundSubmitResult.verificationRejected (aVerificationOutcome);
+        }
 
         // All verifiers accepted
         for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
@@ -529,7 +591,13 @@ public final class OutboundOrchestrator
                                            aSbdData.getDocumentTypeURIEncoded (),
                                            aSbdData.getProcessURIEncoded (),
                                            sSbdhInstanceID);
-    return aMgr.getByID (sTransactionID);
+    final IOutboundTransaction aTx = aMgr.getByID (sTransactionID);
+    if (aTx == null)
+    {
+      LOGGER.error (sLogPrefix + "Failed to read back the just created outbound transaction '" + sTransactionID + "'");
+      return OutboundSubmitResult.failure ("Failed to store the outbound transaction");
+    }
+    return OutboundSubmitResult.success (aTx, aVerificationOutcome);
   }
 
   /**

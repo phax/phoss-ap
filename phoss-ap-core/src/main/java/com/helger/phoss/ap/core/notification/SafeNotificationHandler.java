@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
 /**
@@ -92,11 +93,11 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
 
   /** {@inheritDoc} */
   public void onOutboundVerificationRejection (@NonNull final String sSbdhInstanceID,
-                                               @Nullable final String sErrorDetails)
+                                               @NonNull final VerificationOutcome aVerificationOutcome)
   {
     try
     {
-      m_aHdl.onOutboundVerificationRejection (sSbdhInstanceID, sErrorDetails);
+      m_aHdl.onOutboundVerificationRejection (sSbdhInstanceID, aVerificationOutcome);
     }
     catch (final Exception ex)
     {

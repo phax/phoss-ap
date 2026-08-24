@@ -42,6 +42,7 @@ import com.helger.peppolid.factory.IIdentifierFactory;
 import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.OutboundSubmitResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
@@ -212,11 +213,11 @@ public final class DirectoryFileProcessor
       return;
 
     // Step 2: Submit pre-built SBD
-    final IOutboundTransaction aTx;
+    final OutboundSubmitResult aSubmitResult;
     try (final InputStream aIS = FileHelper.getBufferedInputStream (aPendingFile))
     {
       // Custom fields are not available for directory-based ingestion
-      aTx = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null, null, null, null);
+      aSubmitResult = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null, null, null, null);
     }
     catch (final Exception ex)
     {
@@ -229,17 +230,21 @@ public final class DirectoryFileProcessor
       return;
     }
 
-    if (aTx == null)
+    if (aSubmitResult.isFailure ())
     {
-      // Parse failure
-      LOGGER.error (sLogPrefix + "Failed to parse SBD from '" + sOriginalName + "'");
+      // Parse failure or a verifier rejected the document
+      final String sError = aSubmitResult.isVerificationRejected () ? aSubmitResult.getVerificationOutcome ()
+                                                                                   .getMessage ()
+                                                                    : aSubmitResult.getErrorMessage ();
+      LOGGER.error (sLogPrefix + "Failed to submit SBD from '" + sOriginalName + "': " + sError);
       final File aMoved = _moveFileToDir (aPendingFile, aErrorDir);
       if (aMoved != null)
         _writeResultJson (aErrorDir,
                           aMoved.getName () + ".json",
-                          _createErrorJson (sOriginalName, null, null, null, "Failed to parse SBD"));
+                          _createErrorJson (sOriginalName, null, null, null, sError));
       return;
     }
+    final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
     // Step 3: Send via AS4
     final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);

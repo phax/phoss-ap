@@ -204,18 +204,24 @@ public final class InboundOrchestrator
   {
     /**
      * Get the MLS details to be sent to C2, if the provided verifier result ends up as a rejection.
-     * If the verifier provided no MLS details, they are created from the outcome message.
+     * This is the single point where the transport-neutral
+     * {@link com.helger.phoss.ap.api.model.VerificationIssue}s of a verifier are projected onto the
+     * Peppol MLS format. If the verifier provided no individual issues, they are created from the
+     * outcome message.
      *
-     * @param aVR
-     *        The verifier result. May not be <code>null</code>.
      * @return Never <code>null</code>.
      */
     @NonNull
     MlsOutcome getMlsOutcome ()
     {
-      final MlsOutcome aMlsOutcome = outcome ().getMlsOutcome ();
-      if (aMlsOutcome != null)
-        return aMlsOutcome;
+      if (outcome ().hasIssues ())
+      {
+        final String sResponseText = StringHelper.getNotNull (outcome ().getMessage (),
+                                                              "Document verification failed");
+        return MlsOutcome.rejection (sResponseText,
+                                     outcome ().getAllIssues ()
+                                               .getAllMapped (MlsOutcomeIssue::fromVerificationIssue));
+      }
 
       final String sMessage = StringHelper.getNotNull (outcome ().getMessage (), "no details available");
       if (outcome ().isServiceUnavailable ())

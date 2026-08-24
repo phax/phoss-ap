@@ -56,6 +56,7 @@ import com.helger.phase4.logging.Phase4LoggerFactory;
 import com.helger.phase4.peppol.Phase4PeppolSendingReport;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.OutboundSubmitResult;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.telemetry.Telemetry;
 import com.helger.telemetry.ETelemetrySpanKind;
@@ -313,7 +314,7 @@ public final class APPeppolReportHelper
       final String sCustom1 = null;
       final String sCustom2 = null;
       final String sCustom3 = null;
-      final IOutboundTransaction aTx = OutboundOrchestrator.submitRawDocument ("[PeppolReporting] ",
+      final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitRawDocument ("[PeppolReporting] ",
                                                                                aSenderID,
                                                                                aReceiverID,
                                                                                aDocTypeID,
@@ -329,8 +330,12 @@ public final class APPeppolReportHelper
                                                                                sCustom1,
                                                                                sCustom2,
                                                                                sCustom3);
-      if (aTx == null)
-        throw new IllegalStateException ("Failed to submit Peppol Reporting document for transmission");
+      if (aSubmitResult.isFailure ())
+        throw new IllegalStateException ("Failed to submit Peppol Reporting document for transmission: " +
+                                         (aSubmitResult.isVerificationRejected () ? aSubmitResult.getVerificationOutcome ()
+                                                                                                 .getMessage ()
+                                                                                  : aSubmitResult.getErrorMessage ()));
+      final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[PeppolReporting] ",

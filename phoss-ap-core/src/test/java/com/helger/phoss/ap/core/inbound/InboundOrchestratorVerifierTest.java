@@ -35,6 +35,7 @@ import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.core.inbound.InboundOrchestrator.VerifierResult;
@@ -96,7 +97,7 @@ public final class InboundOrchestratorVerifierTest
     final VerifierResult aVR = _run (new CommonsArrayList <> (new MockVerifier ("V1", VerificationOutcome.passed ()),
                                                               new MockVerifier ("V2", VerificationOutcome.passed ())));
     assertTrue (aVR.outcome ().isPassed ());
-    assertNull (aVR.outcome ().getMlsOutcome ());
+    assertFalse (aVR.outcome ().hasIssues ());
     assertNull (aVR.verifierName ());
   }
 
@@ -119,15 +120,22 @@ public final class InboundOrchestratorVerifierTest
   public void testRejectionWins ()
   {
     // The rejection of the second verifier must win over the unavailability of the first one
-    final MlsOutcome aMls = MlsOutcome.rejection ("Malware found",
-                                                  MlsOutcomeIssue.businessRuleViolation ("NA", "Virus found"));
+    final VerificationIssue aIssue = VerificationIssue.businessRuleViolation (null, null, "Virus found");
     final MockVerifier aUnavailable = new MockVerifier ("Scanner",
                                                         VerificationOutcome.serviceUnavailable ("Connection refused"));
-    final MockVerifier aRejecting = new MockVerifier ("Validator", VerificationOutcome.rejected (aMls));
+    final MockVerifier aRejecting = new MockVerifier ("Validator",
+                                                      VerificationOutcome.rejected ("Malware found",
+                                                                                    new CommonsArrayList <> (aIssue)));
     final VerifierResult aVR = _run (new CommonsArrayList <> (aUnavailable, aRejecting));
     assertTrue (aVR.outcome ().isRejected ());
-    assertSame (aMls, aVR.outcome ().getMlsOutcome ());
+    assertSame (aIssue, aVR.outcome ().getAllIssues ().getFirstOrNull ());
     assertEquals ("Validator", aVR.verifierName ());
+
+    // The issues are projected onto MLS only when the MLS response is built
+    final MlsOutcome aMls = aVR.getMlsOutcome ();
+    assertEquals ("Malware found", aMls.getResponseText ());
+    assertEquals (1, aMls.getIssues ().size ());
+    assertEquals ("Virus found", aMls.getIssues ().get (0).getDescription ());
   }
 
   @Test
@@ -137,8 +145,8 @@ public final class InboundOrchestratorVerifierTest
     final MockVerifier aNeverCalled = new MockVerifier ("Scanner", VerificationOutcome.passed ());
     final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting, aNeverCalled));
     assertTrue (aVR.outcome ().isRejected ());
-    // No MLS details were provided - they are created by the orchestrator on demand
-    assertNull (aVR.outcome ().getMlsOutcome ());
+    // No individual issues were provided - the MLS details are created by the orchestrator on demand
+    assertFalse (aVR.outcome ().hasIssues ());
     assertEquals ("Invalid document", aVR.outcome ().getMessage ());
     assertFalse (aNeverCalled.m_bCalled);
   }

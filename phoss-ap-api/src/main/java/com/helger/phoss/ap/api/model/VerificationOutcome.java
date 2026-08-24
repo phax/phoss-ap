@@ -21,8 +21,11 @@ import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
+import com.helger.annotation.style.ReturnsMutableCopy;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
+import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 
 /**
@@ -30,10 +33,17 @@ import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
  * {@link com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI}.
  * <p>
  * It distinguishes a verdict about the document itself ({@link #passed()} and
- * {@link #rejected(MlsOutcome)}) from the inability to make a verdict at all, because the verifier
- * backend service was unavailable ({@link #serviceUnavailable(String)}). The latter is never an
- * implicit rejection - how it is handled, depends on the configured
- * {@link com.helger.phoss.ap.api.codelist.EVerificationFailMode}.
+ * {@link #rejected(String, Iterable)}) from the inability to make a verdict at all, because the
+ * verifier backend service was unavailable ({@link #serviceUnavailable(String)}). The latter is
+ * never an implicit rejection - for an inbound document it is handled according to the configured
+ * {@link com.helger.phoss.ap.api.codelist.EVerificationFailMode}, for an outbound document it is
+ * always treated as a rejection.
+ * </p>
+ * <p>
+ * The findings are carried as {@link VerificationIssue}s, which are deliberately independent of
+ * Peppol MLS: a verifier states <em>what is wrong with the document</em>, and the AP decides how to
+ * report it - as an MLS response to C2 for an inbound document, and as JSON to the submitter for an
+ * outbound document. A passed outcome may carry issues as well; those are then warnings.
  * </p>
  *
  * @author Philip Helger
@@ -48,15 +58,15 @@ public final class VerificationOutcome
 
   private final EVerificationOutcomeCategory m_eCategory;
   private final String m_sMessage;
-  private final MlsOutcome m_aMlsOutcome;
+  private final ICommonsList <VerificationIssue> m_aIssues;
 
   private VerificationOutcome (@NonNull final EVerificationOutcomeCategory eCategory,
                                @Nullable final String sMessage,
-                               @Nullable final MlsOutcome aMlsOutcome)
+                               @Nullable final Iterable <? extends VerificationIssue> aIssues)
   {
     m_eCategory = eCategory;
     m_sMessage = sMessage;
-    m_aMlsOutcome = aMlsOutcome;
+    m_aIssues = new CommonsArrayList <> (aIssues);
   }
 
   /**
@@ -104,15 +114,22 @@ public final class VerificationOutcome
   }
 
   /**
-   * @return The details to be used for the negative MLS response. Only set for a rejection that was
-   *         created via {@link #rejected(MlsOutcome)}, <code>null</code> otherwise. For all other
-   *         cases that end up as a rejection, the MLS response is created from the category and the
-   *         message.
+   * @return All individual findings of the verification. Never <code>null</code> but maybe empty -
+   *         a verifier is not required to provide details. On a passed outcome these are warnings.
    */
-  @Nullable
-  public MlsOutcome getMlsOutcome ()
+  @NonNull
+  @ReturnsMutableCopy
+  public ICommonsList <VerificationIssue> getAllIssues ()
   {
-    return m_aMlsOutcome;
+    return m_aIssues.getClone ();
+  }
+
+  /**
+   * @return <code>true</code> if there is at least one issue.
+   */
+  public boolean hasIssues ()
+  {
+    return m_aIssues.isNotEmpty ();
   }
 
   @Override
@@ -120,7 +137,7 @@ public final class VerificationOutcome
   {
     return new ToStringGenerator (this).append ("Category", m_eCategory)
                                        .appendIfNotNull ("Message", m_sMessage)
-                                       .appendIfNotNull ("MlsOutcome", m_aMlsOutcome)
+                                       .append ("Issues", m_aIssues)
                                        .getToString ();
   }
 
@@ -135,26 +152,23 @@ public final class VerificationOutcome
   }
 
   /**
-   * Create an outcome stating that the document was inspected and rejected, including the details
-   * for the negative MLS response.
+   * Create an outcome stating that the document was inspected and accepted, but that non-fatal
+   * findings were made.
    *
-   * @param aMlsOutcome
-   *        The MLS details of the rejection. Its issues are propagated into the MLS response. May
-   *        not be <code>null</code>.
+   * @param aIssues
+   *        The warnings. May be <code>null</code> or empty, in which case this is equivalent to
+   *        {@link #passed()}.
    * @return Never <code>null</code>.
    */
   @NonNull
-  public static VerificationOutcome rejected (@NonNull final MlsOutcome aMlsOutcome)
+  public static VerificationOutcome passed (@Nullable final Iterable <? extends VerificationIssue> aIssues)
   {
-    ValueEnforcer.notNull (aMlsOutcome, "MlsOutcome");
-    return new VerificationOutcome (EVerificationOutcomeCategory.REJECTION,
-                                    aMlsOutcome.getResponseText (),
-                                    aMlsOutcome);
+    return new VerificationOutcome (EVerificationOutcomeCategory.PASSED, null, aIssues);
   }
 
   /**
-   * Create an outcome stating that the document was inspected and rejected, without MLS details. If
-   * an MLS response is to be sent, it is created from the provided message.
+   * Create an outcome stating that the document was inspected and rejected, without individual
+   * findings. If an MLS response is to be sent, it is created from the provided message.
    *
    * @param sMessage
    *        The human readable reason of the rejection. May neither be <code>null</code> nor empty.
@@ -165,6 +179,26 @@ public final class VerificationOutcome
   {
     ValueEnforcer.notEmpty (sMessage, "Message");
     return new VerificationOutcome (EVerificationOutcomeCategory.REJECTION, sMessage, null);
+  }
+
+  /**
+   * Create an outcome stating that the document was inspected and rejected, including the
+   * individual findings. For an inbound document the issues are propagated into the MLS response,
+   * for an outbound document they are returned to the submitter.
+   *
+   * @param sMessage
+   *        The human readable reason of the rejection. May neither be <code>null</code> nor empty.
+   * @param aIssues
+   *        The findings that led to the rejection. May neither be <code>null</code> nor empty.
+   * @return Never <code>null</code>.
+   */
+  @NonNull
+  public static VerificationOutcome rejected (@NonNull @Nonempty final String sMessage,
+                                              @NonNull @Nonempty final Iterable <? extends VerificationIssue> aIssues)
+  {
+    ValueEnforcer.notEmpty (sMessage, "Message");
+    ValueEnforcer.notEmpty (aIssues, "Issues");
+    return new VerificationOutcome (EVerificationOutcomeCategory.REJECTION, sMessage, aIssues);
   }
 
   /**

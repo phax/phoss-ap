@@ -21,9 +21,11 @@ import org.jspecify.annotations.NonNull;
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.concurrent.Immutable;
 import com.helger.base.enforce.ValueEnforcer;
+import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
+import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
 
 /**
  * A single issue within an MLS rejection response. Each issue references an error location, a
@@ -174,6 +176,49 @@ public final class MlsOutcomeIssue
                                                  @NonNull @Nonempty final String sDescription)
   {
     return new MlsOutcomeIssue (sErrorField, EPeppolMLSStatusReasonCode.SYNTAX_VIOLATION, sDescription);
+  }
+
+  /**
+   * Map a transport-neutral {@link VerificationIssue} to its Peppol MLS representation.
+   * <p>
+   * MLS conflates severity and rule kind into a single status reason code, so the mapping is
+   * severity-first: a {@link com.helger.phoss.ap.api.codelist.EVerificationIssueLevel#WARNING}
+   * always becomes "BW", because reporting a warning as a fatal violation would tell C2 that the
+   * document is unusable. Only a fatal issue distinguishes "SV" (syntax) from "BV" (business rule).
+   * </p>
+   * <p>
+   * MLS has no field for a machine-readable rule identifier, so a present
+   * {@link VerificationIssue#getCode()} is prefixed to the description as <code>[code] text</code>
+   * - which is exactly the MLS text that was produced before the neutral issue model existed.
+   * </p>
+   *
+   * @param aIssue
+   *        The issue to map. May not be <code>null</code>.
+   * @return A new {@link MlsOutcomeIssue}. Never <code>null</code>.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static MlsOutcomeIssue fromVerificationIssue (@NonNull final VerificationIssue aIssue)
+  {
+    ValueEnforcer.notNull (aIssue, "Issue");
+
+    final EPeppolMLSStatusReasonCode eReason;
+    if (!aIssue.isError ())
+      eReason = EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_WARNING;
+    else
+      eReason = aIssue.getType () == EVerificationIssueType.SYNTAX ? EPeppolMLSStatusReasonCode.SYNTAX_VIOLATION
+                                                                   : EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_FATAL;
+
+    // MLS has no dedicated field for the rule identifier
+    final String sCode = aIssue.getCode ();
+    final String sDescription = StringHelper.isNotEmpty (sCode) ? "[" + sCode + "] " + aIssue.getDescription ()
+                                                                : aIssue.getDescription ();
+
+    // MLS requires a non-empty error field
+    final String sLocation = aIssue.getLocation ();
+    final String sErrorField = StringHelper.isNotEmpty (sLocation) ? sLocation : CPeppolMLS.LINE_ID_NOT_AVAILABLE;
+
+    return new MlsOutcomeIssue (sErrorField, eReason, sDescription);
   }
 
   /**

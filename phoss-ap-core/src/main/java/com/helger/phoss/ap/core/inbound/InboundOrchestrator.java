@@ -488,9 +488,10 @@ public final class InboundOrchestrator
    *         <code>EContinue.BREAK</code> if the document was rejected or if its verification was
    *         deferred.
    */
-  private static @NonNull EContinue _handleVerifierResult (@NonNull final String sLogPrefix,
-                                                           @NonNull final IInboundTransaction aInboundTx,
-                                                           @NonNull final VerifierResult aVR)
+  @VisibleForTesting
+  static @NonNull EContinue handleVerifierResult (@NonNull final String sLogPrefix,
+                                                  @NonNull final IInboundTransaction aInboundTx,
+                                                  @NonNull final VerifierResult aVR)
   {
     if (aVR.outcome ().isRejected ())
     {
@@ -609,7 +610,7 @@ public final class InboundOrchestrator
         if (aVR.outcome ().isServiceUnavailable ())
           aVerifySpan.setStatusError ("Inbound verifier service unavailable");
 
-      final EContinue eContinue = _handleVerifierResult (sLogPrefix, aInboundTx, aVR);
+      final EContinue eContinue = handleVerifierResult (sLogPrefix, aInboundTx, aVR);
       if (eContinue.isContinue ())
       {
         // The document was accepted - any remaining findings are warnings and are reported to C2

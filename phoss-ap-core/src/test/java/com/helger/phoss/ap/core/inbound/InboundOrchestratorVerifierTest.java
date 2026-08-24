@@ -30,10 +30,13 @@ import org.junit.Test;
 import com.helger.annotation.Nonempty;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.peppolid.factory.PeppolIdentifierFactory;
 import com.helger.phoss.ap.api.model.MlsOutcome;
+import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
@@ -131,7 +134,7 @@ public final class InboundOrchestratorVerifierTest
     assertEquals ("Validator", aVR.verifierName ());
 
     // The issues are projected onto MLS only when the MLS response is built
-    final MlsOutcome aMls = aVR.getMlsOutcome ();
+    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
     assertEquals ("Malware found", aMls.getResponseText ());
     assertEquals (1, aMls.getIssues ().size ());
     assertEquals ("Virus found", aMls.getIssues ().get (0).getDescription ());
@@ -149,6 +152,67 @@ public final class InboundOrchestratorVerifierTest
     assertFalse (aVR.outcome ().hasIssues ());
     assertEquals ("Invalid document", aVR.outcome ().getMessage ());
     assertFalse (aNeverCalled.m_bCalled);
+  }
+
+  @Test
+  public void testWarningsOnlyDoNotBecomeTheRejectionReason ()
+  {
+    // A verifier that rejects while reporting warnings only is contradictory. The warnings must not
+    // be presented as the reason of the rejection - a synthesized fatal line response is added
+    final VerificationIssue aWarning = VerificationIssue.businessRuleWarning ("W-1", "/Invoice", "Just a warning");
+    final MockVerifier aRejecting = new MockVerifier ("Validator",
+                                                      VerificationOutcome.rejected ("Nope",
+                                                                                    new CommonsArrayList <> (aWarning)));
+    final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting));
+
+    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
+    assertSame (EPeppolMLSResponseCode.REJECTION, aMls.getResponseCode ());
+    // The synthesized fatal issue plus the original warning
+    assertEquals (2, aMls.getIssues ().size ());
+    assertTrue (aMls.getIssues ()
+                    .stream ()
+                    .anyMatch (x -> x.getStatusReasonCode () ==
+                                    EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_FATAL));
+    assertTrue (aMls.getIssues ()
+                    .stream ()
+                    .anyMatch (x -> x.getStatusReasonCode () ==
+                                    EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_WARNING));
+  }
+
+  @Test
+  public void testErrorDrivesTheRejectionReason ()
+  {
+    // As soon as one finding is an error, the findings themselves are the reason - no synthesized
+    // line response is added
+    final VerificationIssue aWarning = VerificationIssue.businessRuleWarning ("W-1", "/a", "Just a warning");
+    final VerificationIssue aError = VerificationIssue.businessRuleViolation ("E-1", "/b", "Really broken");
+    final MockVerifier aRejecting = new MockVerifier ("Validator",
+                                                      VerificationOutcome.rejected ("Nope",
+                                                                                    new CommonsArrayList <> (aWarning,
+                                                                                                             aError)));
+    final VerifierResult aVR = _run (new CommonsArrayList <> (aRejecting));
+
+    final MlsOutcome aMls = aVR.getRejectionMlsOutcome ();
+    assertSame (EPeppolMLSResponseCode.REJECTION, aMls.getResponseCode ());
+    assertEquals ("Nope", aMls.getResponseText ());
+    assertEquals (2, aMls.getIssues ().size ());
+  }
+
+  @Test
+  public void testPassedWithWarningsYieldsMlsIssues ()
+  {
+    // The findings of an accepted document survive as MLS line responses - MLS allows details on a
+    // positive response code as well
+    final VerificationIssue aWarning = VerificationIssue.businessRuleWarning ("W-1", "/Invoice", "Just a warning");
+    final MockVerifier aPassing = new MockVerifier ("Validator",
+                                                    VerificationOutcome.passed (new CommonsArrayList <> (aWarning)));
+    final VerifierResult aVR = _run (new CommonsArrayList <> (aPassing));
+
+    assertTrue (aVR.outcome ().isPassed ());
+    final ICommonsList <MlsOutcomeIssue> aMlsIssues = aVR.getAllMlsIssues ();
+    assertEquals (1, aMlsIssues.size ());
+    assertSame (EPeppolMLSStatusReasonCode.BUSINESS_RULE_VIOLATION_WARNING,
+                aMlsIssues.getFirstOrNull ().getStatusReasonCode ());
   }
 
   @Test

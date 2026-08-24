@@ -35,6 +35,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.state.EContinue;
 import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
+import com.helger.base.wrapper.Wrapper;
 import com.helger.cache.regex.RegExHelper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
@@ -59,6 +60,7 @@ import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationFailMode;
+import com.helger.phoss.ap.api.codelist.EVerificationIssueLevel;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
@@ -67,6 +69,7 @@ import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
+import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
@@ -203,45 +206,68 @@ public final class InboundOrchestrator
   static record VerifierResult (@NonNull VerificationOutcome outcome, @Nullable String verifierName)
   {
     /**
-     * Get the MLS details to be sent to C2, if the provided verifier result ends up as a rejection.
-     * This is the single point where the transport-neutral
-     * {@link com.helger.phoss.ap.api.model.VerificationIssue}s of a verifier are projected onto the
-     * Peppol MLS format. If the verifier provided no individual issues, they are created from the
-     * outcome message.
+     * Get all findings of this verifier result as MLS line responses, independent of the response
+     * code they will be attached to. This is the single point where the transport-neutral
+     * {@link com.helger.phoss.ap.api.model.VerificationIssue}s are projected onto the Peppol MLS
+     * format.
+     *
+     * @return Never <code>null</code> but maybe empty.
+     */
+    @NonNull
+    @ReturnsMutableCopy
+    ICommonsList <MlsOutcomeIssue> getAllMlsIssues ()
+    {
+      return outcome ().getAllIssues ().getAllMapped (MlsOutcomeIssue::fromVerificationIssue);
+    }
+
+    /**
+     * Get the MLS details to be sent to C2 when the AP rejects the document. The response code is
+     * always RE, because this is only called once the rejection has been decided - but the findings
+     * only become the <em>reason</em> of the rejection if at least one of them is an
+     * {@link EVerificationIssueLevel#ERROR}. Warnings alone never explain a rejection, so in that
+     * case a synthesized error line response naming the verifier is used and the warnings are
+     * appended to it.
+     * <p>
+     * The individual severities survive the projection: an error becomes SV or BV and a warning
+     * becomes BW.
+     * </p>
      *
      * @return Never <code>null</code>.
      */
     @NonNull
-    MlsOutcome getMlsOutcome ()
+    MlsOutcome getRejectionMlsOutcome ()
     {
-      if (outcome ().hasIssues ())
+      final ICommonsList <VerificationIssue> aIssues = outcome ().getAllIssues ();
+      if (aIssues.containsAny (VerificationIssue::isError))
       {
+        // At least one fatal finding - those are the reason of the rejection
         final String sResponseText = StringHelper.getNotNull (outcome ().getMessage (),
                                                               "Document verification failed");
-        return MlsOutcome.rejection (sResponseText,
-                                     outcome ().getAllIssues ()
-                                               .getAllMapped (MlsOutcomeIssue::fromVerificationIssue));
+        return MlsOutcome.rejection (sResponseText, getAllMlsIssues ());
       }
 
       final String sMessage = StringHelper.getNotNull (outcome ().getMessage (), "no details available");
       if (outcome ().isServiceUnavailable ())
       {
         // Yes, Business Rule Violation is a stretch ...
-        return MlsOutcome.rejection ("Document verification could not be performed",
-                                     MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
-                                                                            "The document verifier '" +
-                                                                                                              verifierName () +
-                                                                                                              "' is unavailable: " +
-                                                                                                              sMessage));
+        final ICommonsList <MlsOutcomeIssue> aMlsIssues = new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
+                                                                                                                          "The document verifier '" +
+                                                                                                                                                            verifierName () +
+                                                                                                                                                            "' is unavailable: " +
+                                                                                                                                                            sMessage));
+        aMlsIssues.addAll (getAllMlsIssues ());
+        return MlsOutcome.rejection ("Document verification could not be performed", aMlsIssues);
       }
 
       // Yes, Business Rule Violation is a stretch ...
-      return MlsOutcome.rejection ("Document verification failed",
-                                   MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
-                                                                          "The document verifier '" +
-                                                                                                            verifierName () +
-                                                                                                            "' rejected the document: " +
-                                                                                                            sMessage));
+      final ICommonsList <MlsOutcomeIssue> aMlsIssues = new CommonsArrayList <> (MlsOutcomeIssue.businessRuleViolation (CPeppolMLS.LINE_ID_NOT_AVAILABLE,
+                                                                                                                        "The document verifier '" +
+                                                                                                                                                          verifierName () +
+                                                                                                                                                          "' rejected the document: " +
+                                                                                                                                                          sMessage));
+      // A verifier that rejects with warnings only is contradictory - keep them as extra details
+      aMlsIssues.addAll (getAllMlsIssues ());
+      return MlsOutcome.rejection ("Document verification failed", aMlsIssues);
     }
   }
 
@@ -272,6 +298,7 @@ public final class InboundOrchestrator
                                              @NonNull final IProcessIdentifier aProcessID)
   {
     VerifierResult aUnavailable = null;
+    final ICommonsList <VerificationIssue> aWarnings = new CommonsArrayList <> ();
 
     for (final IInboundDocumentVerifierSPI aVerifier : aVerifiers)
     {
@@ -310,12 +337,17 @@ public final class InboundOrchestrator
         }
         case PASSED:
         {
-          // successful verification
+          // Successful verification - keep the findings of an accepting verifier, they are
+          // reported to C2 as line responses of the positive MLS
+          aWarnings.addAll (aOutcome.getAllIssues ());
         }
       }
     }
 
-    return aUnavailable != null ? aUnavailable : new VerifierResult (VerificationOutcome.passed (), null);
+    if (aUnavailable != null)
+      return aUnavailable;
+
+    return new VerifierResult (VerificationOutcome.passed (aWarnings), null);
   }
 
   /**
@@ -402,7 +434,7 @@ public final class InboundOrchestrator
                              aMaxDuration;
       _rejectAfterVerification (sLogPrefix,
                                 aInboundTx,
-                                aVR.getMlsOutcome (),
+                                aVR.getRejectionMlsOutcome (),
                                 sErrorDetails + " (maximum deferral duration of " + aMaxDuration + " exceeded)",
                                 sReason);
       return;
@@ -460,7 +492,7 @@ public final class InboundOrchestrator
       final String sText = StringHelper.getNotNull (aVR.outcome ().getMessage (), "Verification failed");
       _rejectAfterVerification (sLogPrefix,
                                 aInboundTx,
-                                aVR.getMlsOutcome (),
+                                aVR.getRejectionMlsOutcome (),
                                 ERROR_DETAILS_VERIFICATION_REJECTED + " [" + aVR.verifierName () + "]: " + sText,
                                 "The document verifier '" + aVR.verifierName () + "' rejected the document");
       return EContinue.BREAK;
@@ -500,7 +532,7 @@ public final class InboundOrchestrator
                                  "'";
           _rejectAfterVerification (sLogPrefix,
                                     aInboundTx,
-                                    aVR.getMlsOutcome (),
+                                    aVR.getRejectionMlsOutcome (),
                                     ERROR_DETAILS_VERIFIER_UNAVAILABLE + " [" + aVR.verifierName () + "]: " + sText,
                                     sReason);
           yield EContinue.BREAK;
@@ -526,6 +558,10 @@ public final class InboundOrchestrator
    *        The document type identifier. May not be <code>null</code>.
    * @param aProcessID
    *        The process identifier. May not be <code>null</code>.
+   * @param aMlsWarningsHolder
+   *        Filled with the findings of a verification that did <b>not</b> reject the document, so
+   *        that they can be attached to the positive MLS. Only written on
+   *        <code>EContinue.CONTINUE</code>. May not be <code>null</code>.
    * @return <code>EContinue.CONTINUE</code> if the processing of the document may continue,
    *         <code>EContinue.BREAK</code> if the document was rejected or if its verification was
    *         deferred.
@@ -533,7 +569,8 @@ public final class InboundOrchestrator
   private static @NonNull EContinue _verifyInboundDocument (@NonNull final String sLogPrefix,
                                                             @NonNull final IInboundTransaction aInboundTx,
                                                             @NonNull final IDocumentTypeIdentifier aDocTypeID,
-                                                            @NonNull final IProcessIdentifier aProcessID)
+                                                            @NonNull final IProcessIdentifier aProcessID,
+                                                            @NonNull final Wrapper <ICommonsList <MlsOutcomeIssue>> aMlsWarningsHolder)
   {
     try (final ITelemetrySpan aVerifySpan = Telemetry.startSpan (CPhossAPOtel.SPAN_VERIFICATION,
                                                                  ETelemetrySpanKind.INTERNAL)
@@ -554,7 +591,14 @@ public final class InboundOrchestrator
         if (aVR.outcome ().isServiceUnavailable ())
           aVerifySpan.setStatusError ("Inbound verifier service unavailable");
 
-      return _handleVerifierResult (sLogPrefix, aInboundTx, aVR);
+      final EContinue eContinue = _handleVerifierResult (sLogPrefix, aInboundTx, aVR);
+      if (eContinue.isContinue ())
+      {
+        // The document was accepted - any remaining findings are warnings and are reported to C2
+        // as line responses of the positive MLS
+        aMlsWarningsHolder.set (aVR.getAllMlsIssues ());
+      }
+      return eContinue;
     }
   }
 
@@ -643,8 +687,13 @@ public final class InboundOrchestrator
    *
    * @param aInboundTx
    *        The successfully forwarded inbound transaction. May not be <code>null</code>.
+   * @param aMlsWarnings
+   *        The findings of the verification that accepted the document. May be <code>null</code> or
+   *        empty. MLS allows line responses on a positive response code, so they are reported to C2
+   *        instead of being dropped.
    */
-  private static void _sendPositiveMlsAfterForwarding (@NonNull final IInboundTransaction aInboundTx)
+  private static void _sendPositiveMlsAfterForwarding (@NonNull final IInboundTransaction aInboundTx,
+                                                       @Nullable final ICommonsList <MlsOutcomeIssue> aMlsWarnings)
   {
     if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
     {
@@ -658,8 +707,9 @@ public final class InboundOrchestrator
           // AP for delivery with confirmation (e.g. http), AB for delivery without
           // confirmation (e.g. SFTP, S3, file system)
           final MlsOutcome aOutcome = APCoreMetaManager.getForwarder ().isWithDeliveryConfirmation () ? MlsOutcome
-                                                                                                                  .acceptance ()
-                                                                                                      : MlsOutcome.acknowledging ();
+                                                                                                                  .acceptance (aMlsWarnings)
+                                                                                                      : MlsOutcome.acknowledging (null,
+                                                                                                                                  aMlsWarnings);
           MlsHandler.triggerSendingInboundResultMls (aInboundTx, aOutcome);
         });
       }
@@ -929,11 +979,12 @@ public final class InboundOrchestrator
                                               bIsDuplicateSBDH);
 
         // Optional verification
+        final Wrapper <ICommonsList <MlsOutcomeIssue>> aMlsWarnings = new Wrapper <> ();
         if (APCoreConfig.isVerificationInboundEnabled ())
         {
           // No processing error is created here - a rejection is signaled via MLS and a deferred
           // verification is picked up by the retry scheduler
-          if (_verifyInboundDocument (sLogPrefix, aInboundTx, aDocTypeID, aProcessID).isBreak ())
+          if (_verifyInboundDocument (sLogPrefix, aInboundTx, aDocTypeID, aProcessID, aMlsWarnings).isBreak ())
             return aProcessingErrors;
         }
 
@@ -955,7 +1006,7 @@ public final class InboundOrchestrator
         else
         {
           // Forwarding success
-          _sendPositiveMlsAfterForwarding (aInboundTx);
+          _sendPositiveMlsAfterForwarding (aInboundTx, aMlsWarnings.get ());
         }
 
         return aProcessingErrors;
@@ -1337,6 +1388,7 @@ public final class InboundOrchestrator
 
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final String sTxID = aInboundTx.getID ();
+    final Wrapper <ICommonsList <MlsOutcomeIssue>> aMlsWarnings = new Wrapper <> ();
 
     if (APCoreConfig.isVerificationInboundEnabled ())
     {
@@ -1361,7 +1413,7 @@ public final class InboundOrchestrator
         return ESuccess.FAILURE;
       }
 
-      if (_verifyInboundDocument (sLogPrefix, aInboundTx, aDocTypeID, aProcessID).isBreak ())
+      if (_verifyInboundDocument (sLogPrefix, aInboundTx, aDocTypeID, aProcessID, aMlsWarnings).isBreak ())
         return ESuccess.FAILURE;
     }
     else
@@ -1381,7 +1433,7 @@ public final class InboundOrchestrator
     // Forward - Business Document and MLS
     final ESuccess eForward = forwardDocument (sLogPrefix, aInboundTx);
     if (eForward.isSuccess ())
-      _sendPositiveMlsAfterForwarding (aInboundTx);
+      _sendPositiveMlsAfterForwarding (aInboundTx, aMlsWarnings.get ());
     return eForward;
   }
 }

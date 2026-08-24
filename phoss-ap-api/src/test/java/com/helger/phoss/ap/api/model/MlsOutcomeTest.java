@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 
+import com.helger.collection.commons.CommonsArrayList;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.mls.EPeppolMLSStatusReasonCode;
 import com.helger.peppol.mls.PeppolMLSBuilder;
@@ -134,6 +135,41 @@ public final class MlsOutcomeTest
                                                  .referenceId (UUID.randomUUID ().toString ())
                                                  .build ();
     assertNotNull (aMls);
+  }
+
+  @Test
+  public void testAcceptanceWithWarnings ()
+  {
+    // MLS allows line responses on a positive response code, so warnings do not need a rejection
+    final MlsOutcomeIssue aWarn = MlsOutcomeIssue.businessRuleWarning ("/Invoice/cbc:Note", "Soft warning");
+    final MlsOutcome a = MlsOutcome.acceptance (new CommonsArrayList <> (aWarn));
+    assertSame (EPeppolMLSResponseCode.ACCEPTANCE, a.getResponseCode ());
+    assertTrue (a.hasIssues ());
+    assertEquals (1, a.getIssues ().size ());
+
+    // ... and they survive into the built MLS
+    final PeppolMLSBuilder aBuilder = a.getAsMLSBuilder ();
+    assertEquals (1, aBuilder.lineResponses ().size ());
+  }
+
+  @Test
+  public void testAcknowledgingWithWarnings ()
+  {
+    final MlsOutcomeIssue aWarn = MlsOutcomeIssue.businessRuleWarning ("/Invoice/cbc:Note", "Soft warning");
+    final MlsOutcome a = MlsOutcome.acknowledging ("Forwarded", new CommonsArrayList <> (aWarn));
+    assertSame (EPeppolMLSResponseCode.ACKNOWLEDGING, a.getResponseCode ());
+    assertEquals ("Forwarded", a.getResponseText ());
+    assertEquals (1, a.getIssues ().size ());
+    assertEquals (1, a.getAsMLSBuilder ().lineResponses ().size ());
+  }
+
+  @Test
+  public void testAcceptanceWithoutIssuesIsUnchanged ()
+  {
+    final MlsOutcome a = MlsOutcome.acceptance (null);
+    assertSame (EPeppolMLSResponseCode.ACCEPTANCE, a.getResponseCode ());
+    assertFalse (a.hasIssues ());
+    assertTrue (a.getAsMLSBuilder ().lineResponses ().isEmpty ());
   }
 
   @Test

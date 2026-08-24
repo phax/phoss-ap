@@ -36,7 +36,9 @@ import com.helger.peppol.mls.PeppolMLSLineResponseBuilder;
 /**
  * Immutable DTO that captures the outcome of inbound document processing, used to drive MLS
  * response creation. Carries the overall response code, an optional human-readable response text,
- * and for rejection cases a list of individual issues.
+ * and a list of individual issues. Issues are not limited to rejections: MLS allows line responses
+ * on the positive response codes as well, so the warnings of an accepted document can be reported
+ * to C2 alongside an AP or AB.
  * <p>
  * JSON format:
  *
@@ -172,7 +174,23 @@ public final class MlsOutcome
   @NonNull
   public static MlsOutcome acceptance ()
   {
-    return new MlsOutcome (EPeppolMLSResponseCode.ACCEPTANCE, null, null);
+    return acceptance (null);
+  }
+
+  /**
+   * Create an acceptance outcome (response code AP) that carries additional details, e.g. the
+   * warnings of a verification that accepted the document. MLS allows line responses on a positive
+   * response code as well, so a warning does not have to be dropped.
+   *
+   * @param aIssues
+   *        The issues to report alongside the acceptance. May be <code>null</code> or empty.
+   * @return A new {@link MlsOutcome} with response code {@link EPeppolMLSResponseCode#ACCEPTANCE}.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static MlsOutcome acceptance (@Nullable final Iterable <? extends MlsOutcomeIssue> aIssues)
+  {
+    return new MlsOutcome (EPeppolMLSResponseCode.ACCEPTANCE, null, aIssues);
   }
 
   /**
@@ -201,7 +219,27 @@ public final class MlsOutcome
   @NonNull
   public static MlsOutcome acknowledging (@Nullable final String sResponseText)
   {
-    return new MlsOutcome (EPeppolMLSResponseCode.ACKNOWLEDGING, sResponseText, null);
+    return acknowledging (sResponseText, null);
+  }
+
+  /**
+   * Create an acknowledging outcome (response code AB) that carries additional details, e.g. the
+   * warnings of a verification that accepted the document. MLS allows line responses on a positive
+   * response code as well, so a warning does not have to be dropped.
+   *
+   * @param sResponseText
+   *        The optional response text to be used. May be <code>null</code>.
+   * @param aIssues
+   *        The issues to report alongside the acknowledgement. May be <code>null</code> or empty.
+   * @return A new {@link MlsOutcome} with response code
+   *         {@link EPeppolMLSResponseCode#ACKNOWLEDGING}.
+   * @since 0.12.0
+   */
+  @NonNull
+  public static MlsOutcome acknowledging (@Nullable final String sResponseText,
+                                          @Nullable final Iterable <? extends MlsOutcomeIssue> aIssues)
+  {
+    return new MlsOutcome (EPeppolMLSResponseCode.ACKNOWLEDGING, sResponseText, aIssues);
   }
 
   /**

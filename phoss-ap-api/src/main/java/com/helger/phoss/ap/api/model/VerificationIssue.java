@@ -36,7 +36,7 @@ import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
  * are returned to the submitter as JSON.
  * <p>
  * The separation of {@link #getLevel()} and {@link #getType()} is deliberate: the Peppol MLS status
- * reason codes conflate severity and rule kind into a single value, so a verifier that returns MLS
+ * reason codes connects severity and rule kind into a single value, so a verifier that returns MLS
  * data directly cannot express "an XSD warning". Keeping the two apart also means that a verifier
  * does not need to know anything about MLS at all.
  * </p>

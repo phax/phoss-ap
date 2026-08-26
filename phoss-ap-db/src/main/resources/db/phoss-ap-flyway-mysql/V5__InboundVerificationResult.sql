@@ -23,7 +23,7 @@
 -- "INSERT INTO inbound_transaction_archive SELECT * FROM inbound_transaction".
 
 ALTER TABLE `inbound_transaction`         ADD COLUMN `verification_result`  VARCHAR(20);
-ALTER TABLE `inbound_transaction`         ADD COLUMN `verification_details` TEXT;
+ALTER TABLE `inbound_transaction`         ADD COLUMN `verification_details` MEDIUMTEXT;
 
 ALTER TABLE `inbound_transaction_archive` ADD COLUMN `verification_result`  VARCHAR(20);
-ALTER TABLE `inbound_transaction_archive` ADD COLUMN `verification_details` TEXT;
+ALTER TABLE `inbound_transaction_archive` ADD COLUMN `verification_details` MEDIUMTEXT;

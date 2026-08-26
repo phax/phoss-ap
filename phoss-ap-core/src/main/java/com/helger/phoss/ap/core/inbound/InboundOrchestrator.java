@@ -215,9 +215,9 @@ public final class InboundOrchestrator
    * Get the MLS details to be sent to C2 when the AP rejects the document. The response code is
    * always RE, because this is only called once the rejection has been decided - but the findings
    * only become the <em>reason</em> of the rejection if at least one of them is an
-   * {@link EVerificationIssueLevel#ERROR}. Warnings alone never explain a rejection, so in that case
-   * a synthesized error line response naming the verifier is used and the warnings are appended to
-   * it.
+   * {@link EVerificationIssueLevel#ERROR}. Warnings alone never explain a rejection, so in that
+   * case a synthesized error line response naming the verifier is used and the warnings are
+   * appended to it.
    * <p>
    * The individual severities survive the projection: an error becomes SV or BV and a warning
    * becomes BW.
@@ -251,8 +251,7 @@ public final class InboundOrchestrator
     // A verifier that rejects with warnings only is contradictory - keep them as extra details
     aMlsIssues.addAll (getAllMlsIssues (aVR));
     return MlsOutcome.rejection (aVR.outcome ().isServiceUnavailable () ? "Document verification could not be performed"
-                                                                       : "Document verification failed",
-                                 aMlsIssues);
+                                                                        : "Document verification failed", aMlsIssues);
   }
 
   /**
@@ -378,16 +377,14 @@ public final class InboundOrchestrator
     // Record the verdict separately from the status, so that it survives a later forwarding and is
     // not cleared together with the error details on completion. The details are the neutral
     // findings, not their MLS projection - MLS is only how C2 is answered
-    aTxMgr.updateVerificationResult (sTxID,
-                                     EVerificationResult.REJECTED,
-                                     _getVerificationDetails (aVR.outcome ()));
+    aTxMgr.updateVerificationResult (sTxID, EVerificationResult.REJECTED, _getVerificationDetails (aVR.outcome ()));
 
     // Don't touch the forwarding attempt count - the document is never forwarded
     aTxMgr.updateStatusAndNextRetry (sTxID, EInboundStatus.REJECTED, null, sErrorDetails);
 
     // Don't send MLS as response to MLR or MLS
     if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+      !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
     {
       final MlsOutcome aMlsOutcome = getRejectionMlsOutcome (aVR);
       // Send asynchronously
@@ -422,6 +419,7 @@ public final class InboundOrchestrator
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
+
     final String sErrorDetails = ERROR_DETAILS_VERIFIER_UNAVAILABLE +
                                  " [" +
                                  aVR.verifierName () +
@@ -719,7 +717,7 @@ public final class InboundOrchestrator
       // Try to send back positive MLS
       // Don't send MLS as response to MLS
       if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-          !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
       {
         // Send asynchronously
         PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
@@ -751,7 +749,7 @@ public final class InboundOrchestrator
   {
     // Don't send MLS as response to MLR or MLS
     if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+      !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
     {
       // Send asynchronously
       PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
@@ -1413,6 +1411,7 @@ public final class InboundOrchestrator
     {
       // The stored identifiers are URI encoded, so they must be parsed and not created
       final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
+
       final IDocumentTypeIdentifier aDocTypeID = aIF.parseDocumentTypeIdentifier (aInboundTx.getDocTypeID ());
       final IProcessIdentifier aProcessID = aIF.parseProcessIdentifier (aInboundTx.getProcessID ());
       if (aDocTypeID == null || aProcessID == null)

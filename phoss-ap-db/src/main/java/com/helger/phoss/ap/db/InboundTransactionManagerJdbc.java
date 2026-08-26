@@ -52,18 +52,17 @@ import com.helger.phoss.ap.db.dto.InboundTransactionRow;
  */
 public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager implements IInboundTransactionManager
 {
-  // The columns that are filled when a transaction is created. Everything that is only set by a
-  // later update must not be listed here, because this is also used as the INSERT column list.
-  private static final String COLS_CREATE = "id, incoming_id, c2_seat_id, c3_seat_id, signing_cert_cn," +
-                                            " sender_id, receiver_id, doc_type_id, process_id," +
-                                            " document_path, document_size, document_hash," +
-                                            " as4_message_id, as4_timestamp, sbdh_instance_id," +
-                                            " c1_country_code, c4_country_code, is_duplicate_as4, is_duplicate_sbdh," +
-                                            " status, attempt_count, received_dt, completed_dt," +
-                                            " reporting_status, next_retry_dt, error_details," +
-                                            " mls_to, mls_type, mls_response_code, mls_outbound_transaction_id";
-  // All columns to be read, in the order expected by the InboundTransactionRow constructor
-  private static final String COLS = COLS_CREATE + ", verification_result, verification_details";
+  // All columns, in the order expected by the InboundTransactionRow constructor. This is also used
+  // as the INSERT column list.
+  private static final String COLS = "id, incoming_id, c2_seat_id, c3_seat_id, signing_cert_cn," +
+                                     " sender_id, receiver_id, doc_type_id, process_id," +
+                                     " document_path, document_size, document_hash," +
+                                     " as4_message_id, as4_timestamp, sbdh_instance_id," +
+                                     " c1_country_code, c4_country_code, is_duplicate_as4, is_duplicate_sbdh," +
+                                     " status, attempt_count, received_dt, completed_dt," +
+                                     " reporting_status, next_retry_dt, error_details," +
+                                     " mls_to, mls_type, mls_response_code, mls_outbound_transaction_id," +
+                                     " verification_result, verification_details";
   private static final Logger LOGGER = LoggerFactory.getLogger (InboundTransactionManagerJdbc.class);
 
   private final String m_sTableName;
@@ -112,9 +111,9 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     final long nRowsAffected = aExecutor.insertOrUpdateOrDelete ("INSERT INTO " +
                                                                  m_sTableName +
                                                                  " (" +
-                                                                 COLS_CREATE +
+                                                                 COLS +
                                                                  ")" +
-                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                                                  new ConstantPreparedStatementDataProvider (sID,
                                                                                                             sIncomingID,
                                                                                                             sC2SeatID,
@@ -143,6 +142,8 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             null,
                                                                                                             sMlsTo,
                                                                                                             eMlsType.getID (),
+                                                                                                            null,
+                                                                                                            null,
                                                                                                             null,
                                                                                                             null));
 

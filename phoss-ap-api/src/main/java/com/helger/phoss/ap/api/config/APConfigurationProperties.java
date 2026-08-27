@@ -299,6 +299,8 @@ public final class APConfigurationProperties
   public static final String VERIFICATION_INBOUND_ENABLED = "verification.inbound.enabled";
   public static final boolean VERIFICATION_INBOUND_ENABLED_DEFAULT = false;
   public static final String VERIFICATION_FAIL_MODE = "verification.verifier-fail-mode";
+  /** @since 0.12.0 */
+  public static final String VERIFICATION_INBOUND_REJECTION_FORWARDING = "verification.inbound.rejection-forwarding";
   public static final String VERIFICATION_DEFERRED_RETRY_INTERVAL = "verification.deferred.retry-interval";
   public static final Duration VERIFICATION_DEFERRED_RETRY_INTERVAL_DEFAULT = Duration.ofMinutes (5);
   public static final String VERIFICATION_DEFERRED_MAX_DURATION = "verification.deferred.max-duration";

@@ -17,6 +17,7 @@
 package com.helger.phoss.ap.core.inbound;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -38,6 +39,7 @@ import com.helger.config.source.appl.ConfigurationSourceFunction;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationRejectionForwarding;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
@@ -197,5 +199,128 @@ public final class InboundVerificationResultIntegrationTest
     assertTrue (sDetails.contains ("\"level\":\"warning\""));
     assertTrue (sDetails.contains ("\"code\":\"W-1\""));
     assertEquals (-1, sDetails.indexOf ("responseCode"));
+  }
+
+  @NonNull
+  private static VerifierResult _createRejection ()
+  {
+    final VerificationIssue aError = VerificationIssue.businessRuleViolation ("BR-1",
+                                                                             "/Invoice",
+                                                                             "The document is invalid");
+    return new VerifierResult (VerificationOutcome.rejected ("Document verification failed",
+                                                             new CommonsArrayList <> (aError)),
+                               "Scanner");
+  }
+
+  /**
+   * Set the rejection forwarding mode and reject a freshly created transaction.
+   *
+   * @param eMode
+   *        The mode to configure. May not be <code>null</code>.
+   * @return The transaction as it is stored after the rejection. Never <code>null</code>.
+   */
+  @NonNull
+  private IInboundTransaction _rejectWithMode (@NonNull final EVerificationRejectionForwarding eMode,
+                                               @NonNull final EContinue eExpected)
+  {
+    _overrideConfig ("verification.inbound.rejection-forwarding", eMode.getID ());
+
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = _createInboundTx ();
+    assertNull (aTx.getVerificationResult ());
+
+    assertSame (eExpected, InboundOrchestrator.handleVerifierResult (LOG_PREFIX, aTx, _createRejection ()));
+
+    final IInboundTransaction aUpdated = aMgr.getByID (aTx.getID ());
+    assertNotNull (aUpdated);
+    return aUpdated;
+  }
+
+  @Test
+  public void testRejectionForwardingNoneIsTerminal ()
+  {
+    // The default mode - the document is never forwarded
+    final IInboundTransaction aUpdated = _rejectWithMode (EVerificationRejectionForwarding.NONE, EContinue.BREAK);
+
+    assertSame (EVerificationResult.REJECTED, aUpdated.getVerificationResult ());
+    assertSame (EInboundStatus.REJECTED, aUpdated.getStatus ());
+    assertEquals (0, aUpdated.getAttemptCount ());
+    // The rejection reason is in the error details, as before 0.12.0
+    final String sErrorDetails = aUpdated.getErrorDetails ();
+    assertNotNull (sErrorDetails);
+    assertTrue (sErrorDetails.startsWith (InboundOrchestrator.ERROR_DETAILS_VERIFICATION_REJECTED));
+  }
+
+  @Test
+  public void testRejectionForwardingBestEffortStaysRejected ()
+  {
+    // The copy to C4 is fire-and-forget, so the transaction is terminal as in mode "none"
+    final IInboundTransaction aUpdated = _rejectWithMode (EVerificationRejectionForwarding.BEST_EFFORT,
+                                                          EContinue.BREAK);
+
+    assertSame (EVerificationResult.REJECTED, aUpdated.getVerificationResult ());
+    assertSame (EInboundStatus.REJECTED, aUpdated.getStatus ());
+    // No regular forwarding was performed, so the attempt count is untouched
+    assertEquals (0, aUpdated.getAttemptCount ());
+  }
+
+  @Test
+  public void testRejectionForwardingRetryContinues ()
+  {
+    // The document must reach the regular forwarding, so the status is left to it
+    final IInboundTransaction aUpdated = _rejectWithMode (EVerificationRejectionForwarding.RETRY, EContinue.CONTINUE);
+
+    assertSame (EVerificationResult.REJECTED, aUpdated.getVerificationResult ());
+    assertSame (EInboundStatus.RECEIVED, aUpdated.getStatus ());
+    assertNull (aUpdated.getErrorDetails ());
+
+    // The findings survive the forwarding, because they are not in the error details
+    final String sDetails = aUpdated.getVerificationDetails ();
+    assertNotNull (sDetails);
+    assertTrue (sDetails.contains ("\"code\":\"BR-1\""));
+  }
+
+  @Test
+  public void testRejectionForwardingInvalidValueFallsBackToNone ()
+  {
+    _overrideConfig ("verification.inbound.rejection-forwarding", "bogus");
+
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = _createInboundTx ();
+
+    assertSame (EContinue.BREAK, InboundOrchestrator.handleVerifierResult (LOG_PREFIX, aTx, _createRejection ()));
+
+    final IInboundTransaction aUpdated = aMgr.getByID (aTx.getID ());
+    assertNotNull (aUpdated);
+    assertSame (EInboundStatus.REJECTED, aUpdated.getStatus ());
+  }
+
+  @Test
+  public void testMlsSuppressionFollowsTheVerdict ()
+  {
+    // A rejected but forwarded document was already answered with the negative MLS (RE) - no
+    // further MLS may be sent for it, no matter which code path asks
+    final IInboundTransaction aRejected = _rejectWithMode (EVerificationRejectionForwarding.RETRY,
+                                                           EContinue.CONTINUE);
+    assertTrue (InboundOrchestrator.isMlsSuppressedAfterRejection (aRejected));
+
+    // A stale instance - loaded before the verdict was written - must not be used for the decision
+    assertFalse (InboundOrchestrator.isMlsSuppressedAfterRejection (_createInboundTx ()));
+  }
+
+  @Test
+  public void testMlsIsNotSuppressedForAPassedDocument ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = _createInboundTx ();
+
+    assertSame (EContinue.CONTINUE,
+                InboundOrchestrator.handleVerifierResult (LOG_PREFIX,
+                                                          aTx,
+                                                          VerifierResult.passed (VerificationOutcome.passed ())));
+
+    final IInboundTransaction aUpdated = aMgr.getByID (aTx.getID ());
+    assertNotNull (aUpdated);
+    assertFalse (InboundOrchestrator.isMlsSuppressedAfterRejection (aUpdated));
   }
 }

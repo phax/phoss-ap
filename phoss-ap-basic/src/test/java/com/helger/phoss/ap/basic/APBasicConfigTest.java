@@ -16,11 +16,13 @@
  */
 package com.helger.phoss.ap.basic;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
 import com.helger.httpclient.HttpClientSettings;
+import com.helger.network.proxy.ProxySelectorProxySettingsManager;
 
 /**
  * Test class for class {@link APBasicConfig}.
@@ -44,5 +46,14 @@ public final class APBasicConfigTest
     final HttpClientSettings aHCS = new HttpClientSettings ();
     APBasicConfig.applyHttpProxySettings (aHCS);
     // No exception = success; proxy may or may not be configured in test env
+  }
+
+  @Test
+  public void testInstallGlobalProxySelectorWithoutProxy ()
+  {
+    APBasicConfig.installGlobalProxySelector ();
+    // No proxy is configured in the test environment, so the default ProxySelector must stay
+    // untouched
+    assertFalse (ProxySelectorProxySettingsManager.isDefault ());
   }
 }

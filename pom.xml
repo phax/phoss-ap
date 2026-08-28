@@ -73,11 +73,11 @@
     <swagger-annotations.version>2.2.54</swagger-annotations.version>
     <sshd-sftp.version>2.19.0</sshd-sftp.version>
 
-    <ph-commons.version>12.3.5</ph-commons.version>
+    <ph-commons.version>12.4.0-SNAPSHOT</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
     <ph-db.version>8.4.1</ph-db.version>
-    <ph-web.version>11.4.3</ph-web.version>
-    <ph-oton.version>10.3.1</ph-oton.version>
+    <ph-web.version>11.4.4-SNAPSHOT</ph-web.version>
+    <ph-oton.version>10.4.0-SNAPSHOT</ph-oton.version>
     <peppol-commons.version>12.8.1</peppol-commons.version>
     <phive.version>12.1.0</phive.version>
     <phase4.version>4.6.1</phase4.version>

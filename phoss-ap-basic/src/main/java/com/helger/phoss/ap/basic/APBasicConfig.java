@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.basic;
 
+import java.net.Proxy;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jspecify.annotations.NonNull;
@@ -24,9 +25,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.concurrent.Immutable;
+import com.helger.base.string.StringHelper;
+import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.CommonsHashSet;
+import com.helger.collection.commons.ICommonsSet;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.httpclient.HttpClientSettings;
 import com.helger.httpclient.HttpClientSettingsConfig;
+import com.helger.httpclient.HttpProxySettings;
+import com.helger.network.proxy.AuthenticatorProxySettingsManager;
+import com.helger.network.proxy.ProxySelectorProxySettingsManager;
+import com.helger.network.proxy.settings.ProxySettings;
+import com.helger.network.proxy.settings.ProxySettingsManager;
 import com.helger.phoss.ap.api.codelist.EPeppolIdentifierMode;
 import com.helger.phoss.ap.api.codelist.EStorageMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
@@ -172,7 +182,21 @@ public final class APBasicConfig
   }
 
   private static final AtomicBoolean PROXY_INITED = new AtomicBoolean (false);
+  private static final AtomicBoolean PROXY_SELECTOR_INITED = new AtomicBoolean (false);
   private static HttpClientSettingsConfig.HttpClientConfig s_aHCC = null;
+
+  private static HttpClientSettingsConfig.@Nullable HttpClientConfig _getHttpClientConfig ()
+  {
+    HttpClientSettingsConfig.HttpClientConfig aHCC = s_aHCC;
+    if (PROXY_INITED.compareAndSet (false, true))
+    {
+      // No special configuration prefix needed
+      s_aHCC = aHCC = HttpClientSettingsConfig.HttpClientConfig.create (_getConfig (), "");
+      if (aHCC != null && aHCC.getHttpProxyEnabled (false).isTrue ())
+        LOGGER.info ("Using HTTP outbound proxy " + aHCC.getHttpProxyObject ());
+    }
+    return aHCC;
+  }
 
   /**
    * Apply the configured outbound HTTP proxy settings to the provided {@link HttpClientSettings}.
@@ -184,15 +208,82 @@ public final class APBasicConfig
    */
   public static void applyHttpProxySettings (@NonNull final HttpClientSettings aHCS)
   {
-    HttpClientSettingsConfig.HttpClientConfig aHCC = s_aHCC;
-    if (PROXY_INITED.compareAndSet (false, true))
-    {
-      // No special configuration prefix needed
-      s_aHCC = aHCC = HttpClientSettingsConfig.HttpClientConfig.create (_getConfig (), "");
-      if (aHCC != null && aHCC.getHttpProxyEnabled (false).isTrue ())
-        LOGGER.info ("Using HTTP outbound proxy " + aHCC.getHttpProxyObject ());
-    }
+    final HttpClientSettingsConfig.HttpClientConfig aHCC = _getHttpClientConfig ();
     if (aHCC != null)
       HttpClientSettingsConfig.assignConfigValuesForProxy (aHCS.getGeneralProxy (), aHCC);
+  }
+
+  /**
+   * Install the configured outbound HTTP proxy as the JVM wide default
+   * {@link java.net.ProxySelector} (and, if proxy credentials are configured, as the default
+   * {@link java.net.Authenticator}). Calling this method more than once has no effect.
+   * <p>
+   * This is needed on top of {@link #applyHttpProxySettings(HttpClientSettings)}, because not all
+   * outbound connections go through Apache HttpClient: the certificate revocation check that the
+   * JSSE PKIX trust manager performs during a TLS handshake (SMP lookup and AS4 sending) downloads
+   * the CRL and contacts the OCSP responder using the JDK internal <code>URLConnection</code>. That
+   * code path ignores the Apache HttpClient proxy settings and only honours the default
+   * <code>ProxySelector</code>.
+   * </p>
+   * <p>
+   * Nothing happens if no proxy host and port are configured, or if the proxy was explicitly
+   * disabled via <code>http.proxy.enabled=false</code>.
+   * </p>
+   *
+   * @since v0.12.0
+   */
+  public static void installGlobalProxySelector ()
+  {
+    if (!PROXY_SELECTOR_INITED.compareAndSet (false, true))
+      return;
+
+    final HttpClientSettingsConfig.HttpClientConfig aHCC = _getHttpClientConfig ();
+    if (aHCC == null)
+      return;
+
+    // Explicit kill switch
+    if (aHCC.getHttpProxyEnabled (true).isFalse ())
+      return;
+
+    final String sProxyHost = aHCC.getHttpProxyHost ();
+    final int nProxyPort = aHCC.getHttpProxyPort ();
+    if (StringHelper.isEmpty (sProxyHost) || nProxyPort <= 0)
+    {
+      // No outbound proxy configured
+      return;
+    }
+
+    final String sProxyUsername = aHCC.getHttpProxyUsername ();
+    final char [] aProxyPassword = aHCC.getHttpProxyPasswordCharArray ();
+    final ProxySettings aProxySettings = new ProxySettings (Proxy.Type.HTTP,
+                                                            sProxyHost,
+                                                            nProxyPort,
+                                                            sProxyUsername,
+                                                            aProxyPassword == null ? null
+                                                                                   : new String (aProxyPassword));
+
+    // Same semantics as HttpProxySettings.setNonProxyHostsFromPipeString - exact host name match
+    final ICommonsSet <String> aNonProxyHosts = new CommonsHashSet <> ();
+    HttpProxySettings.forEachNonProxyHostsFromPipeString (aHCC.getNonProxyHosts (), aNonProxyHosts::add);
+
+    ProxySettingsManager.registerProvider ((sProtocol, sHostName, nPort) -> {
+      // Only HTTP(S) targets are proxied - everything else goes directly
+      if (!"http".equals (sProtocol) && !"https".equals (sProtocol))
+        return null;
+      if (aNonProxyHosts.contains (sHostName))
+        return null;
+      return new CommonsArrayList <> (aProxySettings);
+    });
+
+    // Keep a previously installed ProxySelector (e.g. from the system properties) as fallback
+    ProxySelectorProxySettingsManager.setAsDefault (true);
+    if (StringHelper.isNotEmpty (sProxyUsername))
+      AuthenticatorProxySettingsManager.setAsDefault ();
+
+    LOGGER.info ("Installed the JVM default ProxySelector using the outbound HTTP proxy " +
+                 sProxyHost +
+                 ":" +
+                 nProxyPort +
+                 (aNonProxyHosts.isEmpty () ? "" : " and the non-proxy hosts " + aNonProxyHosts));
   }
 }

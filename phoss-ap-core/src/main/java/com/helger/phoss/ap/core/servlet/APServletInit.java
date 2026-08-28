@@ -157,6 +157,11 @@ public class APServletInit
       WebFileIO.initPaths (new File (sDataPath).getAbsoluteFile (), sServletContextPath, bFileAccessCheck);
     }
 
+    // The JDK internal outbound connections - namely the CRL download and the OCSP request that
+    // the JSSE PKIX trust manager performs during a TLS handshake - do not use Apache HttpClient
+    // and therefore need the configured proxy on the JVM default ProxySelector as well
+    APBasicConfig.installGlobalProxySelector ();
+
     if (APCoreConfig.isOfflineMode ())
     {
       LOGGER.warn ("Offline mode enabled - for development purposes only!");

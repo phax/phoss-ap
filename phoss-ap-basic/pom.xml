@@ -46,6 +46,10 @@
     </dependency>
     <dependency>
       <groupId>com.helger.web</groupId>
+      <artifactId>ph-network</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.web</groupId>
       <artifactId>ph-httpclient</artifactId>
     </dependency>
     <dependency>

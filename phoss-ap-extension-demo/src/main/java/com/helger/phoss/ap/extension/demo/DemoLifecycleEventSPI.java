@@ -29,6 +29,7 @@ import com.helger.annotation.Nonnegative;
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 
 /**
@@ -128,7 +129,8 @@ public final class DemoLifecycleEventSPI implements IAPLifecycleEventSPI
   public void onInboundDocumentForwarded (@NonNull final String sTransactionID,
                                           @NonNull final String sSbdhInstanceID,
                                           @Nullable final Duration aForwardingDuration,
-                                          final boolean bIsRetry)
+                                          final boolean bIsRetry,
+                                          @Nullable final EVerificationResult eVerificationResult)
   {
     LOGGER.info (PREFIX +
                  "onInboundDocumentForwarded: transactionID=" +
@@ -138,7 +140,9 @@ public final class DemoLifecycleEventSPI implements IAPLifecycleEventSPI
                  ", forwardingDuration=" +
                  aForwardingDuration +
                  ", isRetry=" +
-                 bIsRetry);
+                 bIsRetry +
+                 ", verificationResult=" +
+                 eVerificationResult);
   }
 
   /** {@inheritDoc} */

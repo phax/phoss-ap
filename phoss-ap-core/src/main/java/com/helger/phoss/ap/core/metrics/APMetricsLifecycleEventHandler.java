@@ -27,6 +27,7 @@ import com.helger.annotation.Nonnegative;
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 import com.helger.telemetry.TelemetryAttributes;
@@ -104,7 +105,8 @@ public class APMetricsLifecycleEventHandler implements IAPLifecycleEventSPI
   public void onInboundDocumentForwarded (@NonNull final String sTransactionID,
                                           @NonNull final String sSbdhInstanceID,
                                           @Nullable final Duration aForwardingDuration,
-                                          final boolean bIsRetry)
+                                          final boolean bIsRetry,
+                                          @Nullable final EVerificationResult eVerificationResult)
   {
     final TelemetryAttributes aAttrs = TelemetryAttributes.builder ()
                                                           .put (CPhossAPOtel.ATTR_IS_RETRY, bIsRetry)
@@ -112,6 +114,10 @@ public class APMetricsLifecycleEventHandler implements IAPLifecycleEventSPI
     APMetrics.INBOUND_FORWARDED.add (1, aAttrs);
     if (aForwardingDuration != null)
       APMetrics.INBOUND_FORWARDING_DURATION.record (_toSeconds (aForwardingDuration), aAttrs);
+
+    // Only counts the mode "retry" - a "best-effort" copy never reaches this callback
+    if (eVerificationResult != null && eVerificationResult.isRejected ())
+      APMetrics.INBOUND_VERIFICATION_REJECTIONS_FORWARDED.add (1, aAttrs);
   }
 
   public void onOutboundDocumentAccepted (@NonNull final String sTransactionID,

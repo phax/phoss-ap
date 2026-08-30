@@ -30,6 +30,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 
 /**
@@ -143,11 +144,16 @@ public final class SafeLifecycleEventHandler implements IAPLifecycleEventSPI
   public void onInboundDocumentForwarded (@NonNull final String sTransactionID,
                                           @NonNull final String sSbdhInstanceID,
                                           @Nullable final Duration aForwardingDuration,
-                                          final boolean bIsRetry)
+                                          final boolean bIsRetry,
+                                          @Nullable final EVerificationResult eVerificationResult)
   {
     try
     {
-      m_aHdl.onInboundDocumentForwarded (sTransactionID, sSbdhInstanceID, aForwardingDuration, bIsRetry);
+      m_aHdl.onInboundDocumentForwarded (sTransactionID,
+                                         sSbdhInstanceID,
+                                         aForwardingDuration,
+                                         bIsRetry,
+                                         eVerificationResult);
     }
     catch (final Exception ex)
     {

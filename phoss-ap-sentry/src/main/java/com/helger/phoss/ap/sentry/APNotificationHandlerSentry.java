@@ -27,6 +27,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.collection.commons.CommonsLinkedHashMap;
 import com.helger.collection.commons.ICommonsOrderedMap;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
@@ -79,7 +80,8 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
   /** {@inheritDoc} */
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
                                               @NonNull final String sSbdhInstanceID,
-                                              @Nullable final String sErrorDetails)
+                                              @Nullable final String sErrorDetails,
+                                              @NonNull final MlsOutcome aMlsOutcome)
   {
     _logError ("onInboundVerificationRejection",
                _params ("transactionID",
@@ -87,7 +89,11 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
                        "sbdhInstanceID",
                        sSbdhInstanceID,
                        "errorDetails",
-                       sErrorDetails));
+                       sErrorDetails,
+                       "mlsResponseCode",
+                       aMlsOutcome.getResponseCodeID (),
+                       "issueCount",
+                       Integer.toString (aMlsOutcome.getIssues ().size ())));
   }
 
   /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import com.helger.annotation.Nonnegative;
 import com.helger.annotation.style.IsSPIInterface;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
+import com.helger.phoss.ap.api.codelist.EVerificationResult;
 
 /**
  * SPI interface for receiving notifications about positive lifecycle events of the AP — e.g.
@@ -144,11 +145,19 @@ public interface IAPLifecycleEventSPI
    * @param bIsRetry
    *        <code>true</code> if the successful forwarding happened on a retry attempt,
    *        <code>false</code> on the first attempt.
+   * @param eVerificationResult
+   *        The persisted verdict of the inbound document verification, or <code>null</code> if no
+   *        verification was performed. A value of {@link EVerificationResult#REJECTED} means that
+   *        the document was forwarded despite its rejection, because
+   *        <code>verification.inbound.rejection-forwarding</code> is set to <code>retry</code>.
+   * @since 0.12.0 - the {@link EVerificationResult} parameter was added, so that a reporting
+   *        integration hung off this callback does not need a second lookup
    */
   void onInboundDocumentForwarded (@NonNull String sTransactionID,
                                    @NonNull String sSbdhInstanceID,
                                    @Nullable Duration aForwardingDuration,
-                                   boolean bIsRetry);
+                                   boolean bIsRetry,
+                                   @Nullable EVerificationResult eVerificationResult);
 
   /**
    * Called when an outbound transaction has been accepted (document persisted, in {@code PENDING}

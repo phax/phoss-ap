@@ -162,6 +162,8 @@ public final class APConfigurationProperties
   public static final String FORWARDING_HTTP_ENDPOINT = "forwarding.http.endpoint";
   @Deprecated (forRemoval = true, since = "0.9.0")
   public static final String FORWARDING_HTTP_HEADERS_PREFIX = "forwarding.http.headers.";
+  /** @since 0.12.0 */
+  public static final boolean FORWARDING_HTTP_VERIFICATION_DETAILS_DEFAULT = false;
 
   // Forwarding - S3
   @Deprecated (forRemoval = true, since = "0.9.0")

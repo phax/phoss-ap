@@ -68,6 +68,9 @@ public final class APMetrics
   public static final ITelemetryCounter INBOUND_FORWARDED = TelemetryMetrics.counter (CPhossAPOtel.METRIC_INBOUND_FORWARDED,
                                                                                       "Inbound documents successfully forwarded to the Receiver Backend",
                                                                                       "{transaction}");
+  public static final ITelemetryCounter INBOUND_VERIFICATION_REJECTIONS_FORWARDED = TelemetryMetrics.counter (CPhossAPOtel.METRIC_INBOUND_VERIFICATION_REJECTIONS_FORWARDED,
+                                                                                                              "Inbound documents that were forwarded to the Receiver Backend despite having been rejected by verification",
+                                                                                                              "{transaction}");
   public static final ITelemetryHistogram INBOUND_FORWARDING_DURATION = TelemetryMetrics.histogram (CPhossAPOtel.METRIC_INBOUND_FORWARDING_DURATION,
                                                                                                     "Wall-clock duration from inbound AS4 reception to successful forwarding",
                                                                                                     "s");

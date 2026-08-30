@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.style.IsSPIInterface;
+import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 
@@ -65,10 +66,18 @@ public interface IAPNotificationHandlerSPI
    *        The SBDH Instance Identifier. Never <code>null</code>.
    * @param sErrorDetails
    *        Optional error details. May be <code>null</code>.
+   * @param aMlsOutcome
+   *        The structured findings that led to the rejection - the very same data that is sent as
+   *        the negative MLS (RE) to C2. Never <code>null</code>. It is also provided for a document
+   *        that receives no MLS at all (an MLR or an MLS itself), because it describes the verdict
+   *        and not the message that was sent.
+   * @since 0.12.0 - the {@link MlsOutcome} parameter was added, so that a handler which builds a
+   *        downstream report has the failure details at hand without a second lookup
    */
   void onInboundVerificationRejection (@NonNull String sTransactionID,
                                        @NonNull String sSbdhInstanceID,
-                                       @Nullable String sErrorDetails);
+                                       @Nullable String sErrorDetails,
+                                       @NonNull MlsOutcome aMlsOutcome);
 
   /**
    * Called when the verification of an inbound document was deferred, because a document verifier
@@ -79,7 +88,7 @@ public interface IAPNotificationHandlerSPI
    * This callback is fired for every deferral, i.e. also for every unsuccessful re-verification. It
    * is the signal that a verifier needs operator attention: if the situation is not resolved within
    * <code>verification.deferred.max-duration</code>, the document is rejected and
-   * {@link #onInboundVerificationRejection(String, String, String)} is fired.
+   * {@link #onInboundVerificationRejection(String, String, String, MlsOutcome)} is fired.
    * </p>
    *
    * @param sTransactionID

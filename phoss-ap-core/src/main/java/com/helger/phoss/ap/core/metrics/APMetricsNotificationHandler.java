@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
@@ -54,7 +55,8 @@ public class APMetricsNotificationHandler implements IAPNotificationHandlerSPI
 
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
                                               @NonNull final String sSbdhInstanceID,
-                                              @Nullable final String sErrorDetails)
+                                              @Nullable final String sErrorDetails,
+                                              @NonNull final MlsOutcome aMlsOutcome)
   {
     APMetrics.INBOUND_VERIFICATION_REJECTIONS.add (1, _baseTxAttrs (sTransactionID, sSbdhInstanceID));
   }

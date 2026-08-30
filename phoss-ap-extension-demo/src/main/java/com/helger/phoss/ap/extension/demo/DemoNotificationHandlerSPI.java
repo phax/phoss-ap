@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
 
@@ -71,7 +72,8 @@ public final class DemoNotificationHandlerSPI implements IAPNotificationHandlerS
   /** {@inheritDoc} */
   public void onInboundVerificationRejection (@NonNull final String sTransactionID,
                                               @NonNull final String sSbdhInstanceID,
-                                              @Nullable final String sErrorDetails)
+                                              @Nullable final String sErrorDetails,
+                                              @NonNull final MlsOutcome aMlsOutcome)
   {
     LOGGER.info (PREFIX +
                  "onInboundVerificationRejection: transactionID=" +
@@ -79,7 +81,9 @@ public final class DemoNotificationHandlerSPI implements IAPNotificationHandlerS
                  ", sbdhInstanceID=" +
                  sSbdhInstanceID +
                  ", errorDetails=" +
-                 sErrorDetails);
+                 sErrorDetails +
+                 ", mlsOutcome=" +
+                 aMlsOutcome);
   }
 
   /** {@inheritDoc} */

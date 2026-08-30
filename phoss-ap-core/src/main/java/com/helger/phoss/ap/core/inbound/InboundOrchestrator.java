@@ -365,11 +365,12 @@ public final class InboundOrchestrator
                                                     @NonNull final VerifierResult aVR,
                                                     @NonNull final String sReason)
   {
+    final MlsOutcome aMlsOutcome = getRejectionMlsOutcome (aVR);
+
     // Don't send MLS as response to MLR or MLS
     if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-      !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
     {
-      final MlsOutcome aMlsOutcome = getRejectionMlsOutcome (aVR);
       // Send asynchronously
       PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
         // Send negative MLS (RE) back to C2 with the verifier's detailed outcome
@@ -377,8 +378,13 @@ public final class InboundOrchestrator
       });
     }
 
+    // The outcome is handed out even if no MLS was sent - it describes the verdict and not the
+    // message, so a handler building a downstream report needs no second lookup
     for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-      aHandler.onInboundVerificationRejection (aInboundTx.getID (), aInboundTx.getSbdhInstanceID (), sReason);
+      aHandler.onInboundVerificationRejection (aInboundTx.getID (),
+                                               aInboundTx.getSbdhInstanceID (),
+                                               sReason,
+                                               aMlsOutcome);
   }
 
   /**
@@ -419,8 +425,7 @@ public final class InboundOrchestrator
       {
         nIndex++;
         try (final ITelemetrySpan aSpan = Telemetry.startSpan (sSpanName, ETelemetrySpanKind.PRODUCER)
-                                                   .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID,
-                                                                  aInboundTx.getID ())
+                                                   .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aInboundTx.getID ())
                                                    .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
                                                                   aInboundTx.getSbdhInstanceID ())
                                                    .setAttribute (CPhossAPOtel.ATTR_FORWARDER_INDEX, nIndex))
@@ -627,10 +632,7 @@ public final class InboundOrchestrator
       return _rejectAfterVerification (sLogPrefix,
                                        aInboundTx,
                                        aVR,
-                                       sErrorDetails +
-                                                    " (maximum deferral duration of " +
-                                                    aMaxDuration +
-                                                    " exceeded)",
+                                       sErrorDetails + " (maximum deferral duration of " + aMaxDuration + " exceeded)",
                                        sReason);
     }
 
@@ -690,11 +692,7 @@ public final class InboundOrchestrator
       return _rejectAfterVerification (sLogPrefix,
                                        aInboundTx,
                                        aVR,
-                                       ERROR_DETAILS_VERIFICATION_REJECTED +
-                                                    " [" +
-                                                    aVR.verifierName () +
-                                                    "]: " +
-                                                    sText,
+                                       ERROR_DETAILS_VERIFICATION_REJECTED + " [" + aVR.verifierName () + "]: " + sText,
                                        "The document verifier '" + aVR.verifierName () + "' rejected the document");
     }
 
@@ -736,10 +734,10 @@ public final class InboundOrchestrator
                                           aInboundTx,
                                           aVR,
                                           ERROR_DETAILS_VERIFIER_UNAVAILABLE +
-                                                       " [" +
-                                                       aVR.verifierName () +
-                                                       "]: " +
-                                                       sText,
+                                               " [" +
+                                               aVR.verifierName () +
+                                               "]: " +
+                                               sText,
                                           sReason);
         }
       };
@@ -946,7 +944,7 @@ public final class InboundOrchestrator
       // Try to send back positive MLS
       // Don't send MLS as response to MLS
       if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+          !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
       {
         // Send asynchronously
         PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
@@ -987,7 +985,7 @@ public final class InboundOrchestrator
     else
       // Don't send MLS as response to MLR or MLS
       if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
-        !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
+          !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
       {
         // Send asynchronously
         PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
@@ -1257,7 +1255,7 @@ public final class InboundOrchestrator
         if (CPhossAP.isMLS (aDocTypeID, aProcessID))
         {
           if (_handleIncomingMls (sLogPrefix, aVerifiedTx, aPeppolSBD.getBusinessMessageNoClone (), aProcessingErrors)
-                                                                                                                     .isFailure ())
+                                                                                                                      .isFailure ())
             return aProcessingErrors;
         }
 
@@ -1382,7 +1380,8 @@ public final class InboundOrchestrator
               aHandler.onInboundDocumentForwarded (aInboundTx.getID (),
                                                    aInboundTx.getSbdhInstanceID (),
                                                    aForwardingDuration,
-                                                   bIsRetry);
+                                                   bIsRetry,
+                                                   aInboundTx.getVerificationResult ());
             }
 
             bForwardSuccess = true;

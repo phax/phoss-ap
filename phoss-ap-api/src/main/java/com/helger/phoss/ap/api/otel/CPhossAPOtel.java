@@ -62,6 +62,8 @@ public final class CPhossAPOtel
   public static final String METRIC_INBOUND_VERIFICATION_ACCEPTED = "phoss.ap.inbound.verification.accepted";
   public static final String METRIC_INBOUND_MLS_CORRELATED = "phoss.ap.inbound.mls.correlated";
   public static final String METRIC_INBOUND_FORWARDED = "phoss.ap.inbound.forwarded";
+  /** @since 0.12.0 */
+  public static final String METRIC_INBOUND_VERIFICATION_REJECTIONS_FORWARDED = "phoss.ap.inbound.verification.rejections.forwarded";
   public static final String METRIC_OUTBOUND_ACCEPTED = "phoss.ap.outbound.accepted";
   public static final String METRIC_OUTBOUND_VERIFICATION_ACCEPTED = "phoss.ap.outbound.verification.accepted";
   public static final String METRIC_OUTBOUND_SENT = "phoss.ap.outbound.sent";

@@ -21,7 +21,7 @@ import org.jspecify.annotations.NonNull;
 import com.helger.base.state.ESuccess;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.phoss.ap.api.model.ForwardingResult;
-import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.IForwardableDocument;
 
 /**
  * Interface for forwarding received inbound documents to the Receiver Backend (C4). Built-in
@@ -72,17 +72,22 @@ public interface IDocumentForwarder
   ESuccess initFromConfiguration (@NonNull IConfigWithFallback aConfig, @NonNull String sKeyPrefix);
 
   /**
-   * Forward the given inbound transaction's document to the Receiver Backend. This method should
-   * never throw an exception.
+   * Forward the given document to the Receiver Backend. This method should never throw an
+   * exception.
+   * <p>
+   * Unlike its predecessor this method is not tied to a received document: an inbound business
+   * document, an inbound MLS and a copy of a self-generated outbound MLS are all passed the same
+   * way, distinguished only by {@link IForwardableDocument#kind()}.
+   * </p>
    *
-   * @param aTransaction
-   *        The inbound transaction whose document bytes should be forwarded. Never
-   *        <code>null</code>.
+   * @param aDocument
+   *        The document to forward. Never <code>null</code>.
    * @return {@link ForwardingResult#success()} if forwarding succeeded, or
    *         {@link ForwardingResult#failure(String, String)} with error details otherwise.
+   * @since 0.12.0
    */
   @NonNull
-  ForwardingResult forwardDocument (@NonNull IInboundTransaction aTransaction);
+  ForwardingResult forwardDocument (@NonNull IForwardableDocument aDocument);
 
   /**
    * @return <code>true</code> if this forwarder synchronously confirms delivery to the Receiver

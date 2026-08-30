@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.jspecify.annotations.NonNull;
@@ -42,13 +41,11 @@ import com.helger.json.IJsonArray;
 import com.helger.json.JsonArray;
 import com.helger.json.JsonObject;
 import com.helger.json.serialize.JsonReader;
-import com.helger.peppol.mls.EPeppolMLSResponseCode;
-import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EForwardingMode;
-import com.helger.phoss.ap.api.codelist.EInboundStatus;
-import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
-import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.ForwardableDocument;
+import com.helger.phoss.ap.api.model.IForwardableDocument;
+import com.helger.phoss.ap.forwarding.MockInboundTransaction;
 
 /**
  * Test class for class {@link HttpDocumentForwarder}, focusing on the verification headers.
@@ -63,208 +60,11 @@ public final class HttpDocumentForwarderTest
   private static final String ENDPOINT_URL = "http://localhost:8888/forwarding";
   private static final int MAX_DETAILS_LENGTH = 4096;
 
-  /**
-   * A minimal inbound transaction that only carries what the verification headers need.
-   */
-  private static final class MockInboundTransaction implements IInboundTransaction
+  @NonNull
+  private static IForwardableDocument _doc (@Nullable final EVerificationResult eVerificationResult,
+                                            @Nullable final String sVerificationDetails)
   {
-    private final EVerificationResult m_eVerificationResult;
-    private final String m_sVerificationDetails;
-
-    MockInboundTransaction (@Nullable final EVerificationResult eVerificationResult,
-                            @Nullable final String sVerificationDetails)
-    {
-      m_eVerificationResult = eVerificationResult;
-      m_sVerificationDetails = sVerificationDetails;
-    }
-
-    @NonNull
-    public String getID ()
-    {
-      return "tx-1";
-    }
-
-    @Nullable
-    public String getIncomingID ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getC2SeatID ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getC3SeatID ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getSigningCertCN ()
-    {
-      return null;
-    }
-
-    @NonNull
-    public String getSenderID ()
-    {
-      return "iso6523-actorid-upis::9915:sender";
-    }
-
-    @NonNull
-    public String getReceiverID ()
-    {
-      return "iso6523-actorid-upis::9915:receiver";
-    }
-
-    @NonNull
-    public String getDocTypeID ()
-    {
-      return "busdox-docid-qns::doctype";
-    }
-
-    @NonNull
-    public String getProcessID ()
-    {
-      return "cenbii-procid-ubl::process";
-    }
-
-    @NonNull
-    public String getDocumentPath ()
-    {
-      return "doc/tx-1.xml";
-    }
-
-    public long getDocumentSize ()
-    {
-      return 0;
-    }
-
-    @Nullable
-    public String getDocumentHash ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getAS4MessageID ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public OffsetDateTime getAS4Timestamp ()
-    {
-      return null;
-    }
-
-    @NonNull
-    public String getSbdhInstanceID ()
-    {
-      return "sbdh-1";
-    }
-
-    @Nullable
-    public String getC1CountryCode ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getC4CountryCode ()
-    {
-      return null;
-    }
-
-    public boolean isDuplicateAS4 ()
-    {
-      return false;
-    }
-
-    public boolean isDuplicateSBDH ()
-    {
-      return false;
-    }
-
-    @NonNull
-    public EInboundStatus getStatus ()
-    {
-      return EInboundStatus.RECEIVED;
-    }
-
-    public int getAttemptCount ()
-    {
-      return 0;
-    }
-
-    @Nullable
-    public OffsetDateTime getReceivedDT ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public OffsetDateTime getCompletedDT ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public EReportingStatus getReportingStatus ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public OffsetDateTime getNextRetryDT ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getErrorDetails ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getMlsTo ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public EPeppolMLSType getMlsType ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public EPeppolMLSResponseCode getMlsResponseCode ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public String getMlsOutboundTransactionID ()
-    {
-      return null;
-    }
-
-    @Nullable
-    public EVerificationResult getVerificationResult ()
-    {
-      return m_eVerificationResult;
-    }
-
-    @Nullable
-    public String getVerificationDetails ()
-    {
-      return m_sVerificationDetails;
-    }
+    return ForwardableDocument.fromInbound (new MockInboundTransaction (eVerificationResult, sVerificationDetails));
   }
 
   @NonNull
@@ -305,7 +105,7 @@ public final class HttpDocumentForwarderTest
     final HttpPost aPost = new HttpPost (ENDPOINT_URL);
 
     // Verification is disabled, or the verdict is still deferred
-    aForwarder.applyVerificationHeaders (aPost, new MockInboundTransaction (null, null));
+    aForwarder.applyVerificationHeaders (aPost, _doc (null, null));
     assertFalse (aPost.containsHeader (HEADER_RESULT));
     assertFalse (aPost.containsHeader (HEADER_DETAILS));
   }
@@ -317,7 +117,7 @@ public final class HttpDocumentForwarderTest
     for (final EVerificationResult eResult : EVerificationResult.values ())
     {
       final HttpPost aPost = new HttpPost (ENDPOINT_URL);
-      aForwarder.applyVerificationHeaders (aPost, new MockInboundTransaction (eResult, null));
+      aForwarder.applyVerificationHeaders (aPost, _doc (eResult, null));
       assertNotNull (aPost.getFirstHeader (HEADER_RESULT));
       assertEquals (eResult.getID (), aPost.getFirstHeader (HEADER_RESULT).getValue ());
     }
@@ -330,8 +130,7 @@ public final class HttpDocumentForwarderTest
     final HttpPost aPost = new HttpPost (ENDPOINT_URL);
 
     aForwarder.applyVerificationHeaders (aPost,
-                                         new MockInboundTransaction (EVerificationResult.REJECTED,
-                                                                     _createIssuesJson (1, 10)));
+                                         _doc (EVerificationResult.REJECTED, _createIssuesJson (1, 10)));
     assertEquals ("rejected", aPost.getFirstHeader (HEADER_RESULT).getValue ());
     // The details are opt-in
     assertFalse (aPost.containsHeader (HEADER_DETAILS));
@@ -345,7 +144,7 @@ public final class HttpDocumentForwarderTest
     final HttpPost aPost = new HttpPost (ENDPOINT_URL);
     final String sDetails = _createIssuesJson (2, 10);
 
-    aForwarder.applyVerificationHeaders (aPost, new MockInboundTransaction (EVerificationResult.REJECTED, sDetails));
+    aForwarder.applyVerificationHeaders (aPost, _doc (EVerificationResult.REJECTED, sDetails));
     assertEquals ("rejected", aPost.getFirstHeader (HEADER_RESULT).getValue ());
 
     final String sEncoded = aPost.getFirstHeader (HEADER_DETAILS).getValue ();
@@ -363,7 +162,7 @@ public final class HttpDocumentForwarderTest
     // Way beyond the characters a header value is limited to
     final String sDetails = _createIssuesJson (50, 500);
 
-    aForwarder.applyVerificationHeaders (aPost, new MockInboundTransaction (EVerificationResult.REJECTED, sDetails));
+    aForwarder.applyVerificationHeaders (aPost, _doc (EVerificationResult.REJECTED, sDetails));
 
     final String sEncoded = aPost.getFirstHeader (HEADER_DETAILS).getValue ();
     assertTrue (sEncoded.length () <= MAX_DETAILS_LENGTH);
@@ -384,7 +183,7 @@ public final class HttpDocumentForwarderTest
     final HttpPost aPost = new HttpPost (ENDPOINT_URL);
 
     aForwarder.applyVerificationHeaders (aPost,
-                                         new MockInboundTransaction (EVerificationResult.REJECTED, "this is no JSON"));
+                                         _doc (EVerificationResult.REJECTED, "this is no JSON"));
     // The verdict is unaffected by unparsable details
     assertEquals ("rejected", aPost.getFirstHeader (HEADER_RESULT).getValue ());
     assertFalse (aPost.containsHeader (HEADER_DETAILS));
@@ -396,7 +195,7 @@ public final class HttpDocumentForwarderTest
     final HttpDocumentForwarder aForwarder = _createForwarder (true);
     final HttpPost aPost = new HttpPost (ENDPOINT_URL);
 
-    aForwarder.applyVerificationHeaders (aPost, new MockInboundTransaction (EVerificationResult.PASSED, null));
+    aForwarder.applyVerificationHeaders (aPost, _doc (EVerificationResult.PASSED, null));
     assertEquals ("passed", aPost.getFirstHeader (HEADER_RESULT).getValue ());
     assertFalse (aPost.containsHeader (HEADER_DETAILS));
   }

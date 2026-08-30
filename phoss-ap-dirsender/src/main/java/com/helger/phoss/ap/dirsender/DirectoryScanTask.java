@@ -46,7 +46,7 @@ final class DirectoryScanTask extends TimerTask
 
   private void _processNewFiles ()
   {
-    final File [] aFiles = m_aWatchDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = m_aWatchDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     if (aFiles == null || aFiles.length == 0)
     {
       if (LOGGER.isDebugEnabled ())
@@ -84,7 +84,7 @@ final class DirectoryScanTask extends TimerTask
   private void _cleanupPendingFiles ()
   {
     final File aPendingDir = new File (m_aWatchDir, DirectoryFileProcessor.DIR_PENDING);
-    final File [] aFiles = aPendingDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aPendingDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     if (aFiles != null && aFiles.length > 0)
     {
       for (final File aFile : aFiles)

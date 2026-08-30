@@ -67,6 +67,7 @@ import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
+import com.helger.phoss.ap.api.model.ForwardableDocument;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
@@ -419,6 +420,9 @@ public final class InboundOrchestrator
     if (aForwarders.isEmpty ())
       return;
 
+    // Adapt once - all forwarders of this dispatch see the very same document
+    final ForwardableDocument aForwardableDoc = ForwardableDocument.fromInbound (aInboundTx);
+
     PhotonWorkerPool.getInstance ().run (sTaskName, () -> {
       int nIndex = 0;
       for (final IDocumentForwarder aForwarder : aForwarders)
@@ -432,7 +436,7 @@ public final class InboundOrchestrator
         {
           try
           {
-            final ForwardingResult aResult = aForwarder.forwardDocument (aInboundTx);
+            final ForwardingResult aResult = aForwarder.forwardDocument (aForwardableDoc);
             if (aResult.isSuccess ())
             {
               LOGGER.info (sLogPrefix +
@@ -1339,7 +1343,7 @@ public final class InboundOrchestrator
           ForwardingResult aResult;
           try
           {
-            aResult = aForwarder.forwardDocument (aInboundTx);
+            aResult = aForwarder.forwardDocument (ForwardableDocument.fromInbound (aInboundTx));
           }
           catch (final Exception ex)
           {

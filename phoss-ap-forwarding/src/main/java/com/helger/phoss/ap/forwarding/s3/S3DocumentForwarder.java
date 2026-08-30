@@ -29,14 +29,12 @@ import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.config.fallback.IConfigWithFallback;
-import com.helger.json.serialize.JsonWriterSettings;
 import com.helger.mime.CMimeType;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
-import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
-import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.IForwardableDocument;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.telemetry.ETelemetrySpanKind;
@@ -125,20 +123,17 @@ public class S3DocumentForwarder implements IDocumentForwarder
    *
    * @param aS3Client
    *        The S3 client to use for the upload. May not be <code>null</code>.
-   * @param aTransaction
-   *        The transaction to write the metadata for. May not be <code>null</code>.
+   * @param aDocument
+   *        The document to write the metadata for. May not be <code>null</code>.
    * @param sMetaKey
    *        The S3 object key of the sidecar (including the ".json" extension). May not be
    *        <code>null</code>.
    */
   private void _writeMetadataSidecar (@NonNull final S3Client aS3Client,
-                                      @NonNull final IInboundTransaction aTransaction,
+                                      @NonNull final IForwardableDocument aDocument,
                                       @NonNull final String sMetaKey)
   {
-    final String sJson = InboundTransactionResponse.fromDomain (aTransaction)
-                                                   .toJson ()
-                                                   .getAsJsonString (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED);
-    final byte [] aJsonBytes = sJson.getBytes (StandardCharsets.UTF_8);
+    final byte [] aJsonBytes = aDocument.metadataJson ().get ().getBytes (StandardCharsets.UTF_8);
 
     final PutObjectRequest aMetaReq = PutObjectRequest.builder ()
                                                       .bucket (m_sBucket)
@@ -149,7 +144,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
     final var aMetaResult = aS3Client.putObject (aMetaReq, RequestBody.fromBytes (aJsonBytes));
     if (!aMetaResult.sdkHttpResponse ().isSuccessful ())
       LOGGER.error ("Failed to write S3 metadata sidecar for transaction '" +
-                    aTransaction.getID () +
+                    aDocument.id () +
                     "' to S3 bucket '" +
                     m_sBucket +
                     "' and key '" +
@@ -158,7 +153,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
   }
 
   @NonNull
-  private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
+  private ForwardingResult _doForwardDocument (@NonNull final IForwardableDocument aDocument)
   {
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
 
@@ -176,9 +171,9 @@ public class S3DocumentForwarder implements IDocumentForwarder
       }
 
       try (final S3Client aS3Client = aBuilder.build ();
-           final InputStream aDocumentIS = aDocPayloadMgr.openDocumentStreamForRead (aTransaction.getDocumentPath ()))
+           final InputStream aDocumentIS = aDocPayloadMgr.openDocumentStreamForRead (aDocument.documentPath ()))
       {
-        final String sBaseKey = m_sKeyPrefix + aTransaction.getSbdhInstanceID ();
+        final String sBaseKey = m_sKeyPrefix + aDocument.sbdhInstanceID ();
         final String sKey = sBaseKey + ".xml";
 
         final PutObjectRequest aPutReq = PutObjectRequest.builder ()
@@ -189,11 +184,11 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
         final var aResult = aS3Client.putObject (aPutReq,
                                                  RequestBody.fromInputStream (aDocumentIS,
-                                                                              aTransaction.getDocumentSize ()));
+                                                                              aDocument.documentSize ()));
         if (!aResult.sdkHttpResponse ().isSuccessful ())
         {
           LOGGER.error ("Failed to uploaded transaction '" +
-                        aTransaction.getID () +
+                        aDocument.id () +
                         "' to S3 bucket '" +
                         m_sBucket +
                         "' and key '" +
@@ -203,7 +198,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
         }
 
         LOGGER.info ("Uploaded transaction '" +
-                     aTransaction.getID () +
+                     aDocument.id () +
                      "' to S3 bucket '" +
                      m_sBucket +
                      "' and key '" +
@@ -211,8 +206,8 @@ public class S3DocumentForwarder implements IDocumentForwarder
                      "'");
 
         // Optionally write a metadata JSON sidecar next to the uploaded SBD
-        if (m_bWriteMetadata)
-          _writeMetadataSidecar (aS3Client, aTransaction, sBaseKey + ".json");
+        if (m_bWriteMetadata && aDocument.metadataJson () != null)
+          _writeMetadataSidecar (aS3Client, aDocument, sBaseKey + ".json");
 
         return ForwardingResult.success ();
       }
@@ -220,7 +215,7 @@ public class S3DocumentForwarder implements IDocumentForwarder
     catch (final Exception ex)
     {
       LOGGER.error ("S3 forwarding failed for transaction '" +
-                    aTransaction.getID () +
+                    aDocument.id () +
                     "' to bucket '" +
                     m_sBucket +
                     "'",
@@ -231,12 +226,12 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
   /** {@inheritDoc} */
   @NonNull
-  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  public ForwardingResult forwardDocument (@NonNull final IForwardableDocument aDocument)
   {
     return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
       aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "s3")
-           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
-      return _doForwardDocument (aTransaction);
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aDocument.id ());
+      return _doForwardDocument (aDocument);
     });
   }
 

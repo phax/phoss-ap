@@ -47,7 +47,7 @@ public final class DirectoryScanTaskTest
     Files.writeString (new File (aWatchDir, "invoice.xml").toPath (), "<sbd/>", StandardCharsets.UTF_8);
     Files.writeString (new File (aWatchDir, "another.xml").toPath (), "<sbd/>", StandardCharsets.UTF_8);
 
-    final File [] aFiles = aWatchDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aWatchDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     assertTrue (aFiles.length == 2);
   }
 
@@ -59,7 +59,7 @@ public final class DirectoryScanTaskTest
     Files.writeString (new File (aWatchDir, "data.json").toPath (), "{}", StandardCharsets.UTF_8);
     Files.writeString (new File (aWatchDir, "invoice.xml").toPath (), "<sbd/>", StandardCharsets.UTF_8);
 
-    final File [] aFiles = aWatchDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aWatchDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     assertTrue (aFiles.length == 1);
     assertTrue (aFiles[0].getName ().equals ("invoice.xml"));
   }
@@ -73,7 +73,7 @@ public final class DirectoryScanTaskTest
     Files.writeString (new File (aWatchDir, "invoice.xml").toPath (), "<sbd/>", StandardCharsets.UTF_8);
 
     // listFiles with filename filter already excludes directories (they don't end in .xml)
-    final File [] aFiles = aWatchDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aWatchDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     assertTrue (aFiles.length == 1);
   }
 
@@ -82,7 +82,7 @@ public final class DirectoryScanTaskTest
   {
     final File aWatchDir = m_aTempDir.getRoot ();
 
-    final File [] aFiles = aWatchDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aWatchDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     assertNotNull (aFiles);
     assertTrue (aFiles.length == 0);
   }

@@ -44,7 +44,7 @@ public final class DirectorySenderScheduler
 
   private static void _recoverPendingFiles (final File aWatchDir, final File aPendingDir)
   {
-    final File [] aFiles = aPendingDir.listFiles ( (dir, name) -> name.endsWith (".xml"));
+    final File [] aFiles = aPendingDir.listFiles ((dir, name) -> name.endsWith (".xml"));
     if (aFiles != null && aFiles.length > 0)
     {
       LOGGER.info ("Recovering " + aFiles.length + " file(s) from pending directory");
@@ -113,7 +113,9 @@ public final class DirectorySenderScheduler
                  aInitialDelay);
 
     s_aTimer = new Timer ("phoss-ap-dir-sender", true);
-    s_aTimer.scheduleAtFixedRate (new DirectoryScanTask (aWatchDir), aInitialDelay.toMillis (), aScanInterval.toMillis ());
+    s_aTimer.scheduleAtFixedRate (new DirectoryScanTask (aWatchDir),
+                                  aInitialDelay.toMillis (),
+                                  aScanInterval.toMillis ());
   }
 
   /**

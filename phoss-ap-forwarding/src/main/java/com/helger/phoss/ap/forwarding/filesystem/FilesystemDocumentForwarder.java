@@ -36,14 +36,12 @@ import com.helger.io.file.FileHelper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.FilenameHelper;
 import com.helger.io.file.SimpleFileIO;
-import com.helger.json.serialize.JsonWriterSettings;
 import com.helger.phoss.ap.api.codelist.EForwardingFilesystemLayout;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
-import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardingResult;
-import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.IForwardableDocument;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.telemetry.ETelemetrySpanKind;
@@ -130,18 +128,18 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
     }
   }
 
-  private static void _writeMetadataJson (@NonNull final File aJsonFile, @NonNull final IInboundTransaction aTx)
+  private static void _writeMetadataJson (@NonNull final File aJsonFile, @NonNull final IForwardableDocument aDoc)
   {
-    final String sJson = InboundTransactionResponse.fromDomain (aTx)
-                                                   .toJson ()
-                                                   .getAsJsonString (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED);
-    if (SimpleFileIO.writeFile (aJsonFile, sJson, StandardCharsets.UTF_8).isFailure ())
+    if (aDoc.metadataJson () == null)
+      return;
+
+    if (SimpleFileIO.writeFile (aJsonFile, aDoc.metadataJson ().get (), StandardCharsets.UTF_8).isFailure ())
       LOGGER.error ("Failed to write metadata JSON to '" + aJsonFile.getAbsolutePath () + "'");
   }
 
   @NonNull
   private ForwardingResult _forwardFlat (@NonNull final IDocumentPayloadManager aDocPayloadMgr,
-                                         @NonNull final IInboundTransaction aTx,
+                                         @NonNull final IForwardableDocument aDoc,
                                          @NonNull final String sBaseName) throws IOException
   {
     final File aTmpFile = new File (m_aBaseDirectory, sBaseName + ".xml.tmp");
@@ -149,7 +147,7 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
     final File aJsonFile = new File (m_aBaseDirectory, sBaseName + ".json");
 
     // Atomic write: .tmp → .xml
-    try (final InputStream aIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
+    try (final InputStream aIS = aDocPayloadMgr.openDocumentStreamForRead (aDoc.documentPath ());
          final OutputStream aOS = FileHelper.getBufferedOutputStream (aTmpFile))
     {
       if (aOS == null)
@@ -168,15 +166,15 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
                                        "Failed to rename temporary file to '" + aFinalFile.getAbsolutePath () + "'");
     }
 
-    LOGGER.info ("Forwarded transaction '" + aTx.getID () + "' to filesystem: '" + aFinalFile.getAbsolutePath () + "'");
+    LOGGER.info ("Forwarded transaction '" + aDoc.id () + "' to filesystem: '" + aFinalFile.getAbsolutePath () + "'");
 
-    _writeMetadataJson (aJsonFile, aTx);
+    _writeMetadataJson (aJsonFile, aDoc);
     return ForwardingResult.success ();
   }
 
   @NonNull
   private ForwardingResult _forwardPerTransaction (@NonNull final IDocumentPayloadManager aDocPayloadMgr,
-                                                   @NonNull final IInboundTransaction aTx,
+                                                   @NonNull final IForwardableDocument aDoc,
                                                    @NonNull final String sBaseName) throws IOException
   {
     final File aTxDir = new File (m_aBaseDirectory, sBaseName);
@@ -187,7 +185,7 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
     final File aJsonFile = new File (aTxDir, "metadata.json");
 
     // Atomic write: .tmp → .xml
-    try (final InputStream aIS = aDocPayloadMgr.openDocumentStreamForRead (aTx.getDocumentPath ());
+    try (final InputStream aIS = aDocPayloadMgr.openDocumentStreamForRead (aDoc.documentPath ());
          final OutputStream aOS = FileHelper.getBufferedOutputStream (aTmpFile))
     {
       if (aOS == null)
@@ -206,47 +204,47 @@ public class FilesystemDocumentForwarder implements IDocumentForwarder
                                        "Failed to rename temporary file to '" + aFinalFile.getAbsolutePath () + "'");
     }
 
-    LOGGER.info ("Forwarded transaction '" + aTx.getID () + "' to filesystem: '" + aFinalFile.getAbsolutePath () + "'");
+    LOGGER.info ("Forwarded transaction '" + aDoc.id () + "' to filesystem: '" + aFinalFile.getAbsolutePath () + "'");
 
-    _writeMetadataJson (aJsonFile, aTx);
+    _writeMetadataJson (aJsonFile, aDoc);
     return ForwardingResult.success ();
   }
 
   @NonNull
-  private ForwardingResult _doForwardDocument (@NonNull final IInboundTransaction aTransaction)
+  private ForwardingResult _doForwardDocument (@NonNull final IForwardableDocument aDocument)
   {
     final IDocumentPayloadManager aDocPayloadMgr = APBasicMetaManager.getDocPayloadMgr ();
-    final String sBaseName = _getUniqueBaseName (m_aBaseDirectory, aTransaction.getSbdhInstanceID ());
+    final String sBaseName = _getUniqueBaseName (m_aBaseDirectory, aDocument.sbdhInstanceID ());
 
     try
     {
       return switch (m_eLayout)
       {
-        case FLAT -> _forwardFlat (aDocPayloadMgr, aTransaction, sBaseName);
-        case PER_TRANSACTION -> _forwardPerTransaction (aDocPayloadMgr, aTransaction, sBaseName);
+        case FLAT -> _forwardFlat (aDocPayloadMgr, aDocument, sBaseName);
+        case PER_TRANSACTION -> _forwardPerTransaction (aDocPayloadMgr, aDocument, sBaseName);
       };
     }
     catch (final IOException ex)
     {
-      LOGGER.error ("Filesystem forwarding failed for transaction '" + aTransaction.getID () + "'", ex);
+      LOGGER.error ("Filesystem forwarding failed for transaction '" + aDocument.id () + "'", ex);
       return ForwardingResult.failure ("filesystem_io_error",
                                        ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
     catch (final Exception ex)
     {
-      LOGGER.error ("Filesystem forwarding failed for transaction '" + aTransaction.getID () + "'", ex);
+      LOGGER.error ("Filesystem forwarding failed for transaction '" + aDocument.id () + "'", ex);
       return ForwardingResult.failure ("filesystem_error", ex.getMessage () + " (" + ex.getClass ().getName () + ")");
     }
   }
 
   /** {@inheritDoc} */
   @NonNull
-  public ForwardingResult forwardDocument (@NonNull final IInboundTransaction aTransaction)
+  public ForwardingResult forwardDocument (@NonNull final IForwardableDocument aDocument)
   {
     return Telemetry.withSpan (CPhossAPOtel.SPAN_FORWARDER_DISPATCH, ETelemetrySpanKind.CLIENT, aSpan -> {
       aSpan.setAttribute (CPhossAPOtel.ATTR_FORWARDER_TYPE, "filesystem")
-           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aTransaction.getID ());
-      return _doForwardDocument (aTransaction);
+           .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aDocument.id ());
+      return _doForwardDocument (aDocument);
     });
   }
 

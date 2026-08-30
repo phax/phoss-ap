@@ -239,8 +239,8 @@ public interface IInboundTransaction extends IHasID <String>
 
   /**
    * @return The verdict of the inbound document verification, or <code>null</code> if no
-   *         verification was performed (yet). Deliberately independent of {@link #getStatus ()},
-   *         so that it survives the forwarding state machine.
+   *         verification was performed (yet). Deliberately independent of {@link #getStatus ()}, so
+   *         that it survives the forwarding state machine.
    * @since 0.12.0
    */
   @Nullable

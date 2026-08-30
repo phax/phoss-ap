@@ -24,8 +24,8 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Defines how an inbound document is handled, if a document verifier cannot make a verdict,
- * because its backend service is unavailable (see
+ * Defines how an inbound document is handled, if a document verifier cannot make a verdict, because
+ * its backend service is unavailable (see
  * {@link EVerificationOutcomeCategory#SERVICE_UNAVAILABLE}).
  * <p>
  * This mode is only applied to unavailable verifier services. A verifier that inspected the

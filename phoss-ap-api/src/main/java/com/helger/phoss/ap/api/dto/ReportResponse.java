@@ -34,8 +34,7 @@ public class ReportResponse
   @Schema (description = "Status keyword describing the outcome", example = "updated")
   private String status;
 
-  @Schema (description = "Human-readable message describing what happened",
-           example = "C4 country code set to 'AT'")
+  @Schema (description = "Human-readable message describing what happened", example = "C4 country code set to 'AT'")
   private String message;
 
   /**

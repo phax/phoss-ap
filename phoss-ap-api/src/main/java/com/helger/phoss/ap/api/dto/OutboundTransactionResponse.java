@@ -38,8 +38,7 @@ public class OutboundTransactionResponse
   @Schema (description = "Kind of transaction", allowableValues = { "business_document", "mls_response" })
   private String transactionType;
 
-  @Schema (description = "Peppol Participant ID of the sender",
-           example = "iso6523-actorid-upis::0088:senderbackend")
+  @Schema (description = "Peppol Participant ID of the sender", example = "iso6523-actorid-upis::0088:senderbackend")
   private String senderID;
 
   @Schema (description = "Peppol Participant ID of the receiver",
@@ -52,8 +51,7 @@ public class OutboundTransactionResponse
   @Schema (description = "Peppol Process Identifier")
   private String processID;
 
-  @Schema (description = "Peppol SBDH Instance Identifier",
-           example = "550e8400-e29b-41d4-a716-446655440000")
+  @Schema (description = "Peppol SBDH Instance Identifier", example = "550e8400-e29b-41d4-a716-446655440000")
   private String sbdhInstanceID;
 
   @Schema (description = "Current transaction status",
@@ -71,12 +69,10 @@ public class OutboundTransactionResponse
            nullable = true)
   private String completedDT;
 
-  @Schema (description = "Whether Peppol Reporting has been triggered",
-           allowableValues = { "pending", "reported" })
+  @Schema (description = "Whether Peppol Reporting has been triggered", allowableValues = { "pending", "reported" })
   private String reportingStatus;
 
-  @Schema (description = "Planned date/time of the next sending retry; null unless status is failed",
-           nullable = true)
+  @Schema (description = "Planned date/time of the next sending retry; null unless status is failed", nullable = true)
   private String nextRetryDT;
 
   @Schema (description = "Summary error from the last failed sending attempt; null on success", nullable = true)

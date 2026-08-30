@@ -24,8 +24,7 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * The severity of a single
- * {@link com.helger.phoss.ap.api.model.VerificationIssue}.
+ * The severity of a single {@link com.helger.phoss.ap.api.model.VerificationIssue}.
  * <p>
  * This is deliberately separate from {@link EVerificationIssueType}: the severity states whether an
  * issue prevents the document from being accepted, whereas the type states what kind of rule was

@@ -24,9 +24,9 @@ import com.helger.base.id.IHasID;
 import com.helger.base.lang.EnumHelper;
 
 /**
- * Category of a document verification outcome. It distinguishes a verdict about the document
- * itself from the inability of a verifier to make a verdict at all, because its backend service
- * was not reachable. See {@link EVerificationFailMode} for the resulting behaviour.
+ * Category of a document verification outcome. It distinguishes a verdict about the document itself
+ * from the inability of a verifier to make a verdict at all, because its backend service was not
+ * reachable. See {@link EVerificationFailMode} for the resulting behaviour.
  *
  * @author Philip Helger
  * @since 0.12.0
@@ -38,8 +38,8 @@ public enum EVerificationOutcomeCategory implements IHasID <String>
   /** The document was inspected and rejected because of its content (e.g. malware, invalid XML). */
   REJECTION ("rejection"),
   /**
-   * The document could not be inspected, because the verifier backend service was unavailable
-   * (e.g. connection refused, HTTP 5xx, timeout).
+   * The document could not be inspected, because the verifier backend service was unavailable (e.g.
+   * connection refused, HTTP 5xx, timeout).
    */
   SERVICE_UNAVAILABLE ("service_unavailable");
 

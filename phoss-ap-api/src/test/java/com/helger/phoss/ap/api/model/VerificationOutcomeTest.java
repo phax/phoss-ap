@@ -82,8 +82,7 @@ public final class VerificationOutcomeTest
     final VerificationIssue aIssue = VerificationIssue.businessRuleViolation ("PEPPOL-EN16931-R001",
                                                                               "/Invoice/cbc:ID",
                                                                               "Rule failed");
-    final VerificationOutcome a = VerificationOutcome.rejected ("Invalid document",
-                                                                 new CommonsArrayList <> (aIssue));
+    final VerificationOutcome a = VerificationOutcome.rejected ("Invalid document", new CommonsArrayList <> (aIssue));
     assertSame (EVerificationOutcomeCategory.REJECTION, a.getCategory ());
     assertTrue (a.isRejected ());
     assertFalse (a.isPassed ());

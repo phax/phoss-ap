@@ -104,8 +104,8 @@ public final class OutboundSubmitResult implements ISuccessIndicator
   }
 
   /**
-   * @return The human-readable error message, or <code>null</code> on success and on a
-   *         verification rejection - use {@link #getVerificationOutcome()} for the latter.
+   * @return The human-readable error message, or <code>null</code> on success and on a verification
+   *         rejection - use {@link #getVerificationOutcome()} for the latter.
    */
   @Nullable
   public String getErrorMessage ()

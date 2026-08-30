@@ -137,8 +137,8 @@ public final class VerificationOutcome
 
   /**
    * @return All findings as a JSON array, each element in the format documented on
-   *         {@link VerificationIssue}. Never <code>null</code> but maybe empty. This is what ends up
-   *         in the <code>verification_details</code> column of an inbound transaction.
+   *         {@link VerificationIssue}. Never <code>null</code> but maybe empty. This is what ends
+   *         up in the <code>verification_details</code> column of an inbound transaction.
    */
   @NonNull
   @ReturnsMutableCopy

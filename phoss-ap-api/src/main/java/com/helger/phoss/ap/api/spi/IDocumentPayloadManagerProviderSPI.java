@@ -29,10 +29,10 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
  * <code>spi</code>, the AP selects one provider by matching {@link #getID()} against the configured
  * <code>storage.spi.id</code> value.
  * <p>
- * This is deliberately storage-technology agnostic: the returned {@link IDocumentPayloadManager} may
- * be backed by a database, an object store, a message queue or anything else. Any technology-specific
- * setup (schema creation, migrations, bucket provisioning, …) is the responsibility of the provider
- * implementation itself, not of the AP core.
+ * This is deliberately storage-technology agnostic: the returned {@link IDocumentPayloadManager}
+ * may be backed by a database, an object store, a message queue or anything else. Any
+ * technology-specific setup (schema creation, migrations, bucket provisioning, …) is the
+ * responsibility of the provider implementation itself, not of the AP core.
  *
  * @author Philip Helger
  * @since 0.10.4

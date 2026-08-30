@@ -116,36 +116,36 @@ public final class OutboundTransactionResponseTest
     final OffsetDateTime aNextRetry = aCreated.plusHours (1);
 
     final IOutboundTransaction aTx = _createMock ("tx-1",
-                                                   ETransactionType.BUSINESS_DOCUMENT,
-                                                   "sender-1",
-                                                   "receiver-1",
-                                                   "docType-1",
-                                                   "process-1",
-                                                   "sbdh-1",
-                                                   ESourceType.PAYLOAD_ONLY,
-                                                   "/path/doc.xml",
-                                                   5678L,
-                                                   "hash123",
-                                                   "AT",
-                                                   EOutboundStatus.SENT,
-                                                   1,
-                                                   aCreated,
-                                                   aCompleted,
-                                                   EReportingStatus.REPORTED,
-                                                   aNextRetry,
-                                                   "err details",
-                                                   "mls-to-1",
-                                                   EMlsReceptionStatus.RECEIVED_AP,
-                                                   aCompleted,
-                                                   "mls-id-1",
-                                                   "mls-inbound-1",
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   "custom-a",
-                                                   "custom-b",
-                                                   "custom-c");
+                                                  ETransactionType.BUSINESS_DOCUMENT,
+                                                  "sender-1",
+                                                  "receiver-1",
+                                                  "docType-1",
+                                                  "process-1",
+                                                  "sbdh-1",
+                                                  ESourceType.PAYLOAD_ONLY,
+                                                  "/path/doc.xml",
+                                                  5678L,
+                                                  "hash123",
+                                                  "AT",
+                                                  EOutboundStatus.SENT,
+                                                  1,
+                                                  aCreated,
+                                                  aCompleted,
+                                                  EReportingStatus.REPORTED,
+                                                  aNextRetry,
+                                                  "err details",
+                                                  "mls-to-1",
+                                                  EMlsReceptionStatus.RECEIVED_AP,
+                                                  aCompleted,
+                                                  "mls-id-1",
+                                                  "mls-inbound-1",
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  "custom-a",
+                                                  "custom-b",
+                                                  "custom-c");
 
     final OutboundTransactionResponse aResp = OutboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -175,36 +175,36 @@ public final class OutboundTransactionResponseTest
     final OffsetDateTime aCreated = OffsetDateTime.of (2026, 3, 29, 10, 0, 0, 0, ZoneOffset.UTC);
 
     final IOutboundTransaction aTx = _createMock ("tx-2",
-                                                   ETransactionType.MLS_RESPONSE,
-                                                   "sender-2",
-                                                   "receiver-2",
-                                                   "docType-2",
-                                                   "process-2",
-                                                   "sbdh-2",
-                                                   ESourceType.PREBUILT_SBD,
-                                                   "/path/doc2.xml",
-                                                   0L,
-                                                   "hash456",
-                                                   "DE",
-                                                   EOutboundStatus.PENDING,
-                                                   0,
-                                                   aCreated,
-                                                   null,
-                                                   EReportingStatus.PENDING,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null);
+                                                  ETransactionType.MLS_RESPONSE,
+                                                  "sender-2",
+                                                  "receiver-2",
+                                                  "docType-2",
+                                                  "process-2",
+                                                  "sbdh-2",
+                                                  ESourceType.PREBUILT_SBD,
+                                                  "/path/doc2.xml",
+                                                  0L,
+                                                  "hash456",
+                                                  "DE",
+                                                  EOutboundStatus.PENDING,
+                                                  0,
+                                                  aCreated,
+                                                  null,
+                                                  EReportingStatus.PENDING,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null,
+                                                  null);
 
     final OutboundTransactionResponse aResp = OutboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -220,70 +220,193 @@ public final class OutboundTransactionResponseTest
 
   @NonNull
   private static IOutboundTransaction _createMock (@NonNull final String sID,
-                                                    @NonNull final ETransactionType eTransactionType,
-                                                    @NonNull final String sSenderID,
-                                                    @NonNull final String sReceiverID,
-                                                    @NonNull final String sDocTypeID,
-                                                    @NonNull final String sProcessID,
-                                                    @NonNull final String sSbdhInstanceID,
-                                                    @NonNull final ESourceType eSourceType,
-                                                    @NonNull final String sDocumentPath,
-                                                    final long nDocumentSize,
-                                                    @NonNull final String sDocumentHash,
-                                                    @NonNull final String sC1CountryCode,
-                                                    @NonNull final EOutboundStatus eStatus,
-                                                    final int nAttemptCount,
-                                                    @NonNull final OffsetDateTime aCreatedDT,
-                                                    @Nullable final OffsetDateTime aCompletedDT,
-                                                    @NonNull final EReportingStatus eReportingStatus,
-                                                    @Nullable final OffsetDateTime aNextRetryDT,
-                                                    @Nullable final String sErrorDetails,
-                                                    @Nullable final String sMlsTo,
-                                                    @Nullable final EMlsReceptionStatus eMlsStatus,
-                                                    @Nullable final OffsetDateTime aMlsReceivedDT,
-                                                    @Nullable final String sMlsID,
-                                                    @Nullable final String sMlsInboundTransactionID,
-                                                    @Nullable final String sSbdhStandard,
-                                                    @Nullable final String sSbdhTypeVersion,
-                                                    @Nullable final String sSbdhType,
-                                                    @Nullable final String sPayloadMimeType,
-                                                    @Nullable final String sCustom1,
-                                                    @Nullable final String sCustom2,
-                                                    @Nullable final String sCustom3)
+                                                   @NonNull final ETransactionType eTransactionType,
+                                                   @NonNull final String sSenderID,
+                                                   @NonNull final String sReceiverID,
+                                                   @NonNull final String sDocTypeID,
+                                                   @NonNull final String sProcessID,
+                                                   @NonNull final String sSbdhInstanceID,
+                                                   @NonNull final ESourceType eSourceType,
+                                                   @NonNull final String sDocumentPath,
+                                                   final long nDocumentSize,
+                                                   @NonNull final String sDocumentHash,
+                                                   @NonNull final String sC1CountryCode,
+                                                   @NonNull final EOutboundStatus eStatus,
+                                                   final int nAttemptCount,
+                                                   @NonNull final OffsetDateTime aCreatedDT,
+                                                   @Nullable final OffsetDateTime aCompletedDT,
+                                                   @NonNull final EReportingStatus eReportingStatus,
+                                                   @Nullable final OffsetDateTime aNextRetryDT,
+                                                   @Nullable final String sErrorDetails,
+                                                   @Nullable final String sMlsTo,
+                                                   @Nullable final EMlsReceptionStatus eMlsStatus,
+                                                   @Nullable final OffsetDateTime aMlsReceivedDT,
+                                                   @Nullable final String sMlsID,
+                                                   @Nullable final String sMlsInboundTransactionID,
+                                                   @Nullable final String sSbdhStandard,
+                                                   @Nullable final String sSbdhTypeVersion,
+                                                   @Nullable final String sSbdhType,
+                                                   @Nullable final String sPayloadMimeType,
+                                                   @Nullable final String sCustom1,
+                                                   @Nullable final String sCustom2,
+                                                   @Nullable final String sCustom3)
   {
     return new IOutboundTransaction ()
     {
-      public String getID () { return sID; }
-      public ETransactionType getTransactionType () { return eTransactionType; }
-      public String getSenderID () { return sSenderID; }
-      public String getReceiverID () { return sReceiverID; }
-      public String getDocTypeID () { return sDocTypeID; }
-      public String getProcessID () { return sProcessID; }
-      public String getSbdhInstanceID () { return sSbdhInstanceID; }
-      public ESourceType getSourceType () { return eSourceType; }
-      public String getDocumentPath () { return sDocumentPath; }
-      public long getDocumentSize () { return nDocumentSize; }
-      public String getDocumentHash () { return sDocumentHash; }
-      public String getC1CountryCode () { return sC1CountryCode; }
-      public EOutboundStatus getStatus () { return eStatus; }
-      public int getAttemptCount () { return nAttemptCount; }
-      public OffsetDateTime getCreatedDT () { return aCreatedDT; }
-      public OffsetDateTime getCompletedDT () { return aCompletedDT; }
-      public EReportingStatus getReportingStatus () { return eReportingStatus; }
-      public OffsetDateTime getNextRetryDT () { return aNextRetryDT; }
-      public String getErrorDetails () { return sErrorDetails; }
-      public String getMlsTo () { return sMlsTo; }
-      public EMlsReceptionStatus getMlsStatus () { return eMlsStatus; }
-      public OffsetDateTime getMlsReceivedDT () { return aMlsReceivedDT; }
-      public String getMlsID () { return sMlsID; }
-      public String getMlsInboundTransactionID () { return sMlsInboundTransactionID; }
-      public String getSbdhStandard () { return sSbdhStandard; }
-      public String getSbdhTypeVersion () { return sSbdhTypeVersion; }
-      public String getSbdhType () { return sSbdhType; }
-      public String getPayloadMimeType () { return sPayloadMimeType; }
-      public String getCustom1 () { return sCustom1; }
-      public String getCustom2 () { return sCustom2; }
-      public String getCustom3 () { return sCustom3; }
+      public String getID ()
+      {
+        return sID;
+      }
+
+      public ETransactionType getTransactionType ()
+      {
+        return eTransactionType;
+      }
+
+      public String getSenderID ()
+      {
+        return sSenderID;
+      }
+
+      public String getReceiverID ()
+      {
+        return sReceiverID;
+      }
+
+      public String getDocTypeID ()
+      {
+        return sDocTypeID;
+      }
+
+      public String getProcessID ()
+      {
+        return sProcessID;
+      }
+
+      public String getSbdhInstanceID ()
+      {
+        return sSbdhInstanceID;
+      }
+
+      public ESourceType getSourceType ()
+      {
+        return eSourceType;
+      }
+
+      public String getDocumentPath ()
+      {
+        return sDocumentPath;
+      }
+
+      public long getDocumentSize ()
+      {
+        return nDocumentSize;
+      }
+
+      public String getDocumentHash ()
+      {
+        return sDocumentHash;
+      }
+
+      public String getC1CountryCode ()
+      {
+        return sC1CountryCode;
+      }
+
+      public EOutboundStatus getStatus ()
+      {
+        return eStatus;
+      }
+
+      public int getAttemptCount ()
+      {
+        return nAttemptCount;
+      }
+
+      public OffsetDateTime getCreatedDT ()
+      {
+        return aCreatedDT;
+      }
+
+      public OffsetDateTime getCompletedDT ()
+      {
+        return aCompletedDT;
+      }
+
+      public EReportingStatus getReportingStatus ()
+      {
+        return eReportingStatus;
+      }
+
+      public OffsetDateTime getNextRetryDT ()
+      {
+        return aNextRetryDT;
+      }
+
+      public String getErrorDetails ()
+      {
+        return sErrorDetails;
+      }
+
+      public String getMlsTo ()
+      {
+        return sMlsTo;
+      }
+
+      public EMlsReceptionStatus getMlsStatus ()
+      {
+        return eMlsStatus;
+      }
+
+      public OffsetDateTime getMlsReceivedDT ()
+      {
+        return aMlsReceivedDT;
+      }
+
+      public String getMlsID ()
+      {
+        return sMlsID;
+      }
+
+      public String getMlsInboundTransactionID ()
+      {
+        return sMlsInboundTransactionID;
+      }
+
+      public String getSbdhStandard ()
+      {
+        return sSbdhStandard;
+      }
+
+      public String getSbdhTypeVersion ()
+      {
+        return sSbdhTypeVersion;
+      }
+
+      public String getSbdhType ()
+      {
+        return sSbdhType;
+      }
+
+      public String getPayloadMimeType ()
+      {
+        return sPayloadMimeType;
+      }
+
+      public String getCustom1 ()
+      {
+        return sCustom1;
+      }
+
+      public String getCustom2 ()
+      {
+        return sCustom2;
+      }
+
+      public String getCustom3 ()
+      {
+        return sCustom3;
+      }
     };
   }
 }

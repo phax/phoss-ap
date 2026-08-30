@@ -72,9 +72,9 @@ public interface IAPNotificationHandlerSPI
 
   /**
    * Called when the verification of an inbound document was deferred, because a document verifier
-   * made no verdict about the document - e.g. because its backend service was unavailable - and
-   * the configured fail mode is <code>deferred</code>. The document is neither forwarded nor
-   * rejected yet and <b>no MLS was sent to C2</b>; it is re-verified at the provided date and time.
+   * made no verdict about the document - e.g. because its backend service was unavailable - and the
+   * configured fail mode is <code>deferred</code>. The document is neither forwarded nor rejected
+   * yet and <b>no MLS was sent to C2</b>; it is re-verified at the provided date and time.
    * <p>
    * This callback is fired for every deferral, i.e. also for every unsuccessful re-verification. It
    * is the signal that a verifier needs operator attention: if the situation is not resolved within

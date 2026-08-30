@@ -41,10 +41,10 @@ public final class VerificationIssueTest
   public void testAllFields ()
   {
     final VerificationIssue a = new VerificationIssue (EVerificationIssueLevel.ERROR,
-                                                        EVerificationIssueType.BUSINESS_RULE,
-                                                        "PEPPOL-EN16931-R001",
-                                                        "/Invoice/cbc:ID",
-                                                        "Missing ID");
+                                                       EVerificationIssueType.BUSINESS_RULE,
+                                                       "PEPPOL-EN16931-R001",
+                                                       "/Invoice/cbc:ID",
+                                                       "Missing ID");
     assertSame (EVerificationIssueLevel.ERROR, a.getLevel ());
     assertSame (EVerificationIssueType.BUSINESS_RULE, a.getType ());
     assertTrue (a.isError ());

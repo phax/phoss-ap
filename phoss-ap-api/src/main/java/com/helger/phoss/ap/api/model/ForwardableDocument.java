@@ -111,4 +111,41 @@ public record ForwardableDocument (@NonNull @Nonempty String id,
                                                                     .toJson ()
                                                                     .getAsJsonString (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED));
   }
+
+  /**
+   * Create a forwardable document from an outbound MLS transaction, to hand C4 a copy of an MLS
+   * that this AP generated and sent itself. The payload is the bare <code>ApplicationResponse</code>
+   * XML as it was stored - the AP never materializes the SBDH envelope, phase4 adds it during the
+   * AS4 transmission - so C4 tells this apart from a received MLS by {@link #kind()}.
+   * <p>
+   * No metadata sidecar is offered: the MLS <code>ApplicationResponse</code> already references the
+   * document it responds to, which is the correlation key a downstream reporter needs.
+   * </p>
+   *
+   * @param aTransaction
+   *        The outbound MLS transaction to adapt. May not be <code>null</code>.
+   * @return The adapted document. Never <code>null</code>.
+   */
+  @NonNull
+  public static ForwardableDocument fromOutboundMlsCopy (@NonNull final IOutboundTransaction aTransaction)
+  {
+    return new ForwardableDocument (aTransaction.getID (),
+                                    EForwardableKind.OUTBOUND_MLS_COPY,
+                                    aTransaction.getSbdhInstanceID (),
+                                    aTransaction.getDocumentPath (),
+                                    aTransaction.getDocumentSize (),
+                                    aTransaction.getDocTypeID (),
+                                    aTransaction.getProcessID (),
+                                    aTransaction.getSenderID (),
+                                    aTransaction.getReceiverID (),
+                                    aTransaction.getCreatedDT (),
+                                    aTransaction.getID (),
+                                    // A self-generated document is never verified
+                                    null,
+                                    null,
+                                    // No sidecar: OutboundTransactionResponse has no JSON
+                                    // rendering, and the MLS ApplicationResponse already carries
+                                    // the reference to the document it responds to
+                                    null);
+  }
 }

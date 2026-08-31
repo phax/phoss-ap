@@ -46,6 +46,7 @@ import com.helger.phoss.ap.api.codelist.EVerificationResult;
 import com.helger.phoss.ap.api.model.ForwardableDocument;
 import com.helger.phoss.ap.api.model.IForwardableDocument;
 import com.helger.phoss.ap.forwarding.MockInboundTransaction;
+import com.helger.phoss.ap.forwarding.MockOutboundMlsTransaction;
 
 /**
  * Test class for class {@link HttpDocumentForwarder}, focusing on the verification headers.
@@ -187,6 +188,20 @@ public final class HttpDocumentForwarderTest
     // The verdict is unaffected by unparsable details
     assertEquals ("rejected", aPost.getFirstHeader (HEADER_RESULT).getValue ());
     assertFalse (aPost.containsHeader (HEADER_DETAILS));
+  }
+
+  @Test
+  public void testMlsCopySendsNoVerificationHeaders ()
+  {
+    // A self-generated MLS copy has no verdict at all - the forwarder must cope with that
+    final HttpDocumentForwarder aForwarder = _createForwarder (true);
+    final HttpPost aPost = new HttpPost (ENDPOINT_URL);
+
+    aForwarder.applyVerificationHeaders (aPost,
+                                         ForwardableDocument.fromOutboundMlsCopy (new MockOutboundMlsTransaction ()));
+    assertFalse (aPost.containsHeader (HEADER_RESULT));
+    assertFalse (aPost.containsHeader (HEADER_DETAILS));
+    assertFalse (aPost.containsHeader (HEADER_TRUNCATED));
   }
 
   @Test

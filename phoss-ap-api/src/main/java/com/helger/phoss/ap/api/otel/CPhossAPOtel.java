@@ -91,6 +91,8 @@ public final class CPhossAPOtel
   public static final String SPAN_SMP_LOOKUP = "phoss.ap.smp.lookup";
   public static final String SPAN_MLS_CORRELATE = "phoss.ap.mls.correlate";
   public static final String SPAN_MLS_SEND = "phoss.ap.mls.send";
+  /** @since 0.12.0 */
+  public static final String SPAN_MLS_FORWARD_COPY = "phoss.ap.mls.forward.copy";
   public static final String SPAN_VERIFICATION = "phoss.ap.verification";
   public static final String SPAN_REPORTING_TSR = "phoss.ap.reporting.tsr";
   public static final String SPAN_REPORTING_EUSR = "phoss.ap.reporting.eusr";

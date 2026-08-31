@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.style.ReturnsMutableCopy;
 import com.helger.base.exception.InitializationException;
+import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.collection.commons.ICommonsOrderedSet;
@@ -62,6 +63,7 @@ public final class APCoreMetaManager
   private static EForwardingMode s_eForwardingMode;
   private static IDocumentForwarder s_aForwarder;
   private static final ICommonsList <IDocumentForwarder> s_aSecondaryForwarders = new CommonsArrayList <> ();
+  private static IDocumentForwarder s_aMlsCopyForwarder;
   private static BusinessCardCache s_aBusinessCardCache;
   private static final ICommonsList <IInboundDocumentVerifierSPI> s_aInboundVerifiers = new CommonsArrayList <> ();
   private static final ICommonsList <IOutboundDocumentVerifierSPI> s_aOutboundVerifiers = new CommonsArrayList <> ();
@@ -136,6 +138,34 @@ public final class APCoreMetaManager
         LOGGER.info ("No secondary document forwarders configured");
       else
         LOGGER.info ("Loaded " + s_aSecondaryForwarders.size () + " secondary document forwarder(s)");
+    }
+
+    // Create the sink for the copies of the self-generated MLS documents (fire-and-forget, no
+    // retry, no SLA). Disabled by default - stay completely silent in that case.
+    if (aConfig.getAsBoolean (APConfigurationProperties.FORWARDING_MLS_COPY_ENABLED,
+                              APConfigurationProperties.FORWARDING_MLS_COPY_ENABLED_DEFAULT))
+    {
+      // Without an own mode the whole primary forwarder configuration is reused
+      final String sOwnMode = aConfig.getAsString (APConfigurationProperties.FORWARDING_MLS_COPY_MODE);
+      final boolean bOwnConfig = StringHelper.isNotEmpty (sOwnMode);
+      final String sMlsCopyPrefix = bOwnConfig ? APConfigurationProperties.FORWARDING_MLS_COPY_PREFIX
+                                               : IDocumentForwarder.DEFAULT_CONFIG_KEY_PREFIX;
+
+      final EForwardingMode eMlsCopyMode = bOwnConfig ? EForwardingMode.getFromIDOrNull (sOwnMode) : s_eForwardingMode;
+      if (eMlsCopyMode == null)
+        throw new InitializationException ("The configured Forwarding Mode for the MLS copy ('" +
+                                           sOwnMode +
+                                           "') is invalid");
+
+      final IDocumentForwarder aMlsCopy = DocumentForwarderFactory.create (eMlsCopyMode, aConfig, sMlsCopyPrefix);
+      if (aMlsCopy.initFromConfiguration (aConfig, sMlsCopyPrefix).isFailure ())
+        throw new InitializationException ("Failed to init the MLS copy forwarder configuration - see logs for details");
+
+      s_aMlsCopyForwarder = aMlsCopy;
+      LOGGER.info ("Loaded MLS copy document forwarder" +
+                   (bOwnConfig ? "" : " (reusing the primary forwarder configuration)") +
+                   ": " +
+                   aMlsCopy.toString ());
     }
 
     // Initialize Business Card Cache if configured
@@ -218,6 +248,19 @@ public final class APCoreMetaManager
   public static ICommonsList <IDocumentForwarder> getAllSecondaryForwarders ()
   {
     return s_aSecondaryForwarders.getClone ();
+  }
+
+  /**
+   * @return The forwarder that receives a copy of every MLS this AP generates itself, or
+   *         <code>null</code> if <code>forwarding.mls-copy.enabled</code> is not set. It is
+   *         dispatched on a fire-and-forget basis; it has no retries and its failure affects neither
+   *         the MLS sending to C2 nor the inbound transaction status.
+   * @since 0.12.0
+   */
+  @Nullable
+  public static IDocumentForwarder getMlsCopyForwarderOrNull ()
+  {
+    return s_aMlsCopyForwarder;
   }
 
   /**

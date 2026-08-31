@@ -152,6 +152,27 @@ public final class APConfigurationProperties
    */
   public static final String FORWARDING_SECONDARY_MODE_SUFFIX = "mode";
 
+  // Forwarding - MLS copy (since 0.12.0)
+  /**
+   * Prefix for the sink that receives a copy of every MLS this AP generates and sends itself. It is
+   * deliberately a separate sink and not the primary forwarder, because a reporting integration is
+   * normally not the same endpoint as the invoice inbox.
+   *
+   * @since 0.12.0
+   */
+  public static final String FORWARDING_MLS_COPY_PREFIX = "forwarding.mls-copy.";
+  /** @since 0.12.0 */
+  public static final String FORWARDING_MLS_COPY_ENABLED = "forwarding.mls-copy.enabled";
+  /** @since 0.12.0 */
+  public static final boolean FORWARDING_MLS_COPY_ENABLED_DEFAULT = false;
+  /**
+   * The forwarding mode of the MLS copy sink. If it is not set, the whole primary forwarder
+   * configuration is reused.
+   *
+   * @since 0.12.0
+   */
+  public static final String FORWARDING_MLS_COPY_MODE = "forwarding.mls-copy.mode";
+
   // Forwarding - C4 country code determination
   public static final String FORWARDING_C4_COUNTRYCODE_MODES = "forwarding.c4countrycode.modes";
 

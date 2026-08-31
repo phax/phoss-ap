@@ -37,13 +37,17 @@ import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
 import com.helger.peppolid.peppol.process.EPredefinedProcessIdentifier;
 import com.helger.peppolid.peppol.spis.SPIDHelper;
 import com.helger.phase4.peppol.Phase4PeppolSendingReport;
+import com.helger.photon.io.PhotonWorkerPool;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
+import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
+import com.helger.phoss.ap.api.model.ForwardableDocument;
+import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
@@ -73,6 +77,74 @@ public final class MlsHandler
 
   private MlsHandler ()
   {}
+
+  /**
+   * Dispatch a copy of a self-generated MLS to the configured MLS copy sink. This is a
+   * fire-and-forget dispatch: it never influences the MLS sending to C2 and never touches the
+   * inbound transaction status. Nothing happens at all if no sink is configured.
+   *
+   * @param aMlsTx
+   *        The outbound transaction of the MLS. May not be <code>null</code>.
+   * @param eResponseCode
+   *        The MLS response code, for the log messages and the telemetry span. May not be
+   *        <code>null</code>.
+   * @since 0.12.0
+   */
+  private static void _forwardMlsCopy (@NonNull final IOutboundTransaction aMlsTx,
+                                       @NonNull final EPeppolMLSResponseCode eResponseCode)
+  {
+    final IDocumentForwarder aForwarder = APCoreMetaManager.getMlsCopyForwarderOrNull ();
+    if (aForwarder == null)
+    {
+      // Not configured - stay silent
+      return;
+    }
+
+    final ForwardableDocument aDocument = ForwardableDocument.fromOutboundMlsCopy (aMlsTx);
+
+    PhotonWorkerPool.getInstance ().run ("forward-mls-copy", () -> {
+      try (final ITelemetrySpan aSpan = Telemetry.startSpan (CPhossAPOtel.SPAN_MLS_FORWARD_COPY,
+                                                             ETelemetrySpanKind.PRODUCER)
+                                                 .setAttribute (CPhossAPOtel.ATTR_TRANSACTION_ID, aMlsTx.getID ())
+                                                 .setAttribute (CPhossAPOtel.ATTR_SBDH_INSTANCE_ID,
+                                                                aMlsTx.getSbdhInstanceID ())
+                                                 .setAttribute (CPhossAPOtel.ATTR_MLS_RESPONSE_CODE,
+                                                                eResponseCode.getID ()))
+      {
+        try
+        {
+          final ForwardingResult aResult = aForwarder.forwardDocument (aDocument);
+          if (aResult.isSuccess ())
+          {
+            LOGGER.info ("Forwarded the copy of the MLS (" +
+                         eResponseCode.getID () +
+                         ") of outbound transaction '" +
+                         aMlsTx.getID () +
+                         "'");
+            aSpan.setStatusOk ();
+          }
+          else
+          {
+            LOGGER.warn ("Failed to forward the copy of the MLS (" +
+                         eResponseCode.getID () +
+                         ") of outbound transaction '" +
+                         aMlsTx.getID () +
+                         "': " +
+                         aResult.getErrorDetails ());
+            aSpan.setStatusError (aResult.getErrorDetails ());
+          }
+        }
+        catch (final Exception ex)
+        {
+          // Be resilient - this must never influence the MLS sending
+          LOGGER.error ("Internal error forwarding the copy of the MLS of outbound transaction '" +
+                        aMlsTx.getID () +
+                        "'", ex);
+          aSpan.recordException (ex);
+        }
+      }
+    });
+  }
 
   /**
    * Handle the outcome of an inbound document by creating an outbound MLS response transaction if
@@ -259,6 +331,9 @@ public final class MlsHandler
       // Update inbound with MLS fields
       if (aInboundMgr.updateMlsFields (aInboundTx.getID (), eResponseCode, sMlsTxID).isFailure ())
         LOGGER.error ("Failed to update MLS fields for inbound transaction '" + aInboundTx.getID () + "'");
+
+      // Optionally hand C4 a copy of the MLS we are about to send - AP, AB and RE alike
+      _forwardMlsCopy (aMlsTx, eResponseCode);
 
       // Perform actual sending. Provide the default SPID as MLS fallback target in case the custom
       // MLS_TO receiver is not reachable via SMP (MLS SPOG section 5.4).

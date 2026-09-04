@@ -22,6 +22,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
+
+import java.time.Duration;
+
 import com.helger.collection.commons.CommonsLinkedHashSet;
 import com.helger.config.ConfigFactory;
 import com.helger.config.fallback.ConfigWithFallback;
@@ -104,6 +109,107 @@ public final class APCoreConfigTest
         System.clearProperty (APConfigurationProperties.PEPPOL_REPORTING_EXCLUDE_PARTICIPANT_IDS);
       else
         System.setProperty (APConfigurationProperties.PEPPOL_REPORTING_EXCLUDE_PARTICIPANT_IDS, sOldValue);
+
+      APConfigProvider.setConfig (aOldConfig);
+    }
+  }
+
+  @Test
+  public void testMlsSendingTrigger ()
+  {
+    final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();
+    final String sOldValue = System.getProperty (APConfigurationProperties.MLS_SENDING_TRIGGER);
+
+    try
+    {
+      // Nothing configured - the default reproduces the pre-0.13.0 behaviour
+      System.clearProperty (APConfigurationProperties.MLS_SENDING_TRIGGER);
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EMlsSendingTrigger.AUTO, APCoreConfig.getMlsSendingTrigger ());
+
+      System.setProperty (APConfigurationProperties.MLS_SENDING_TRIGGER, "api");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EMlsSendingTrigger.API, APCoreConfig.getMlsSendingTrigger ());
+
+      // An unsupported value falls back to the default
+      System.setProperty (APConfigurationProperties.MLS_SENDING_TRIGGER, "whatever");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EMlsSendingTrigger.AUTO, APCoreConfig.getMlsSendingTrigger ());
+    }
+    finally
+    {
+      if (sOldValue == null)
+        System.clearProperty (APConfigurationProperties.MLS_SENDING_TRIGGER);
+      else
+        System.setProperty (APConfigurationProperties.MLS_SENDING_TRIGGER, sOldValue);
+
+      APConfigProvider.setConfig (aOldConfig);
+    }
+  }
+
+  @Test
+  public void testMlsSendingApiTimeout ()
+  {
+    final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();
+    final String sOldValue = System.getProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT);
+
+    try
+    {
+      System.clearProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT);
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_DEFAULT, APCoreConfig.getMlsSendingApiTimeout ());
+
+      System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT, "90s");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (Duration.ofSeconds (90), APCoreConfig.getMlsSendingApiTimeout ());
+
+      // A non-positive value would answer every document immediately
+      System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT, "0s");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_DEFAULT, APCoreConfig.getMlsSendingApiTimeout ());
+    }
+    finally
+    {
+      if (sOldValue == null)
+        System.clearProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT);
+      else
+        System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT, sOldValue);
+
+      APConfigProvider.setConfig (aOldConfig);
+    }
+  }
+
+  @Test
+  public void testMlsSendingApiTimeoutResponseCode ()
+  {
+    final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();
+    final String sOldValue = System.getProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE);
+
+    try
+    {
+      System.clearProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE);
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EPeppolMLSResponseCode.ACKNOWLEDGING, APCoreConfig.getMlsSendingApiTimeoutResponseCode ());
+
+      System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE, "AP");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EPeppolMLSResponseCode.ACCEPTANCE, APCoreConfig.getMlsSendingApiTimeoutResponseCode ());
+
+      // A rejection is a statement only the Receiver Backend can make
+      System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE, "RE");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EPeppolMLSResponseCode.ACKNOWLEDGING, APCoreConfig.getMlsSendingApiTimeoutResponseCode ());
+
+      System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE, "whatever");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals (EPeppolMLSResponseCode.ACKNOWLEDGING, APCoreConfig.getMlsSendingApiTimeoutResponseCode ());
+    }
+    finally
+    {
+      if (sOldValue == null)
+        System.clearProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE);
+      else
+        System.setProperty (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE, sOldValue);
 
       APConfigProvider.setConfig (aOldConfig);
     }

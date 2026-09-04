@@ -467,6 +467,44 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
 
   /** {@inheritDoc} */
   @NonNull
+  public ICommonsList <IInboundTransaction> getAllForMlsApiTimeout (@Nonnegative final int nBatchSize,
+                                                                    @NonNull final OffsetDateTime aMaxCompletedDT)
+  {
+    ValueEnforcer.isGT0 (nBatchSize, "BatchSize");
+    ValueEnforcer.notNull (aMaxCompletedDT, "MaxCompletedDT");
+
+    // Forwarded business documents (neither MLS nor MLR) that were forwarded long enough ago and
+    // for which no MLS response code was determined yet. A document that was rejected by the
+    // verification is excluded, because C2 already received the negative MLS (RE) of that rejection
+    final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
+                                                                      COLS +
+                                                                      " FROM " +
+                                                                      m_sTableName +
+                                                                      " WHERE status=? AND mls_response_code IS NULL" +
+                                                                      " AND completed_dt < ?" +
+                                                                      " AND NOT (doc_type_id=? AND process_id=?)" +
+                                                                      " AND NOT (doc_type_id=? AND process_id=?)" +
+                                                                      " AND (verification_result IS NULL OR verification_result <> ?)" +
+                                                                      " ORDER BY completed_dt" +
+                                                                      " LIMIT " +
+                                                                      nBatchSize +
+                                                                      " FOR UPDATE SKIP LOCKED",
+                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARDED.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (aMaxCompletedDT),
+                                                                                                                 EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
+                                                                                                                 EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded (),
+                                                                                                                 EPredefinedDocumentTypeIdentifier.APPLICATIONRESPONSE_FDC_PEPPOL_EU_POACC_TRNS_MLR_3.getURIEncoded (),
+                                                                                                                 EPredefinedProcessIdentifier.BIS3_MLR.getURIEncoded (),
+                                                                                                                 EVerificationResult.REJECTED.getID ()));
+    final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
+    if (aRows != null)
+      for (final DBResultRow aRow : aRows)
+        ret.add (new InboundTransactionRow (aRow));
+    return ret;
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
   public ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative final int nBatchSize)
   {
     ValueEnforcer.isGT0 (nBatchSize, "BatchSize");

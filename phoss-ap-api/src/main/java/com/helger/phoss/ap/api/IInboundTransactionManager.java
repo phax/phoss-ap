@@ -332,6 +332,31 @@ public interface IInboundTransactionManager
   ICommonsList <IInboundTransaction> getAllForVerificationRetry (@Nonnegative int nBatchSize);
 
   /**
+   * Get forwarded inbound business documents that are still waiting for the MLS the Receiver
+   * Backend was supposed to trigger via the API. These are the transactions the MLS watchdog of the
+   * trigger mode {@link com.helger.phoss.ap.api.codelist.EMlsSendingTrigger#API} answers with the
+   * fallback MLS.
+   * <p>
+   * Returned are the transactions in status {@link EInboundStatus#FORWARDED} without an MLS
+   * response code, whose {@code completed_dt} is older than the provided limit. Inbound MLS and MLR
+   * documents are excluded, because they are never answered with an MLS, and so is a document that
+   * was rejected by the verification, because C2 already received the negative MLS (RE) of that
+   * rejection.
+   * </p>
+   *
+   * @param nBatchSize
+   *        Maximum number of transactions to return. Must be &gt; 0.
+   * @param aMaxCompletedDT
+   *        Only transactions that were forwarded before this date time are returned. May not be
+   *        <code>null</code>.
+   * @return The list of transactions. Never <code>null</code>.
+   * @since 0.13.0
+   */
+  @NonNull
+  ICommonsList <IInboundTransaction> getAllForMlsApiTimeout (@Nonnegative int nBatchSize,
+                                                             @NonNull OffsetDateTime aMaxCompletedDT);
+
+  /**
    * Get completed inbound transactions eligible for archival.
    *
    * @param nBatchSize

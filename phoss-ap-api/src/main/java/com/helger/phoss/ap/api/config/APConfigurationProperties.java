@@ -341,6 +341,14 @@ public final class APConfigurationProperties
   public static final String MLS_SENDING_ENABLED = "mls.sending.enabled";
   public static final boolean MLS_SENDING_ENABLED_DEFAULT = true;
   public static final String MLS_TYPE = "mls.type";
+  /** @since 0.13.0 */
+  public static final String MLS_SENDING_TRIGGER = "mls.sending.trigger";
+  /** @since 0.13.0 */
+  public static final String MLS_SENDING_API_TIMEOUT = "mls.sending.api.timeout";
+  /** @since 0.13.0 */
+  public static final Duration MLS_SENDING_API_TIMEOUT_DEFAULT = Duration.ofMinutes (5);
+  /** @since 0.13.0 */
+  public static final String MLS_SENDING_API_TIMEOUT_CODE = "mls.sending.api.timeout.code";
 
   // Reporting
   public static final String PEPPOL_REPORTING_SCHEDULE_ENABLED = "peppol.reporting.schedule.enabled";

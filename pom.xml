@@ -75,7 +75,7 @@
 
     <ph-commons.version>12.4.0</ph-commons.version>
     <ph-telemetry.version>1.0.1</ph-telemetry.version>
-    <ph-db.version>8.4.2</ph-db.version>
+    <ph-db.version>8.4.3</ph-db.version>
     <ph-web.version>11.4.4</ph-web.version>
     <ph-oton.version>10.4.0</ph-oton.version>
     <peppol-commons.version>12.9.0</peppol-commons.version>

@@ -75,7 +75,29 @@ See `docker-compose.db2.yml` for an example of how to spin up a local DB2 instan
 
 ## Documentation
 
-Provided in the Wiki: https://github.com/phax/phoss-ap/wiki
+The full documentation is in the **[Wiki](https://github.com/phax/phoss-ap/wiki)**:
+
+* [News and noteworthy](https://github.com/phax/phoss-ap/wiki/News-and-noteworthy)
+* [Running phoss AP](https://github.com/phax/phoss-ap/wiki/Running-phoss-AP)
+* [Architecture Overview](https://github.com/phax/phoss-ap/wiki/Architecture-Overview)
+  * [Sending Process](https://github.com/phax/phoss-ap/wiki/Sending-Process)
+  * [Receiving Process](https://github.com/phax/phoss-ap/wiki/Receiving-Process)
+  * [Forwarding Process](https://github.com/phax/phoss-ap/wiki/Forwarding-Process)
+  * [Retry and Resilience Patterns](https://github.com/phax/phoss-ap/wiki/Retry-and-Resilience-Patterns)
+  * [Message Level Status](https://github.com/phax/phoss-ap/wiki/Message-Level-Status)
+* [API Specification](https://github.com/phax/phoss-ap/wiki/API-Specification)
+* [Configuration Properties](https://github.com/phax/phoss-ap/wiki/Configuration-Properties)
+* [Code Lists](https://github.com/phax/phoss-ap/wiki/Code-Lists)
+* [Database Design Notes](https://github.com/phax/phoss-ap/wiki/Database-Design-Notes)
+* [Maven Module Structure](https://github.com/phax/phoss-ap/wiki/Maven-Module-Structure)
+* [Runtime Extensions](https://github.com/phax/phoss-ap/wiki/Runtime-Extensions)
+* [OpenTelemetry Integration](https://github.com/phax/phoss-ap/wiki/OpenTelemetry-Integration)
+* [Security Considerations](https://github.com/phax/phoss-ap/wiki/Security-Considerations)
+* [Peppol Specifics](https://github.com/phax/phoss-ap/wiki/Peppol-Specifics)
+* [Testing Without Peppol Network](https://github.com/phax/phoss-ap/wiki/Testing-Without-Peppol-Network)
+* [Known Users](https://github.com/phax/phoss-ap/wiki/Known-Users)
+* [Migrating from phase4-peppol-standalone](https://github.com/phax/phoss-ap/wiki/Migrating-from-phase4-peppol-standalone)
+* [Contributing](https://github.com/phax/phoss-ap/wiki/Contributing)
 
 ## Misc
 

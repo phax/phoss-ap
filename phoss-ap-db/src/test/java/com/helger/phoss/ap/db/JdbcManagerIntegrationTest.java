@@ -36,6 +36,8 @@ import com.helger.phase4.duplicate.IAS4DuplicateItem;
 import com.helger.phase4.duplicate.IAS4DuplicateManager;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
+import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
+import com.helger.peppolid.peppol.process.EPredefinedProcessIdentifier;
 import com.helger.phoss.ap.api.IArchivalManager;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
@@ -522,6 +524,11 @@ public final class JdbcManagerIntegrationTest
 
   private static String _createInboundTx ()
   {
+    return _createInboundTx ("busdox-docid-qns::urn:test:invoice", "cenbii-procid-ubl::urn:test:process");
+  }
+
+  private static String _createInboundTx (@NonNull final String sDocTypeID, @NonNull final String sProcessID)
+  {
     return APJdbcMetaManager.getInboundTransactionMgr ()
                             .create (_uniqueID (),
                                      "POP000001",
@@ -529,8 +536,8 @@ public final class JdbcManagerIntegrationTest
                                      "CN=TestCert",
                                      "iso6523-actorid-upis::9915:sender",
                                      "iso6523-actorid-upis::9915:receiver",
-                                     "busdox-docid-qns::urn:test:invoice",
-                                     "cenbii-procid-ubl::urn:test:process",
+                                     sDocTypeID,
+                                     sProcessID,
                                      "/tmp/test-inbound.sbd",
                                      2048L,
                                      "sha256hash012345678901234567890123456789012345678901234567890123",
@@ -982,6 +989,59 @@ public final class JdbcManagerIntegrationTest
     final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100);
     assertNotNull (aList);
     assertTrue (aList.containsAny (x -> x.getID ().equals (sID)));
+  }
+
+  @Test
+  public void testInboundGetAllForMlsApiTimeout ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    // Not forwarded yet
+    assertFalse (aMgr.getAllForMlsApiTimeout (100, _now ().plusHours (1)).containsAny (x -> x.getID ().equals (sID)));
+
+    aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED);
+
+    // Forwarded, no MLS response code yet - waiting for the Receiver Backend
+    assertTrue (aMgr.getAllForMlsApiTimeout (100, _now ().plusHours (1)).containsAny (x -> x.getID ().equals (sID)));
+
+    // The timeout has not expired yet
+    assertFalse (aMgr.getAllForMlsApiTimeout (100, _now ().minusHours (1)).containsAny (x -> x.getID ().equals (sID)));
+
+    // Once an MLS was determined, the watchdog must not touch it again
+    aMgr.updateMlsFields (sID, EPeppolMLSResponseCode.ACCEPTANCE, null);
+    assertFalse (aMgr.getAllForMlsApiTimeout (100, _now ().plusHours (1)).containsAny (x -> x.getID ().equals (sID)));
+  }
+
+  @Test
+  public void testInboundGetAllForMlsApiTimeoutExcludesMlsAndRejected ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+
+    // An inbound MLS is never answered with an MLS
+    final String sMlsID = _createInboundTx (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
+                                            EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded ());
+    assertNotNull (sMlsID);
+    aMgr.updateStatusCompleted (sMlsID, EInboundStatus.FORWARDED);
+
+    // ... and neither is an inbound MLR
+    final String sMlrID = _createInboundTx (EPredefinedDocumentTypeIdentifier.APPLICATIONRESPONSE_FDC_PEPPOL_EU_POACC_TRNS_MLR_3.getURIEncoded (),
+                                            EPredefinedProcessIdentifier.BIS3_MLR.getURIEncoded ());
+    assertNotNull (sMlrID);
+    aMgr.updateStatusCompleted (sMlrID, EInboundStatus.FORWARDED);
+
+    // A rejected but forwarded document already got the negative MLS of its rejection
+    final String sRejectedID = _createInboundTx ();
+    assertNotNull (sRejectedID);
+    aMgr.updateVerificationResult (sRejectedID, EVerificationResult.REJECTED, null);
+    aMgr.updateStatusCompleted (sRejectedID, EInboundStatus.FORWARDED);
+
+    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForMlsApiTimeout (100, _now ().plusHours (1));
+    assertNotNull (aList);
+    assertFalse (aList.containsAny (x -> x.getID ().equals (sMlsID)));
+    assertFalse (aList.containsAny (x -> x.getID ().equals (sMlrID)));
+    assertFalse (aList.containsAny (x -> x.getID ().equals (sRejectedID)));
   }
 
   // --- OutboundSendingAttemptManager ---

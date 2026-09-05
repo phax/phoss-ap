@@ -33,12 +33,14 @@ import com.helger.collection.commons.CommonsLinkedHashSet;
 import com.helger.collection.commons.ICommonsOrderedSet;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.config.value.parser.ConfigDurationParser;
+import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.codelist.EAS4DumpMode;
 import com.helger.phoss.ap.api.codelist.EC4CountryCodeMode;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
+import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
 import com.helger.phoss.ap.api.codelist.EReceiverCheckMode;
 import com.helger.phoss.ap.api.codelist.EVerificationFailMode;
 import com.helger.phoss.ap.api.codelist.EVerificationRejectionForwarding;
@@ -762,6 +764,93 @@ public final class APCoreConfig
     final String sVal = _getConfig ().getAsString (APConfigurationProperties.MLS_TYPE);
     final EPeppolMLSType eRet = EPeppolMLSType.getFromIDOrNull (sVal);
     return eRet != null ? eRet : EPeppolMLSType.ALWAYS_SEND;
+  }
+
+  /**
+   * @return The configured trigger of the positive MLS of a successfully forwarded document.
+   *         Defaults to {@link EMlsSendingTrigger#AUTO}. Never <code>null</code>.
+   * @since 0.13.0
+   */
+  @NonNull
+  public static EMlsSendingTrigger getMlsSendingTrigger ()
+  {
+    final String sVal = _getConfig ().getAsString (APConfigurationProperties.MLS_SENDING_TRIGGER);
+    if (StringHelper.isEmpty (sVal))
+      return EMlsSendingTrigger.DEFAULT;
+
+    final EMlsSendingTrigger eRet = EMlsSendingTrigger.getFromIDOrNull (sVal);
+    if (eRet != null)
+      return eRet;
+
+    if (WARNED_INVALID_VALUES.add (APConfigurationProperties.MLS_SENDING_TRIGGER))
+      LOGGER.warn ("The configuration key '" +
+                   APConfigurationProperties.MLS_SENDING_TRIGGER +
+                   "' has the unsupported value '" +
+                   sVal +
+                   "' - falling back to '" +
+                   EMlsSendingTrigger.DEFAULT.getID () +
+                   "'");
+    return EMlsSendingTrigger.DEFAULT;
+  }
+
+  /**
+   * @return The duration after the successful forwarding of a document, after which the MLS
+   *         watchdog of the trigger mode {@link EMlsSendingTrigger#API} sends the fallback MLS on
+   *         its own. Never <code>null</code> and always positive.
+   * @since 0.13.0
+   */
+  @NonNull
+  public static Duration getMlsSendingApiTimeout ()
+  {
+    final Duration ret = _getDuration (APConfigurationProperties.MLS_SENDING_API_TIMEOUT,
+                                       APConfigurationProperties.MLS_SENDING_API_TIMEOUT_DEFAULT);
+    if (ret.isPositive ())
+      return ret;
+
+    // A non-positive timeout would make the watchdog answer every document immediately, defeating
+    // the whole point of the trigger mode
+    if (WARNED_INVALID_VALUES.add (APConfigurationProperties.MLS_SENDING_API_TIMEOUT))
+      LOGGER.warn ("The configuration key '" +
+                   APConfigurationProperties.MLS_SENDING_API_TIMEOUT +
+                   "' has the non-positive value '" +
+                   ret +
+                   "' - falling back to '" +
+                   APConfigurationProperties.MLS_SENDING_API_TIMEOUT_DEFAULT +
+                   "'");
+    return APConfigurationProperties.MLS_SENDING_API_TIMEOUT_DEFAULT;
+  }
+
+  /**
+   * @return The MLS response code the watchdog of the trigger mode {@link EMlsSendingTrigger#API}
+   *         uses for the fallback MLS. Only the positive response codes are allowed - a rejection
+   *         is a statement only the Receiver Backend can make. Defaults to
+   *         {@link EPeppolMLSResponseCode#ACKNOWLEDGING}. Never <code>null</code>.
+   * @since 0.13.0
+   */
+  @NonNull
+  public static EPeppolMLSResponseCode getMlsSendingApiTimeoutResponseCode ()
+  {
+    final String sVal = _getConfig ().getAsString (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE);
+    if (StringHelper.isEmpty (sVal))
+      return EPeppolMLSResponseCode.ACKNOWLEDGING;
+
+    final EPeppolMLSResponseCode eRet = EPeppolMLSResponseCode.getFromIDOrNull (sVal);
+    if (eRet != null && eRet.isSuccess ())
+      return eRet;
+
+    if (WARNED_INVALID_VALUES.add (APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE))
+      LOGGER.warn ("The configuration key '" +
+                   APConfigurationProperties.MLS_SENDING_API_TIMEOUT_CODE +
+                   "' has the unsupported value '" +
+                   sVal +
+                   "' - only '" +
+                   EPeppolMLSResponseCode.ACCEPTANCE.getID () +
+                   "' and '" +
+                   EPeppolMLSResponseCode.ACKNOWLEDGING.getID () +
+                   "' are allowed - falling back to '" +
+                   EPeppolMLSResponseCode.ACKNOWLEDGING.getID () +
+                   "'");
+    return EPeppolMLSResponseCode.ACKNOWLEDGING;
   }
 
   /**

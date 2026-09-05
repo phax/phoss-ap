@@ -59,6 +59,7 @@ import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
+import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
 import com.helger.phoss.ap.api.codelist.EVerificationFailMode;
 import com.helger.phoss.ap.api.codelist.EVerificationIssueLevel;
 import com.helger.phoss.ap.api.codelist.EVerificationOutcomeCategory;
@@ -909,8 +910,8 @@ public final class InboundOrchestrator
    * a rejected document is forwarded to C4, see {@link EVerificationRejectionForwarding}.
    * <p>
    * The suppression is deliberately derived from the persisted verdict and not from a parameter, so
-   * that the retry scheduler and the operations endpoint behave exactly like the initial receive
-   * path.
+   * that the retry scheduler, the operations endpoint, the MLS sending endpoint and the MLS
+   * watchdog all behave exactly like the initial receive path.
    * </p>
    *
    * @param aInboundTx
@@ -918,8 +919,7 @@ public final class InboundOrchestrator
    * @return <code>true</code> if no further MLS may be sent for this transaction.
    * @since 0.12.0
    */
-  @VisibleForTesting
-  static boolean isMlsSuppressedAfterRejection (@NonNull final IInboundTransaction aInboundTx)
+  public static boolean isMlsSuppressedAfterRejection (@NonNull final IInboundTransaction aInboundTx)
   {
     final EVerificationResult eVerificationResult = aInboundTx.getVerificationResult ();
     return eVerificationResult != null && eVerificationResult.isRejected ();
@@ -956,6 +956,17 @@ public final class InboundOrchestrator
       if (!CPhossAP.isMLR (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()) &&
           !CPhossAP.isMLS (aInboundTx.getDocTypeID (), aInboundTx.getProcessID ()))
       {
+        if (APCoreConfig.getMlsSendingTrigger () == EMlsSendingTrigger.API)
+        {
+          // The Receiver Backend reports the outcome via POST /api/mls/send. If it stays silent,
+          // the watchdog of the retry scheduler sends the fallback MLS after
+          // "mls.sending.api.timeout"
+          LOGGER.info ("Deferring the positive MLS of the inbound transaction '" +
+                       aInboundTx.getID () +
+                       "' until the Receiver Backend reports the outcome");
+          return;
+        }
+
         // Send asynchronously
         PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
           // AP for delivery with confirmation (e.g. http), AB for delivery without

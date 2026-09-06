@@ -78,12 +78,12 @@
     <ph-db.version>8.5.0</ph-db.version>
     <ph-web.version>11.4.5</ph-web.version>
     <ph-oton.version>10.6.0</ph-oton.version>
-    <peppol-commons.version>12.9.0</peppol-commons.version>
+    <peppol-commons.version>12.10.0</peppol-commons.version>
     <phive.version>12.1.0</phive.version>
     <phase4.version>4.6.1</phase4.version>
     <ddd.version>0.8.10</ddd.version>
-    <peppol-reporting.version>4.2.0</peppol-reporting.version>
-    <peppol-ap-support.version>2.2.1</peppol-ap-support.version>
+    <peppol-reporting.version>4.3.0</peppol-reporting.version>
+    <peppol-ap-support.version>2.3.0</peppol-ap-support.version>
   </properties>
 
   <dependencyManagement>

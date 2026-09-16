@@ -32,6 +32,7 @@ import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.datetime.helper.PDTFactory;
+import com.helger.phoss.ap.api.codelist.ECircuitBreakerState;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.model.CircuitBreakerInfo;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
@@ -224,18 +225,39 @@ public final class CircuitBreakerManager
     return aBuilder.withFailureThreshold (nFailureThreshold);
   }
 
+  /**
+   * Map the state of the underlying Failsafe circuit breaker onto the project's own code list, so
+   * that the Failsafe dependency stays confined to this module.
+   *
+   * @param aBreaker
+   *        The circuit breaker to read the state from. May not be <code>null</code>.
+   * @return The matching code list value. Never <code>null</code>.
+   */
   @NonNull
-  private static TelemetryAttributes _getMetricAttrs (@NonNull final String sCircuitKey, @NonNull final String sState)
+  private static ECircuitBreakerState _getMappedState (@NonNull final CircuitBreaker <Void> aBreaker)
+  {
+    return switch (aBreaker.getState ())
+    {
+      case CLOSED -> ECircuitBreakerState.CLOSED;
+      case OPEN -> ECircuitBreakerState.OPEN;
+      case HALF_OPEN -> ECircuitBreakerState.HALF_OPEN;
+    };
+  }
+
+  @NonNull
+  private static TelemetryAttributes _getMetricAttrs (@NonNull final String sCircuitKey,
+                                                      @NonNull final ECircuitBreakerState eState)
   {
     return TelemetryAttributes.builder ()
                               .put (CPhossAPOtel.ATTR_CIRCUIT_BREAKER_KEY, sCircuitKey)
-                              .put (CPhossAPOtel.ATTR_CIRCUIT_BREAKER_STATE, sState)
+                              .put (CPhossAPOtel.ATTR_CIRCUIT_BREAKER_STATE, eState.getID ())
                               .build ();
   }
 
-  private static void _onStateChange (@NonNull final String sCircuitKey, @NonNull final String sNewState)
+  private static void _onStateChange (@NonNull final String sCircuitKey,
+                                      @NonNull final ECircuitBreakerState eNewState)
   {
-    APMetrics.CIRCUIT_BREAKER_STATE_CHANGES.add (1, _getMetricAttrs (sCircuitKey, sNewState));
+    APMetrics.CIRCUIT_BREAKER_STATE_CHANGES.add (1, _getMetricAttrs (sCircuitKey, eNewState));
   }
 
   private static void _onOpen (@NonNull final String sCircuitKey)
@@ -243,7 +265,7 @@ public final class CircuitBreakerManager
     final BreakerState aState = _getState (sCircuitKey);
     aState.m_aOpenSinceDT = PDTFactory.getCurrentOffsetDateTimeUTC ();
 
-    _onStateChange (sCircuitKey, "OPEN");
+    _onStateChange (sCircuitKey, ECircuitBreakerState.OPEN);
 
     final String sLastFailureCause = aState.m_sLastFailureCause;
     LOGGER.warn ("The circuit breaker for '" +
@@ -256,13 +278,13 @@ public final class CircuitBreakerManager
   private static void _onClose (@NonNull final String sCircuitKey)
   {
     _getState (sCircuitKey).m_aOpenSinceDT = null;
-    _onStateChange (sCircuitKey, "CLOSED");
+    _onStateChange (sCircuitKey, ECircuitBreakerState.CLOSED);
     LOGGER.info ("The circuit breaker for '" + sCircuitKey + "' was closed");
   }
 
   private static void _onHalfOpen (@NonNull final String sCircuitKey)
   {
-    _onStateChange (sCircuitKey, "HALF_OPEN");
+    _onStateChange (sCircuitKey, ECircuitBreakerState.HALF_OPEN);
     LOGGER.info ("The circuit breaker for '" + sCircuitKey + "' was half-opened");
   }
 
@@ -294,7 +316,8 @@ public final class CircuitBreakerManager
     if (aBreaker.tryAcquirePermit ())
       return true;
 
-    APMetrics.CIRCUIT_BREAKER_REJECTIONS.add (1, _getMetricAttrs (sCircuitKey, aBreaker.getState ().toString ()));
+    APMetrics.CIRCUIT_BREAKER_REJECTIONS.add (1,
+                                             _getMetricAttrs (sCircuitKey, _getMappedState (aBreaker)));
     return false;
   }
 
@@ -365,8 +388,10 @@ public final class CircuitBreakerManager
     final OffsetDateTime aOpenSinceDT = aState.m_aOpenSinceDT;
     final String sLastFailureCause = aState.m_sLastFailureCause;
 
+    // The human readable enum name is used deliberately - the lower case ID is for the REST API
+    // and the metric attributes
     final StringBuilder aSB = new StringBuilder (sWhatIsSuspended).append (" suspended by circuit breaker (state ")
-                                                                  .append (aBreaker.getState ());
+                                                                  .append (_getMappedState (aBreaker).name ());
     if (aOpenSinceDT != null)
       aSB.append (" since ").append (aOpenSinceDT);
     aSB.append (", ").append (aBreaker.getRemainingDelay ().toSeconds ()).append ("s remaining) after ");
@@ -411,7 +436,7 @@ public final class CircuitBreakerManager
       final CircuitBreaker <Void> aBreaker = aEntry.getValue ();
       final BreakerState aState = _getState (sCircuitKey);
       ret.add (new CircuitBreakerInfo (sCircuitKey,
-                                       aBreaker.getState ().toString (),
+                                       _getMappedState (aBreaker),
                                        aState.m_aOpenSinceDT,
                                        aBreaker.getRemainingDelay (),
                                        aBreaker.getFailureCount (),

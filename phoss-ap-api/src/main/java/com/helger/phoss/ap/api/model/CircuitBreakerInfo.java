@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.Nonempty;
+import com.helger.phoss.ap.api.codelist.ECircuitBreakerState;
 
 /**
  * An immutable snapshot of a single circuit breaker, as needed for operational monitoring. The
@@ -33,8 +34,7 @@ import com.helger.annotation.Nonempty;
  *        The key that identifies the circuit breaker, e.g.
  *        <code>smp$https://smp.example.org</code>. May neither be <code>null</code> nor empty.
  * @param state
- *        The current state - <code>CLOSED</code>, <code>OPEN</code> or <code>HALF_OPEN</code>. May
- *        neither be <code>null</code> nor empty.
+ *        The current state. May not be <code>null</code>.
  * @param openSinceDT
  *        When the circuit breaker was opened, in UTC. <code>null</code> if it is closed.
  * @param remainingDelay
@@ -49,7 +49,7 @@ import com.helger.annotation.Nonempty;
  * @since 0.13.0
  */
 public record CircuitBreakerInfo (@NonNull @Nonempty String circuitKey,
-                                  @NonNull @Nonempty String state,
+                                  @NonNull ECircuitBreakerState state,
                                   @Nullable OffsetDateTime openSinceDT,
                                   @NonNull Duration remainingDelay,
                                   long failureCount,
@@ -60,6 +60,6 @@ public record CircuitBreakerInfo (@NonNull @Nonempty String circuitKey,
    */
   public boolean isOpen ()
   {
-    return "OPEN".equals (state);
+    return state.isOpen ();
   }
 }

@@ -37,7 +37,7 @@ public class CircuitBreakerResponse
            example = "smp$https://smp.example.org")
   private String circuitKey;
 
-  @Schema (description = "Current state", allowableValues = { "CLOSED", "OPEN", "HALF_OPEN" })
+  @Schema (description = "Current state", allowableValues = { "closed", "open", "half_open" })
   private String state;
 
   @Schema (description = "When the circuit breaker was opened (ISO-8601, UTC); null if it is closed",
@@ -69,7 +69,7 @@ public class CircuitBreakerResponse
   {
     final CircuitBreakerResponse aResp = new CircuitBreakerResponse ();
     aResp.circuitKey = aInfo.circuitKey ();
-    aResp.state = aInfo.state ();
+    aResp.state = aInfo.state ().getID ();
     aResp.openSinceDT = aInfo.openSinceDT () != null ? aInfo.openSinceDT ().toString () : null;
     aResp.remainingDelaySeconds = aInfo.remainingDelay ().toSeconds ();
     aResp.failureCount = aInfo.failureCount ();

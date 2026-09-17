@@ -109,11 +109,11 @@ public final class SMPClientManager
     final Duration aResponseTimeout = APCoreConfig.getPeppolSmpTimeoutResponse ();
     aHCS.setConnectTimeout (Timeout.of (aConnectTimeout));
     aHCS.setResponseTimeout (Timeout.of (aResponseTimeout));
-    final HttpClientManager aHttpClientMgr = HttpClientManager.create (aHCS);
+    final HttpClientManager aSharedHttpClientMgr = HttpClientManager.create (aHCS);
 
     RW_LOCK.writeLocked (() -> {
       s_bCacheEnabled = bCacheEnabled;
-      s_aSharedHttpClientMgr = aHttpClientMgr;
+      s_aSharedHttpClientMgr = aSharedHttpClientMgr;
     });
     LOGGER.info ("Created the shared HTTP client manager for all Peppol SMP queries with a connect timeout of " +
                  aConnectTimeout +
@@ -128,16 +128,16 @@ public final class SMPClientManager
   public static void shutdown ()
   {
     @SuppressWarnings ("resource")
-    final HttpClientManager aHttpClientMgr = RW_LOCK.writeLockedGet (() -> {
+    final HttpClientManager aSharedHttpClientMgr = RW_LOCK.writeLockedGet (() -> {
       final HttpClientManager ret = s_aSharedHttpClientMgr;
       s_aSharedHttpClientMgr = null;
       return ret;
     });
 
-    if (aHttpClientMgr != null)
+    if (aSharedHttpClientMgr != null)
       try
       {
-        aHttpClientMgr.close ();
+        aSharedHttpClientMgr.close ();
         LOGGER.info ("Closed the shared HTTP client manager of all Peppol SMP queries");
       }
       catch (final Exception ex)
@@ -182,9 +182,9 @@ public final class SMPClientManager
     APBasicConfig.applyHttpProxySettings (aSMPClient.httpClientSettings ());
 
     // The shared manager takes precedence over the client specific HTTP client settings
-    final HttpClientManager aHttpClientMgr = RW_LOCK.readLockedGet (() -> s_aSharedHttpClientMgr);
-    if (aHttpClientMgr != null)
-      aSMPClient.setSharedHttpClientManager (aHttpClientMgr);
+    final HttpClientManager aSharedHttpClientMgr = getSharedHttpClientManager ();
+    if (aSharedHttpClientMgr != null)
+      aSMPClient.setSharedHttpClientManager (aSharedHttpClientMgr);
     else
       if (LOGGER.isDebugEnabled ())
         LOGGER.debug ("No shared HTTP client manager is present - each SMP query will create its own one");

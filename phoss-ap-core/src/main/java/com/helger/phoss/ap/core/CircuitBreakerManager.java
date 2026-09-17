@@ -18,6 +18,7 @@ package com.helger.phoss.ap.core;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
@@ -26,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.concurrent.ThreadSafe;
-import com.helger.annotation.style.VisibleForTesting;
 import com.helger.annotation.style.ReturnsMutableCopy;
+import com.helger.annotation.style.VisibleForTesting;
 import com.helger.base.string.StringHelper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
@@ -95,8 +96,10 @@ public final class CircuitBreakerManager
       return null;
 
     final String sMessage = aCause.getMessage ();
-    final String sRet = StringHelper.isEmpty (sMessage) ? aCause.getClass ().getSimpleName ()
-                                                        : aCause.getClass ().getSimpleName () + ": " + sMessage;
+    final String sRet = StringHelper.isEmpty (sMessage) ? aCause.getClass ().getSimpleName () : aCause.getClass ()
+                                                                                                      .getSimpleName () +
+                                                                                                ": " +
+                                                                                                sMessage;
     return sRet.length () > MAX_FAILURE_CAUSE_LENGTH ? sRet.substring (0, MAX_FAILURE_CAUSE_LENGTH) + "..." : sRet;
   }
 
@@ -112,8 +115,8 @@ public final class CircuitBreakerManager
    * {@code circuit-breaker.failure-executions} is set</li>
    * </ol>
    * If neither of them is set, the default applies: N <b>consecutive</b> failures open the circuit
-   * breaker. An invalid combination is logged as an error and falls back to that default, because
-   * a circuit breaker that cannot be built would take the whole sending down.
+   * breaker. An invalid combination is logged as an error and falls back to that default, because a
+   * circuit breaker that cannot be built would take the whole sending down.
    *
    * @param aBuilder
    *        The builder to apply the thresholding to. May not be <code>null</code>.
@@ -145,15 +148,7 @@ public final class CircuitBreakerManager
       else
         if (nFailureRate > 0)
         {
-          if (nFailureRate > 100)
-          {
-            LOGGER.error ("The configuration property '" +
-                          APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_RATE +
-                          "' must be between 1 and 100 - ignoring the time based thresholding of circuit breaker '" +
-                          sCircuitKey +
-                          "'");
-          }
-          else
+          if (nFailureRate <= 100)
           {
             // Minimum number of executions before the rate is evaluated at all
             final int nExecutionThreshold = nFailureExecutions > 0 ? nFailureExecutions : nFailureThreshold;
@@ -167,21 +162,16 @@ public final class CircuitBreakerManager
                          aFailurePeriod);
             return aBuilder.withFailureRateThreshold (nFailureRate, nExecutionThreshold, aFailurePeriod);
           }
+          LOGGER.error ("The configuration property '" +
+                        APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_RATE +
+                        "' must be between 1 and 100 - ignoring the time based thresholding of circuit breaker '" +
+                        sCircuitKey +
+                        "'");
         }
         else
         {
           final int nExecutionThreshold = nFailureExecutions > 0 ? nFailureExecutions : nFailureThreshold;
-          if (nExecutionThreshold < nFailureThreshold)
-          {
-            LOGGER.error ("The configuration property '" +
-                          APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_EXECUTIONS +
-                          "' must not be smaller than '" +
-                          APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_THRESHOLD +
-                          "' - ignoring the time based thresholding of circuit breaker '" +
-                          sCircuitKey +
-                          "'");
-          }
-          else
+          if (nExecutionThreshold >= nFailureThreshold)
           {
             LOGGER.info ("The circuit breaker for '" +
                          sCircuitKey +
@@ -193,22 +183,19 @@ public final class CircuitBreakerManager
                          aFailurePeriod);
             return aBuilder.withFailureThreshold (nFailureThreshold, nExecutionThreshold, aFailurePeriod);
           }
+          LOGGER.error ("The configuration property '" +
+                        APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_EXECUTIONS +
+                        "' must not be smaller than '" +
+                        APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_THRESHOLD +
+                        "' - ignoring the time based thresholding of circuit breaker '" +
+                        sCircuitKey +
+                        "'");
         }
     }
     else
       if (nFailureExecutions > 0)
       {
-        if (nFailureExecutions < nFailureThreshold)
-        {
-          LOGGER.error ("The configuration property '" +
-                        APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_EXECUTIONS +
-                        "' must not be smaller than '" +
-                        APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_THRESHOLD +
-                        "' - ignoring the count based thresholding of circuit breaker '" +
-                        sCircuitKey +
-                        "'");
-        }
-        else
+        if (nFailureExecutions >= nFailureThreshold)
         {
           LOGGER.info ("The circuit breaker for '" +
                        sCircuitKey +
@@ -219,6 +206,13 @@ public final class CircuitBreakerManager
                        " executions");
           return aBuilder.withFailureThreshold (nFailureThreshold, nFailureExecutions);
         }
+        LOGGER.error ("The configuration property '" +
+                      APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_EXECUTIONS +
+                      "' must not be smaller than '" +
+                      APConfigurationProperties.CIRCUIT_BREAKER_FAILURE_THRESHOLD +
+                      "' - ignoring the count based thresholding of circuit breaker '" +
+                      sCircuitKey +
+                      "'");
       }
 
     // Default: consecutive failures
@@ -254,8 +248,7 @@ public final class CircuitBreakerManager
                               .build ();
   }
 
-  private static void _onStateChange (@NonNull final String sCircuitKey,
-                                      @NonNull final ECircuitBreakerState eNewState)
+  private static void _onStateChange (@NonNull final String sCircuitKey, @NonNull final ECircuitBreakerState eNewState)
   {
     APMetrics.CIRCUIT_BREAKER_STATE_CHANGES.add (1, _getMetricAttrs (sCircuitKey, eNewState));
   }
@@ -293,7 +286,8 @@ public final class CircuitBreakerManager
   {
     return BREAKERS.computeIfAbsent (sCircuitKey, k -> {
       LOGGER.info ("Creating circuit breaker for '" + k + "'");
-      return _applyFailureThreshold (CircuitBreaker.<Void> builder (), k).withDelay (APCoreConfig.getCircuitBreakerOpenDuration ())
+      return _applyFailureThreshold (CircuitBreaker.<Void> builder (), k).withDelay (APCoreConfig
+                                                                                                 .getCircuitBreakerOpenDuration ())
                                                                          .withSuccessThreshold (APCoreConfig.getCircuitBreakerHalfOpenMaxAttempts ())
                                                                          .onOpen (e -> _onOpen (k))
                                                                          .onClose (e -> _onClose (k))
@@ -316,8 +310,7 @@ public final class CircuitBreakerManager
     if (aBreaker.tryAcquirePermit ())
       return true;
 
-    APMetrics.CIRCUIT_BREAKER_REJECTIONS.add (1,
-                                             _getMetricAttrs (sCircuitKey, _getMappedState (aBreaker)));
+    APMetrics.CIRCUIT_BREAKER_REJECTIONS.add (1, _getMetricAttrs (sCircuitKey, _getMappedState (aBreaker)));
     return false;
   }
 
@@ -380,8 +373,7 @@ public final class CircuitBreakerManager
    * @since 0.13.0
    */
   @NonNull
-  public static String getRejectionMessage (@NonNull final String sCircuitKey,
-                                            @NonNull final String sWhatIsSuspended)
+  public static String getRejectionMessage (@NonNull final String sCircuitKey, @NonNull final String sWhatIsSuspended)
   {
     final CircuitBreaker <Void> aBreaker = _getOrCreate (sCircuitKey);
     final BreakerState aState = _getState (sCircuitKey);
@@ -442,7 +434,7 @@ public final class CircuitBreakerManager
                                        aBreaker.getFailureCount (),
                                        aState.m_sLastFailureCause));
     }
-    ret.sort ( (x, y) -> x.circuitKey ().compareTo (y.circuitKey ()));
+    ret.sort (Comparator.comparing (CircuitBreakerInfo::circuitKey));
     return ret;
   }
 

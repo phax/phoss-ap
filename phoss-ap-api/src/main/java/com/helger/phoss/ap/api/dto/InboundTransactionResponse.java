@@ -75,6 +75,12 @@ public class InboundTransactionResponse
   @Schema (description = "Total number of forwarding attempts")
   private int attemptCount;
 
+  @Schema (description = "Whether this transaction has been replayed or re-forwarded by an operator")
+  private boolean isReplayed;
+
+  @Schema (description = "Total number of times a replay or manual re-forward was triggered")
+  private int replayCount;
+
   @Schema (description = "When the message was received (ISO-8601, UTC)", example = "2026-03-27T14:30:00Z")
   private String receivedDT;
 
@@ -520,6 +526,31 @@ public class InboundTransactionResponse
    */
   @NonNull
   @Schema (hidden = true)
+  public boolean isReplayed ()
+  {
+    return isReplayed;
+  }
+
+  public boolean getIsReplayed ()
+  {
+    return isReplayed;
+  }
+
+  public void setReplayed (final boolean b)
+  {
+    isReplayed = b;
+  }
+
+  public int getReplayCount ()
+  {
+    return replayCount;
+  }
+
+  public void setReplayCount (final int n)
+  {
+    replayCount = n;
+  }
+
   public IJsonObject toJson ()
   {
     final IJsonObject ret = new JsonObject ();

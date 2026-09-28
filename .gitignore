@@ -15,3 +15,7 @@ zz
 lgtm-container/
 .lgtm-env
 run-lgtm.sh
+docker/two-instances/certs/
+aspire/.dev/
+aspire/**/bin/
+aspire/**/obj/

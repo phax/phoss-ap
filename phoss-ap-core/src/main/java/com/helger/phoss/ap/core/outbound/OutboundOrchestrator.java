@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.WillNotClose;
 import com.helger.annotation.style.VisibleForTesting;
+import com.helger.base.exception.InitializationException;
 import com.helger.base.io.stream.CountingInputStream;
 import com.helger.base.io.stream.HasInputStream;
 import com.helger.base.io.stream.StreamHelper;
@@ -47,7 +48,6 @@ import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppol.sbdh.PeppolSBDHDataReader;
-import com.helger.peppol.security.PeppolTrustedCA;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.peppol.sml.ISMLInfo;
 import com.helger.peppolid.IDocumentTypeIdentifier;
@@ -91,6 +91,7 @@ import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
 import com.helger.phoss.ap.core.SMPClientManager;
+import com.helger.phoss.ap.core.helper.APTrustedCAHelper;
 import com.helger.phoss.ap.core.helper.BackoffCalculator;
 import com.helger.phoss.ap.core.helper.CopyingInputStream;
 import com.helger.phoss.ap.core.helper.HashHelper;
@@ -1107,6 +1108,47 @@ public final class OutboundOrchestrator
         String sReceiverAPURLOut = null;
         String sReceiverTechnicalContactOut = null;
 
+        // Only returned on the test stage - never used in production
+        final String sDevFixedEndpointURL = APCoreConfig.getOutboundDevFixedEndpointUrl ();
+        if (StringHelper.isNotEmpty (sDevFixedEndpointURL))
+        {
+          final String sCertPath = APCoreConfig.getOutboundDevFixedEndpointCertificatePath ();
+          if (StringHelper.isEmpty (sCertPath))
+          {
+            final String sMsg = "Outbound dev fixed endpoint requires configuration property '" +
+                                APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_CERTIFICATE_PATH +
+                                "' to be set";
+            aSendingReport.setLookupError (sMsg);
+            onPermanentFailure.accept (sMsg);
+            return aSendingReport;
+          }
+
+          try
+          {
+            aReceiverCertOut = APTrustedCAHelper.readCertificate (sCertPath);
+          }
+          catch (final InitializationException ex)
+          {
+            final String sMsg = "Outbound dev fixed endpoint: " + ex.getMessage ();
+            aSendingReport.setLookupError (sMsg);
+            onPermanentFailure.accept (sMsg);
+            return aSendingReport;
+          }
+          sReceiverAPURLOut = sDevFixedEndpointURL;
+
+          aSendingReport.setC3Cert (aReceiverCertOut);
+          aSendingReport.setC3EndpointURL (sReceiverAPURLOut);
+          aSendingReport.setC3TechnicalContact ("Outbound dev fixed endpoint");
+          aSendingReport.setLookupDurationMillis (0);
+
+          LOGGER.warn (sRealLogPrefix +
+                       "Outbound dev fixed endpoint is configured; bypassing SMP lookup and sending receiver '" +
+                       aTx.getReceiverID () +
+                       "' to AP endpoint '" +
+                       sReceiverAPURLOut +
+                       "'");
+        }
+        else
         // This guard checks, that this never happens in production
         if (APCoreConfig.isOutboundDevLoopbackEnabled ())
         {
@@ -1251,8 +1293,7 @@ public final class OutboundOrchestrator
             final String sAS4ConversationID = MessageHelperMethods.createRandomConversationID ();
             aSendingReport.setAS4ConversationID (sAS4ConversationID);
 
-            final TrustedCAChecker aAPCAChecker = ePeppolStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
-                                                                               : PeppolTrustedCA.peppolTestAP ();
+            final TrustedCAChecker aAPCAChecker = APTrustedCAHelper.getAPCAChecker (ePeppolStage);
 
             PeppolReportingItem aReportingItem = null;
             // The C1 participant identifier is the End User of an outbound transaction

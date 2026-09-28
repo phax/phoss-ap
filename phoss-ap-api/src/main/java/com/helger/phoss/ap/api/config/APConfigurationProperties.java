@@ -501,6 +501,16 @@ public final class APConfigurationProperties
   public static final String OUTBOUND_DEV_LOOPBACK_ENABLED = "outbound.dev-loopback.enabled";
   public static final boolean OUTBOUND_DEV_LOOPBACK_ENABLED_DEFAULT = false;
 
+  // Outbound local development fixed endpoint - bypasses the SMP lookup (test stage only)
+  /** @since 0.13.1 */
+  public static final String OUTBOUND_DEV_FIXED_ENDPOINT_URL = "outbound.dev-fixed-endpoint.url";
+  /** @since 0.13.1 */
+  public static final String OUTBOUND_DEV_FIXED_ENDPOINT_CERTIFICATE_PATH = "outbound.dev-fixed-endpoint.certificate-path";
+
+  // Custom AP CA replacing the Peppol test CA for local development (test stage only)
+  /** @since 0.13.1 */
+  public static final String PEPPOL_DEV_TRUSTED_CA_PATH = "peppol.dev.trusted-ca.path";
+
   // Directory sender (since 0.2.0)
   public static final String DIRSENDER_ENABLED = "dirsender.enabled";
   public static final boolean DIRSENDER_ENABLED_DEFAULT = false;

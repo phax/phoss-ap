@@ -186,6 +186,48 @@ public final class APCoreConfig
   }
 
   /**
+   * @return The AS4 endpoint URL to which all outbound documents are sent without SMP lookup, or
+   *         <code>null</code> if not configured. This is intentionally only returned on the Peppol
+   *         test network.
+   * @since 0.13.1
+   */
+  @Nullable
+  public static String getOutboundDevFixedEndpointUrl ()
+  {
+    final EPeppolNetwork ePeppolStage = getPeppolStage ();
+    if (ePeppolStage == null || !ePeppolStage.isTest ())
+      return null;
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_URL);
+  }
+
+  /**
+   * @return The path to the PEM encoded AP certificate of the fixed outbound endpoint. May be
+   *         <code>null</code>.
+   * @see #getOutboundDevFixedEndpointUrl()
+   * @since 0.13.1
+   */
+  @Nullable
+  public static String getOutboundDevFixedEndpointCertificatePath ()
+  {
+    return _getConfig ().getAsString (APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_CERTIFICATE_PATH);
+  }
+
+  /**
+   * @return The path to a PEM encoded CA certificate that replaces the Peppol test AP CA, or
+   *         <code>null</code> if not configured. This is intentionally only returned on the Peppol
+   *         test network.
+   * @since 0.13.1
+   */
+  @Nullable
+  public static String getPeppolDevTrustedCAPath ()
+  {
+    final EPeppolNetwork ePeppolStage = getPeppolStage ();
+    if (ePeppolStage == null || !ePeppolStage.isTest ())
+      return null;
+    return _getConfig ().getAsString (APConfigurationProperties.PEPPOL_DEV_TRUSTED_CA_PATH);
+  }
+
+  /**
    * @return The configured Peppol network stage (production or test). May be <code>null</code> if
    *         not configured.
    */

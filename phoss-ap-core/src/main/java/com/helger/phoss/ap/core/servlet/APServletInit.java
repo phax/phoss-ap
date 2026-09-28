@@ -44,7 +44,6 @@ import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingHelper;
 import com.helger.peppol.reporting.api.backend.IPeppolReportingBackendSPI;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
-import com.helger.peppol.security.PeppolTrustedCA;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.phase4.config.AS4Configuration;
 import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
@@ -71,6 +70,7 @@ import com.helger.phoss.ap.core.SMPClientManager;
 import com.helger.phoss.ap.core.StartupRecovery;
 import com.helger.phoss.ap.core.dump.AS4GroupedExchangeDumper;
 import com.helger.phoss.ap.core.dump.AS4IncomingDumperWithMetadata;
+import com.helger.phoss.ap.core.helper.APTrustedCAHelper;
 import com.helger.phoss.ap.core.job.ArchivalScheduler;
 import com.helger.phoss.ap.core.job.CleanupScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
@@ -316,11 +316,18 @@ public class APServletInit
     if (ePeppolStage == null)
       throw new InitializationException ("The Peppol Stage configuration is missing or invalid");
 
+    // Optional custom CA for local development without Peppol certificates (test stage only)
+    if (APTrustedCAHelper.init ())
+    {
+      // A self-made CA has neither CRL nor OCSP
+      CertificateRevocationCheckerDefaults.setRevocationCheckMode (ERevocationCheckMode.NONE);
+      Phase4PeppolDefaultReceiverConfiguration.setCheckSigningCertificateRevocation (false);
+    }
+
     // Check if the private key is a proper Peppol AP certificate
     final X509Certificate aAPCert = (X509Certificate) aPKE.getCertificate ();
     {
-      final TrustedCAChecker aAPCAChecker = ePeppolStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
-                                                                         : PeppolTrustedCA.peppolTestAP ();
+      final TrustedCAChecker aAPCAChecker = APTrustedCAHelper.getAPCAChecker (ePeppolStage);
 
       // Check the configured Peppol AP certificate
       // * No caching

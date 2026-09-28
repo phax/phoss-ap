@@ -92,6 +92,43 @@ public final class APCoreConfigTest
   }
 
   @Test
+  public void testDevCertificateSettingsRequireTestStage ()
+  {
+    final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();
+    final String sOldStage = System.getProperty (APConfigurationProperties.PEPPOL_STAGE);
+    final String sOldCA = System.getProperty (APConfigurationProperties.PEPPOL_DEV_TRUSTED_CA_PATH);
+    final String sOldURL = System.getProperty (APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_URL);
+
+    try
+    {
+      System.setProperty (APConfigurationProperties.PEPPOL_DEV_TRUSTED_CA_PATH, "dev-ca.pem");
+      System.setProperty (APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_URL, "http://localhost:8082/as4");
+
+      System.clearProperty (APConfigurationProperties.PEPPOL_STAGE);
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertNull (APCoreConfig.getPeppolDevTrustedCAPath ());
+      assertNull (APCoreConfig.getOutboundDevFixedEndpointUrl ());
+
+      System.setProperty (APConfigurationProperties.PEPPOL_STAGE, "production");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertNull (APCoreConfig.getPeppolDevTrustedCAPath ());
+      assertNull (APCoreConfig.getOutboundDevFixedEndpointUrl ());
+
+      System.setProperty (APConfigurationProperties.PEPPOL_STAGE, "test");
+      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
+      assertEquals ("dev-ca.pem", APCoreConfig.getPeppolDevTrustedCAPath ());
+      assertEquals ("http://localhost:8082/as4", APCoreConfig.getOutboundDevFixedEndpointUrl ());
+    }
+    finally
+    {
+      _restore (APConfigurationProperties.PEPPOL_STAGE, sOldStage);
+      _restore (APConfigurationProperties.PEPPOL_DEV_TRUSTED_CA_PATH, sOldCA);
+      _restore (APConfigurationProperties.OUTBOUND_DEV_FIXED_ENDPOINT_URL, sOldURL);
+      APConfigProvider.setConfig (aOldConfig);
+    }
+  }
+
+  @Test
   public void testPeppolReportingExcludedParticipantIDs ()
   {
     final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();

@@ -43,6 +43,7 @@ import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
+import com.helger.phoss.ap.api.ITransactionAuditManager;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
@@ -55,6 +56,7 @@ import com.helger.phoss.ap.api.model.IInboundForwardingAttempt;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundSendingAttempt;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.ITransactionAuditItem;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.scope.mock.ScopeTestRule;
 
@@ -1557,5 +1559,147 @@ public final class JdbcManagerIntegrationTest
     assertTrue (aMgr.isEmpty ());
     // A second clear on an empty table must be UNCHANGED
     assertEquals (EChange.UNCHANGED, aMgr.clearCache ());
+  }
+
+  // --- TransactionAuditManager and DB Triggers ---
+
+  @Test
+  public void testTriggerLifecycleHistoryAuditingInbound ()
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+
+    final String sSbdhID = _uniqueID ();
+    final String sTxID = aTxMgr.create (_uniqueID (),
+                                        "c2-seat",
+                                        "c3-seat",
+                                        "CN=test",
+                                        "iso6523-actorid-upis::9915:sender",
+                                        "iso6523-actorid-upis::9915:receiver",
+                                        "busdox-docid-qns::urn:test:invoice",
+                                        "cenbii-procid-ubl::urn:test:process",
+                                        "/tmp/inbound.sbd",
+                                        2048L,
+                                        "hash123",
+                                        _uniqueID (),
+                                        _now (),
+                                        sSbdhID,
+                                        "AU",
+                                        false,
+                                        false,
+                                        null,
+                                        EPeppolMLSType.ALWAYS_SEND);
+    assertNotNull (sTxID);
+
+    // Initial state is received; update to forwarding
+    assertTrue (aTxMgr.updateStatus (sTxID, EInboundStatus.FORWARDING).isSuccess ());
+
+    // Update to forward_failed with retry count 1
+    final OffsetDateTime aRetryDT = _now ().plusMinutes (10);
+    assertTrue (aTxMgr.updateStatusAndRetry (sTxID, EInboundStatus.FORWARD_FAILED, 1, aRetryDT, "HTTP 503").isSuccess ());
+
+    // Update to completed forwarded
+    assertTrue (aTxMgr.updateStatusCompleted (sTxID, EInboundStatus.FORWARDED).isSuccess ());
+
+    // Check timeline recorded by H2 trigger
+    final ICommonsList <ITransactionAuditItem> aTimeline = aAuditMgr.getTimelineBySbdhInstanceID (sSbdhID);
+    assertNotNull (aTimeline);
+    assertEquals (3, aTimeline.size ());
+
+    final ITransactionAuditItem aEvt1 = aTimeline.get (0);
+    assertEquals (sTxID, aEvt1.getTransactionID ());
+    assertEquals (sSbdhID, aEvt1.getSbdhInstanceID ());
+    assertEquals ("INBOUND", aEvt1.getDirection ());
+    assertEquals ("STATUS_CHANGE", aEvt1.getEventType ());
+    assertEquals ("STATUS_UPDATE", aEvt1.getAction ());
+    assertEquals ("received", aEvt1.getFromStatus ());
+    assertEquals ("forwarding", aEvt1.getToStatus ());
+    assertEquals ("SYSTEM", aEvt1.getPerformedBy ());
+
+    final ITransactionAuditItem aEvt2 = aTimeline.get (1);
+    assertEquals ("forwarding", aEvt2.getFromStatus ());
+    assertEquals ("forward_failed", aEvt2.getToStatus ());
+    assertEquals (Integer.valueOf (1), aEvt2.getAttemptCount ());
+
+    final ITransactionAuditItem aEvt3 = aTimeline.get (2);
+    assertEquals ("forward_failed", aEvt3.getFromStatus ());
+    assertEquals ("forwarded", aEvt3.getToStatus ());
+  }
+
+  @Test
+  public void testTriggerLifecycleHistoryAuditingOutbound ()
+  {
+    final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+
+    final String sSbdhID = _uniqueID ();
+    final String sTxID = aTxMgr.create (ETransactionType.BUSINESS_DOCUMENT,
+                                        "iso6523-actorid-upis::9915:sender",
+                                        "iso6523-actorid-upis::9915:receiver",
+                                        "busdox-docid-qns::urn:test:invoice",
+                                        "cenbii-procid-ubl::urn:test:process",
+                                        sSbdhID,
+                                        ESourceType.PAYLOAD_ONLY,
+                                        "/tmp/test-outbound.sbd",
+                                        1024L,
+                                        "hash123",
+                                        "AU",
+                                        _now (),
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null);
+    assertNotNull (sTxID);
+
+    // Initial state is pending; update to sending
+    assertTrue (aTxMgr.updateStatus (sTxID, EOutboundStatus.SENDING).isSuccess ());
+
+    // Update to sent
+    assertTrue (aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT).isSuccess ());
+
+    final ICommonsList <ITransactionAuditItem> aTimeline = aAuditMgr.getTimelineBySbdhInstanceID (sSbdhID);
+    assertNotNull (aTimeline);
+    assertEquals (2, aTimeline.size ());
+    assertEquals ("pending", aTimeline.get (0).getFromStatus ());
+    assertEquals ("sending", aTimeline.get (0).getToStatus ());
+    assertEquals ("sending", aTimeline.get (1).getFromStatus ());
+    assertEquals ("sent", aTimeline.get (1).getToStatus ());
+  }
+
+  @Test
+  public void testOperatorActionAuditingAndTimeline ()
+  {
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    final String sSbdhID = _uniqueID ();
+    final String sTxID = _uniqueID ();
+
+    assertTrue (aAuditMgr.recordAudit (sTxID,
+                                       sSbdhID,
+                                       "INBOUND",
+                                       "OPERATOR_ACTION",
+                                       "REPLAY_INBOUND",
+                                       "forwarding_failed",
+                                       "pending",
+                                       Integer.valueOf (0),
+                                       "operator-deepesh@peppol.gov.au",
+                                       "Triggered replay after endpoint recovery").isSuccess ());
+
+    final ICommonsList <ITransactionAuditItem> aTimeline = aAuditMgr.getTimelineBySbdhInstanceID (sSbdhID);
+    assertNotNull (aTimeline);
+    assertEquals (1, aTimeline.size ());
+
+    final ITransactionAuditItem aItem = aTimeline.getFirstOrNull ();
+    assertNotNull (aItem);
+    assertEquals (sTxID, aItem.getTransactionID ());
+    assertEquals (sSbdhID, aItem.getSbdhInstanceID ());
+    assertEquals ("OPERATOR_ACTION", aItem.getEventType ());
+    assertEquals ("REPLAY_INBOUND", aItem.getAction ());
+    assertEquals ("operator-deepesh@peppol.gov.au", aItem.getPerformedBy ());
+    assertEquals ("Triggered replay after endpoint recovery", aItem.getDetails ());
   }
 }

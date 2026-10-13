@@ -75,6 +75,12 @@ public class InboundTransactionResponse
   @Schema (description = "Total number of forwarding attempts")
   private int attemptCount;
 
+  @Schema (description = "Whether this transaction has been replayed or re-forwarded by an operator")
+  private boolean isReplayed;
+
+  @Schema (description = "Total number of times a replay or manual re-forward was triggered")
+  private int replayCount;
+
   @Schema (description = "When the message was received (ISO-8601, UTC)", example = "2026-03-27T14:30:00Z")
   private String receivedDT;
 
@@ -512,6 +518,36 @@ public class InboundTransactionResponse
   public void setVerificationDetails (final String s)
   {
     verificationDetails = s;
+  }
+
+  /** @return <code>true</code> if this transaction was replayed or re-forwarded */
+  public boolean isReplayed ()
+  {
+    return isReplayed;
+  }
+
+  /**
+   * @param b
+   *        <code>true</code> if this transaction was replayed or re-forwarded.
+   */
+  public void setReplayed (final boolean b)
+  {
+    isReplayed = b;
+  }
+
+  /** @return the total number of times a replay or manual re-forward was triggered */
+  public int getReplayCount ()
+  {
+    return replayCount;
+  }
+
+  /**
+   * @param n
+   *        The replay count to set.
+   */
+  public void setReplayCount (final int n)
+  {
+    replayCount = n;
   }
 
   /**

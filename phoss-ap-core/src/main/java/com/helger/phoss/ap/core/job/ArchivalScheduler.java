@@ -27,6 +27,7 @@ import com.helger.annotation.Nonnegative;
 import com.helger.base.exception.InitializationException;
 import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
@@ -113,7 +114,10 @@ public final class ArchivalScheduler
     {
       try
       {
-        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize);
+        final boolean bExcludeMlsPending = APCoreConfig.getMlsSendingTrigger () == EMlsSendingTrigger.API &&
+                                           APCoreConfig.isMlsSendingEnabled ();
+        final ICommonsList <IInboundTransaction> aTransactions = aInboundMgr.getAllForArchival (nBatchSize,
+                                                                                                bExcludeMlsPending);
         if (aTransactions.isNotEmpty ())
         {
           LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");

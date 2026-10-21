@@ -547,24 +547,45 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
 
   /** {@inheritDoc} */
   @NonNull
-  public ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative final int nBatchSize)
+  public ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative final int nBatchSize,
+                                                               final boolean bExcludeMlsPending)
   {
     ValueEnforcer.isGT0 (nBatchSize, "BatchSize");
+
+    final ConstantPreparedStatementDataProvider aParams = new ConstantPreparedStatementDataProvider (EInboundStatus.REJECTED.getID (),
+                                                                                                    EInboundStatus.FORWARDED.getID (),
+                                                                                                    EInboundStatus.PERMANENTLY_FAILED.getID (),
+                                                                                                    EReportingStatus.REPORTED.getID (),
+                                                                                                    EReportingStatus.EXCLUDED.getID ());
+    String sMlsPendingCondition = "";
+    if (bExcludeMlsPending)
+    {
+      // Same criteria as getAllForMlsApiTimeout
+      sMlsPendingCondition = " AND NOT (status=? AND mls_response_code IS NULL" +
+                             " AND mls_type <> ?" +
+                             " AND NOT (doc_type_id=? AND process_id=?)" +
+                             " AND NOT (doc_type_id=? AND process_id=?)" +
+                             " AND (verification_result IS NULL OR verification_result <> ?))";
+      aParams.addValue (EInboundStatus.FORWARDED.getID ())
+             .addValue (EPeppolMLSType.FAILURE_ONLY.getID ())
+             .addValue (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded ())
+             .addValue (EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded ())
+             .addValue (EPredefinedDocumentTypeIdentifier.APPLICATIONRESPONSE_FDC_PEPPOL_EU_POACC_TRNS_MLR_3.getURIEncoded ())
+             .addValue (EPredefinedProcessIdentifier.BIS3_MLR.getURIEncoded ())
+             .addValue (EVerificationResult.REJECTED.getID ());
+    }
 
     final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
                                                                       " WHERE status IN (?,?,?) AND reporting_status IN (?,?)" +
+                                                                      sMlsPendingCondition +
                                                                       " ORDER BY completed_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize +
                                                                       " FOR UPDATE SKIP LOCKED",
-                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.REJECTED.getID (),
-                                                                                                                 EInboundStatus.FORWARDED.getID (),
-                                                                                                                 EInboundStatus.PERMANENTLY_FAILED.getID (),
-                                                                                                                 EReportingStatus.REPORTED.getID (),
-                                                                                                                 EReportingStatus.EXCLUDED.getID ()));
+                                                                      aParams);
     final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)

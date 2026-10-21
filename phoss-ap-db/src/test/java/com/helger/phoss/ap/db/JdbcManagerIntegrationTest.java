@@ -1026,7 +1026,7 @@ public final class JdbcManagerIntegrationTest
     aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED);
     aMgr.updateReportingStatus (sID, EReportingStatus.REPORTED);
 
-    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100);
+    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100, false);
     assertNotNull (aList);
     assertTrue (aList.containsAny (x -> x.getID ().equals (sID)));
   }
@@ -1042,9 +1042,71 @@ public final class JdbcManagerIntegrationTest
     aMgr.updateReportingStatus (sID, EReportingStatus.EXCLUDED);
 
     // Transactions excluded from Peppol Reporting must be archived as well
-    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100);
+    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100, false);
     assertNotNull (aList);
     assertTrue (aList.containsAny (x -> x.getID ().equals (sID)));
+  }
+
+  @Test
+  public void testInboundGetAllForArchivalExcludesPendingMls ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED);
+    aMgr.updateReportingStatus (sID, EReportingStatus.REPORTED);
+
+    // Forwarded, but no MLS yet
+    assertFalse (aMgr.getAllForArchival (100, true).containsAny (x -> x.getID ().equals (sID)));
+
+    // Once the MLS was determined, it may be archived
+    aMgr.updateMlsFields (sID, EPeppolMLSResponseCode.ACKNOWLEDGING, null);
+    assertTrue (aMgr.getAllForArchival (100, true).containsAny (x -> x.getID ().equals (sID)));
+  }
+
+  @Test
+  public void testInboundGetAllForArchivalPendingMlsWithoutWatchdog ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED);
+    aMgr.updateReportingStatus (sID, EReportingStatus.REPORTED);
+
+    assertTrue (aMgr.getAllForArchival (100, false).containsAny (x -> x.getID ().equals (sID)));
+  }
+
+  @Test
+  public void testInboundGetAllForArchivalWithoutMlsExpected ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+
+    // Documents that never get a positive MLS must not wait for one
+    final String sFailureOnlyID = _createInboundTx ("busdox-docid-qns::urn:test:invoice",
+                                                    "cenbii-procid-ubl::urn:test:process",
+                                                    EPeppolMLSType.FAILURE_ONLY);
+    final String sMlsID = _createInboundTx (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
+                                            EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded ());
+    final String sMlrID = _createInboundTx (EPredefinedDocumentTypeIdentifier.APPLICATIONRESPONSE_FDC_PEPPOL_EU_POACC_TRNS_MLR_3.getURIEncoded (),
+                                            EPredefinedProcessIdentifier.BIS3_MLR.getURIEncoded ());
+    final String sRejectedForwardedID = _createInboundTx ();
+    aMgr.updateVerificationResult (sRejectedForwardedID, EVerificationResult.REJECTED, null);
+    for (final String sID : new String [] { sFailureOnlyID, sMlsID, sMlrID, sRejectedForwardedID })
+    {
+      aMgr.updateStatusCompleted (sID, EInboundStatus.FORWARDED);
+      aMgr.updateReportingStatus (sID, EReportingStatus.REPORTED);
+    }
+
+    // Not forwarded at all
+    final String sRejectedID = _createInboundTx ();
+    aMgr.updateStatusCompleted (sRejectedID, EInboundStatus.REJECTED);
+    aMgr.updateReportingStatus (sRejectedID, EReportingStatus.REPORTED);
+
+    final ICommonsList <IInboundTransaction> aList = aMgr.getAllForArchival (100, true);
+    for (final String sID : new String [] { sFailureOnlyID, sMlsID, sMlrID, sRejectedForwardedID, sRejectedID })
+      assertTrue (sID, aList.containsAny (x -> x.getID ().equals (sID)));
   }
 
   @Test

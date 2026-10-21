@@ -402,10 +402,14 @@ public interface IInboundTransactionManager
    *
    * @param nBatchSize
    *        Maximum number of transactions to return. Must be &gt; 0.
+   * @param bExcludeMlsPending
+   *        <code>true</code> to exclude forwarded business documents still waiting for their MLS
+   *        (see {@link #getAllForMlsApiTimeout(int, OffsetDateTime)}). Required while the MLS
+   *        watchdog is active, because it doesn't look into the archive.
    * @return The list of transactions. Never <code>null</code>.
    */
   @NonNull
-  ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative int nBatchSize);
+  ICommonsList <IInboundTransaction> getAllForArchival (@Nonnegative int nBatchSize, boolean bExcludeMlsPending);
 
   /**
    * Get all inbound business document transactions (excluding MLS messages) for which no MLS

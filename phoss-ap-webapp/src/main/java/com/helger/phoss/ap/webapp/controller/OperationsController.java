@@ -19,6 +19,7 @@ package com.helger.phoss.ap.webapp.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -27,21 +28,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.helger.base.state.ESuccess;
+import com.helger.collection.commons.ICommonsList;
+import com.helger.collection.commons.ICommonsMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Collections;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
+import com.helger.phoss.ap.api.ITransactionAuditManager;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.dto.CircuitBreakerResponse;
 import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
 import com.helger.phoss.ap.api.dto.OutboundTransactionResponse;
+import com.helger.phoss.ap.api.dto.TimelineEventItem;
+import com.helger.phoss.ap.api.dto.TransactionTimelineResponse;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.ITransactionAuditItem;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.CircuitBreakerManager;
+
 import com.helger.phoss.ap.core.inbound.InboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.config.OpenApiConfig;
@@ -68,6 +80,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class OperationsController
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (OperationsController.class);
+
+  private static String _resolveUser (@Nullable final String sHeaderUser)
+  {
+    if (sHeaderUser != null && !sHeaderUser.trim ().isEmpty ())
+      return sHeaderUser.trim ();
+    return "SYSTEM";
+  }
 
   /**
    * Get historical inbound transactions with pagination.
@@ -97,6 +116,22 @@ public class OperationsController
    *
    * @return The count of active (non-archived) inbound transactions.
    */
+  /**
+   * Get map of replayed inbound transactions and their replay counts.
+   *
+   * @return Map of SBDH instance ID to replay count.
+   */
+  @GetMapping ("/inbound/replayed-summary")
+  @Operation (summary = "Get map of replayed inbound transactions and their replay counts",
+              description = "Returns a map of SBDH Instance ID to replay count for all inbound transactions that have been replayed.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Summary returned") })
+  public ResponseEntity <Map <String, Integer>> getInboundReplayedSummary ()
+  {
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    final ICommonsMap <String, Integer> aCounts = aAuditMgr != null ? aAuditMgr.getReplayCountsBySbdhInstanceID () : null;
+    return ResponseEntity.ok (aCounts != null ? new HashMap <> (aCounts) : Collections.emptyMap ());
+  }
+
   @GetMapping ("/inbound/size")
   @Operation (summary = "Get total count of active inbound transactions",
               description = "Returns the count of active (non-archived) inbound transactions.")
@@ -146,6 +181,8 @@ public class OperationsController
    *
    * @param sbdhInstanceID
    *        The SBDH Instance ID of the transaction to replay.
+   * @param sAuditUser
+   *        Operator username, ID, or email passed in the X-Audit-User header.
    * @return 200 on success, 404 if not found, 500 on failure.
    */
   @PostMapping ("/inbound/{sbdhInstanceID}/replay")
@@ -154,12 +191,32 @@ public class OperationsController
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction replay initiated"),
                    @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content) })
   public ResponseEntity <InboundTransactionResponse> replayInbound (@Parameter (description = "SBDH Instance ID",
-                                                                                required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+                                                                                required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID,
+                                                                    @RequestHeader (name = "X-Audit-User",
+                                                                                    required = false) final String sAuditUser)
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
+
+    final String sUser = _resolveUser (sAuditUser);
+
+    // Record operator audit event
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    if (aAuditMgr != null)
+    {
+      aAuditMgr.recordAudit (aTx.getID (),
+                             sbdhInstanceID,
+                             "INBOUND",
+                             "OPERATOR_ACTION",
+                             "REPLAY_INBOUND",
+                             aTx.getStatus () != null ? aTx.getStatus ().getID () : null,
+                             null,
+                             Integer.valueOf (aTx.getAttemptCount ()),
+                             sUser,
+                             "Manual operator replay initiated");
+    }
 
     final ESuccess eSuccess = InboundOrchestrator.forwardDocument ("API Replay: ", aTx);
     final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
@@ -168,6 +225,11 @@ public class OperationsController
     if (eSuccess.isSuccess ())
       return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aFinalTx));
     return ResponseEntity.internalServerError ().body (InboundTransactionResponse.fromDomain (aFinalTx));
+  }
+
+  public ResponseEntity <InboundTransactionResponse> replayInbound (final String sbdhInstanceID)
+  {
+    return replayInbound (sbdhInstanceID, null);
   }
 
   /**
@@ -191,7 +253,9 @@ public class OperationsController
                                  description = "Re-verification or forwarding failed",
                                  content = @Content) })
   public ResponseEntity <InboundTransactionResponse> reverifyAndForwardInbound (@Parameter (description = "SBDH Instance ID",
-                                                                                            required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+                                                                                            required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID,
+                                                                                @RequestHeader (name = "X-Audit-User",
+                                                                                                required = false) final String sAuditUser)
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
     // Deliberately not looking into the archive - an archived transaction is done
@@ -214,6 +278,24 @@ public class OperationsController
       return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aTx));
     }
 
+    final String sUser = _resolveUser (sAuditUser);
+
+    // Record operator audit event
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    if (aAuditMgr != null)
+    {
+      aAuditMgr.recordAudit (aTx.getID (),
+                             sbdhInstanceID,
+                             "INBOUND",
+                             "OPERATOR_ACTION",
+                             "REVERIFY_AND_FORWARD_INBOUND",
+                             aTx.getStatus ().getID (),
+                             null,
+                             Integer.valueOf (aTx.getAttemptCount ()),
+                             sUser,
+                             "Manual operator reverify and forward initiated");
+    }
+
     final ESuccess eSuccess = InboundOrchestrator.resumeDeferredInboundDocument ("API ReverifyAndForward: ", aTx);
     final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
     final IInboundTransaction aFinalTx = aUpdatedTx != null ? aUpdatedTx : aTx;
@@ -221,6 +303,43 @@ public class OperationsController
     if (eSuccess.isSuccess ())
       return ResponseEntity.ok (InboundTransactionResponse.fromDomain (aFinalTx));
     return ResponseEntity.internalServerError ().body (InboundTransactionResponse.fromDomain (aFinalTx));
+  }
+
+  public ResponseEntity <InboundTransactionResponse> reverifyAndForwardInbound (final String sbdhInstanceID)
+  {
+    return reverifyAndForwardInbound (sbdhInstanceID, null);
+  }
+
+  /**
+   * Get the full lifecycle and audit timeline for an inbound transaction.
+   *
+   * @param sbdhInstanceID
+   *        The SBDH Instance ID of the transaction.
+   * @return 200 with the timeline, or 404 if not found.
+   */
+  @GetMapping ("/inbound/{sbdhInstanceID}/timeline")
+  @Operation (summary = "Get inbound transaction timeline",
+              description = "Returns the chronological lifecycle status transitions and operator audit history for an inbound transaction.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Timeline returned"),
+                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content) })
+  public ResponseEntity <TransactionTimelineResponse> getInboundTimeline (@Parameter (description = "SBDH Instance ID",
+                                                                                      required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    final ICommonsList <ITransactionAuditItem> aAuditItems = aAuditMgr != null ? aAuditMgr.getTimelineBySbdhInstanceID (sbdhInstanceID)
+                                                                               : null;
+
+    if (aTx == null && (aAuditItems == null || aAuditItems.isEmpty ()))
+      return ResponseEntity.notFound ().build ();
+
+    final List <TimelineEventItem> aEvents = new ArrayList <> ();
+    if (aAuditItems != null)
+      for (final ITransactionAuditItem aItem : aAuditItems)
+        aEvents.add (new TimelineEventItem (aItem));
+
+    return ResponseEntity.ok (new TransactionTimelineResponse (sbdhInstanceID, "INBOUND", aEvents));
   }
 
   /**
@@ -293,6 +412,38 @@ public class OperationsController
       LOGGER.error ("Failed to read payload for outbound transaction " + sbdhInstanceID, ex);
       return ResponseEntity.notFound ().build ();
     }
+  }
+
+  /**
+   * Get the full lifecycle and audit timeline for an outbound transaction.
+   *
+   * @param sbdhInstanceID
+   *        The SBDH Instance ID of the transaction.
+   * @return 200 with the timeline, or 404 if not found.
+   */
+  @GetMapping ("/outbound/{sbdhInstanceID}/timeline")
+  @Operation (summary = "Get outbound transaction timeline",
+              description = "Returns the chronological lifecycle status transitions and operator audit history for an outbound transaction.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Timeline returned"),
+                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content) })
+  public ResponseEntity <TransactionTimelineResponse> getOutboundTimeline (@Parameter (description = "SBDH Instance ID",
+                                                                                        required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
+  {
+    final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final IOutboundTransaction aTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+    final ITransactionAuditManager aAuditMgr = APJdbcMetaManager.getTransactionAuditMgr ();
+    final ICommonsList <ITransactionAuditItem> aAuditItems = aAuditMgr != null ? aAuditMgr.getTimelineBySbdhInstanceID (sbdhInstanceID)
+                                                                               : null;
+
+    if (aTx == null && (aAuditItems == null || aAuditItems.isEmpty ()))
+      return ResponseEntity.notFound ().build ();
+
+    final List <TimelineEventItem> aEvents = new ArrayList <> ();
+    if (aAuditItems != null)
+      for (final ITransactionAuditItem aItem : aAuditItems)
+        aEvents.add (new TimelineEventItem (aItem));
+
+    return ResponseEntity.ok (new TransactionTimelineResponse (sbdhInstanceID, "OUTBOUND", aEvents));
   }
 
   /**

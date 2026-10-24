@@ -245,6 +245,24 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
 
   /** {@inheritDoc} */
   @NonNull
+  public ESuccess claimForRetry (@NonNull final String sID)
+  {
+    ValueEnforcer.notNull (sID, "ID");
+
+    // "next_retry_dt" keeps an instance with an old batch from claiming a transaction that was
+    // retried and failed again in the meantime
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
+                                                                      " SET status=?" +
+                                                                      " WHERE id=? AND status=? AND next_retry_dt <= NOW()",
+                                                                      new ConstantPreparedStatementDataProvider (EOutboundStatus.SENDING.getID (),
+                                                                                                                 sID,
+                                                                                                                 EOutboundStatus.FAILED.getID ()));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
   public ESuccess updateStatusAndRetry (@NonNull final String sID,
                                         @NonNull final EOutboundStatus eStatus,
                                         @Nonnegative final int nAttemptCount,

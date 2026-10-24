@@ -188,6 +188,39 @@ public interface IInboundTransactionManager
   ESuccess updateStatus (@NonNull String sID, @NonNull EInboundStatus eStatus);
 
   /**
+   * Atomically claim a transaction returned by {@link #getAllForRetry(int)}: change its status from
+   * {@link EInboundStatus#FORWARD_FAILED} to {@link EInboundStatus#FORWARDING}, if it is still
+   * failed and due for a retry.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if this call claimed the transaction.
+   * @since 0.13.2
+   */
+  @NonNull
+  ESuccess claimForRetry (@NonNull String sID);
+
+  /**
+   * Atomically claim a transaction returned by {@link #getAllForVerificationRetry(int)}: move its
+   * next retry to the lease end, if it is still deferred and due. The status stays unchanged.
+   * <p>
+   * The lease must be longer than the re-verification takes - until the status leaves
+   * {@link EInboundStatus#VERIFICATION_DEFERRED}, an expired lease lets another caller claim the
+   * transaction again. The lease end is compared with the database time, so a clock difference
+   * between application and database shortens or extends it.
+   * </p>
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param aLeaseEndDT
+   *        Until when no other caller may claim the transaction. Never <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if this call claimed the transaction.
+   * @since 0.13.2
+   */
+  @NonNull
+  ESuccess claimForVerificationRetry (@NonNull String sID, @NonNull OffsetDateTime aLeaseEndDT);
+
+  /**
    * Update the status after a failed attempt with retry information.
    *
    * @param sID
@@ -343,7 +376,8 @@ public interface IInboundTransactionManager
   ICommonsList <IInboundTransaction> getAllInProcessing ();
 
   /**
-   * Get failed inbound transactions eligible for retry.
+   * Get failed inbound transactions eligible for retry. They are not locked - claim each one with
+   * {@link #claimForRetry(String)} before processing it.
    *
    * @param nBatchSize
    *        Maximum number of transactions to return. Must be &gt; 0.
@@ -354,6 +388,8 @@ public interface IInboundTransactionManager
 
   /**
    * Get inbound transactions with a deferred verification that are eligible for re-verification.
+   * They are not locked - claim each one with
+   * {@link #claimForVerificationRetry(String, OffsetDateTime)} before processing it.
    *
    * @param nBatchSize
    *        Maximum number of transactions to return. Must be &gt; 0.

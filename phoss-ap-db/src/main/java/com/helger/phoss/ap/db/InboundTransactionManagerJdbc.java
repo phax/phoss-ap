@@ -291,6 +291,40 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
 
   /** {@inheritDoc} */
   @NonNull
+  public ESuccess claimForRetry (@NonNull final String sID)
+  {
+    ValueEnforcer.notNull (sID, "ID");
+
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
+                                                                      " SET status=?" +
+                                                                      " WHERE id=? AND status=? AND next_retry_dt <= NOW()",
+                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARDING.getID (),
+                                                                                                                 sID,
+                                                                                                                 EInboundStatus.FORWARD_FAILED.getID ()));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
+  public ESuccess claimForVerificationRetry (@NonNull final String sID, @NonNull final OffsetDateTime aLeaseEndDT)
+  {
+    ValueEnforcer.notNull (sID, "ID");
+    ValueEnforcer.notNull (aLeaseEndDT, "LeaseEndDT");
+
+    // The status stays - moving "next_retry_dt" out of the "<= NOW()" window is the claim
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
+                                                                      " SET next_retry_dt=?" +
+                                                                      " WHERE id=? AND status=? AND next_retry_dt <= NOW()",
+                                                                      new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aLeaseEndDT),
+                                                                                                                 sID,
+                                                                                                                 EInboundStatus.VERIFICATION_DEFERRED.getID ()));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
   public ESuccess updateStatusAndRetry (@NonNull final String sID,
                                         @NonNull final EInboundStatus eStatus,
                                         @Nonnegative final int nAttemptCount,

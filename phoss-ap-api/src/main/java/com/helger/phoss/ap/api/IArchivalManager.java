@@ -37,7 +37,7 @@ public interface IArchivalManager
    *
    * @param sID
    *        The outbound transaction to archive. May not be <code>null</code>.
-   * @return {@link ESuccess}
+   * @return {@link ESuccess#SUCCESS} if this call archived the transaction.
    */
   @NonNull
   ESuccess archiveOutboundTransaction (@NonNull String sID);
@@ -48,7 +48,7 @@ public interface IArchivalManager
    *
    * @param sID
    *        The inbound transaction to archive. May not be <code>null</code>.
-   * @return {@link ESuccess}
+   * @return {@link ESuccess#SUCCESS} if this call archived the transaction.
    */
   @NonNull
   ESuccess archiveInboundTransaction (@NonNull String sID);

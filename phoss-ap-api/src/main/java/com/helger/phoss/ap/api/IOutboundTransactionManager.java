@@ -171,6 +171,19 @@ public interface IOutboundTransactionManager
   ESuccess updateStatus (@NonNull String sID, @NonNull EOutboundStatus eStatus);
 
   /**
+   * Atomically claim a transaction returned by {@link #getAllForRetry(int)}: change its status from
+   * {@link EOutboundStatus#FAILED} to {@link EOutboundStatus#SENDING}, if it is still failed and due
+   * for a retry.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if this call claimed the transaction.
+   * @since 0.13.2
+   */
+  @NonNull
+  ESuccess claimForRetry (@NonNull String sID);
+
+  /**
    * Update the status after a failed attempt with retry information.
    *
    * @param sID
@@ -247,7 +260,8 @@ public interface IOutboundTransactionManager
   ICommonsList <IOutboundTransaction> getAllInTransmission ();
 
   /**
-   * Get failed outbound transactions eligible for retry.
+   * Get failed outbound transactions eligible for retry. They are not locked - claim each one with
+   * {@link #claimForRetry(String)} before processing it.
    *
    * @param nBatchSize
    *        Maximum number of transactions to return.

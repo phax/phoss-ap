@@ -72,8 +72,8 @@ public final class ArchivalScheduler
           LOGGER.info ("Archiving " + aTransactions.size () + " outbound transactions");
           for (final IOutboundTransaction aTx : aTransactions)
           {
-            aArchivalMgr.archiveOutboundTransaction (aTx.getID ());
-            nArchived++;
+            if (aArchivalMgr.archiveOutboundTransaction (aTx.getID ()).isSuccess ())
+              nArchived++;
           }
         }
         else
@@ -123,8 +123,8 @@ public final class ArchivalScheduler
           LOGGER.info ("Archiving " + aTransactions.size () + " inbound transactions");
           for (final IInboundTransaction aTx : aTransactions)
           {
-            aArchivalMgr.archiveInboundTransaction (aTx.getID ());
-            nArchived++;
+            if (aArchivalMgr.archiveInboundTransaction (aTx.getID ()).isSuccess ())
+              nArchived++;
           }
         }
         else

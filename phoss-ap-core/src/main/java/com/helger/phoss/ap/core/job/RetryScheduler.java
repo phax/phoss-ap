@@ -83,6 +83,18 @@ public final class RetryScheduler
 
           for (final IOutboundTransaction aTx : aTransactions)
           {
+            // The row locks of the SELECT end with its commit, so another instance may hold the
+            // same transaction - only the one that claims it may send it
+            if (aOutboundMgr.claimForRetry (aTx.getID ()).isFailure ())
+            {
+              if (LOGGER.isDebugEnabled ())
+                LOGGER.debug (sLogPrefix +
+                              "Outbound transaction '" +
+                              aTx.getID () +
+                              "' is no longer eligible for retry (claimed by another instance) - skipping");
+              continue;
+            }
+
             nProcessed++;
             try
             {
@@ -145,9 +157,23 @@ public final class RetryScheduler
         {
           LOGGER.info ("Re-verifying " + aTransactions.size () + " inbound transactions");
           final String sLogPrefix = "[RetryVerification] ";
+          final Duration aLease = APCoreConfig.getVerificationDeferredRetryInterval ();
 
           for (final IInboundTransaction aInboundTx : aTransactions)
           {
+            final OffsetDateTime aLeaseEndDT = APBasicMetaManager.getTimestampMgr ()
+                                                                 .getCurrentDateTimeUTC ()
+                                                                 .plus (aLease);
+            if (aInboundMgr.claimForVerificationRetry (aInboundTx.getID (), aLeaseEndDT).isFailure ())
+            {
+              if (LOGGER.isDebugEnabled ())
+                LOGGER.debug (sLogPrefix +
+                              "Inbound transaction '" +
+                              aInboundTx.getID () +
+                              "' is no longer eligible for re-verification (claimed by another instance) - skipping");
+              continue;
+            }
+
             nProcessed++;
             if (InboundOrchestrator.resumeDeferredInboundDocument (sLogPrefix, aInboundTx).isFailure ())
             {
@@ -205,6 +231,16 @@ public final class RetryScheduler
 
           for (final IInboundTransaction aInboundTx : aTransactions)
           {
+            if (aInboundMgr.claimForRetry (aInboundTx.getID ()).isFailure ())
+            {
+              if (LOGGER.isDebugEnabled ())
+                LOGGER.debug (sLogPrefix +
+                              "Inbound transaction '" +
+                              aInboundTx.getID () +
+                              "' is no longer eligible for retry (claimed by another instance) - skipping");
+              continue;
+            }
+
             nProcessed++;
             // Re-forward using the original InboundOrchestrator logic
             if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())

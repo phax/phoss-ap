@@ -17,9 +17,12 @@
 package com.helger.phoss.ap.core.startup;
 
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.helger.base.string.StringHelper;
 import com.helger.diagnostics.error.list.ErrorList;
+import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.phoss.ap.api.codelist.EAPStartupCheckPhase;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.core.APCoreConfig;
@@ -27,7 +30,9 @@ import com.helger.phoss.ap.core.APCoreConfig;
 /**
  * Check that the API token protecting <code>/api/**</code> is configured. Without it, everybody who
  * can reach the port can submit documents, and they are sent signed with the AP certificate. A
- * short token is only a warning.
+ * short token is only a warning. The development token shipped in the default
+ * <code>application.properties</code> is logged as an error in the Peppol production network and
+ * reported as a warning otherwise - it does not prevent the start.
  *
  * @author Philip Helger
  * @since 0.13.3
@@ -38,6 +43,11 @@ public class StartupCheckApiToken extends AbstractAPStartupCheck
 
   /** Below this length a token is reported as a warning */
   public static final int MIN_TOKEN_LENGTH = 16;
+
+  /** The token from the default application.properties */
+  public static final String DEVELOPMENT_TOKEN = "phoss-ap-development-token";
+
+  private static final Logger LOGGER = LoggerFactory.getLogger (StartupCheckApiToken.class);
 
   public StartupCheckApiToken ()
   {
@@ -53,6 +63,22 @@ public class StartupCheckApiToken extends AbstractAPStartupCheck
                 "The API token (" +
                          APConfigurationProperties.PHASE4_API_REQUIREDTOKEN +
                          ") is not configured, so '/api/**' is open to everybody who can reach the port. Configure a strong, random token.");
+      return;
+    }
+
+    if (DEVELOPMENT_TOKEN.equals (sToken))
+    {
+      final String sMsg = "The API token (" +
+                          APConfigurationProperties.PHASE4_API_REQUIREDTOKEN +
+                          ") is still the publicly known development token from the default configuration. Configure a strong, random token.";
+      final EPeppolNetwork ePeppolStage = APCoreConfig.getPeppolStage ();
+      if (ePeppolStage != null && ePeppolStage.isProduction ())
+      {
+        // Deliberately not a startup check error - logged as an error, but the AP still starts
+        LOGGER.error ("Startup check '" + CHECK_NAME + "': " + sMsg);
+      }
+      else
+        addWarning (aErrors, sMsg);
       return;
     }
 

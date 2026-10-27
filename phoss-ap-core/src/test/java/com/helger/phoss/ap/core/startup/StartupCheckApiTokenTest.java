@@ -52,6 +52,26 @@ public final class StartupCheckApiTokenTest
   }
 
   @Test
+  public void testDevelopmentToken ()
+  {
+    // A warning in the test network
+    assertOneWarning (m_aCheck,
+                      performCheck (m_aCheck,
+                                    Map.of (APConfigurationProperties.PHASE4_API_REQUIREDTOKEN,
+                                            StartupCheckApiToken.DEVELOPMENT_TOKEN,
+                                            APConfigurationProperties.PEPPOL_STAGE,
+                                            "test")));
+    // Only logged as an error in the production network - the start is not prevented
+    assertErrors (m_aCheck,
+                  0,
+                  performCheck (m_aCheck,
+                                Map.of (APConfigurationProperties.PHASE4_API_REQUIREDTOKEN,
+                                        StartupCheckApiToken.DEVELOPMENT_TOKEN,
+                                        APConfigurationProperties.PEPPOL_STAGE,
+                                        "prod")));
+  }
+
+  @Test
   public void testShort ()
   {
     assertOneWarning (m_aCheck,

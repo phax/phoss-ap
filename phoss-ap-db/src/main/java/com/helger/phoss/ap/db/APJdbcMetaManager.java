@@ -19,6 +19,7 @@ package com.helger.phoss.ap.db;
 import java.util.EnumSet;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,33 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   {}
 
   /**
+   * @param eDBType
+   *        The database type to check. May be <code>null</code>.
+   * @return <code>true</code> if the database type is supported by phoss AP.
+   * @since 0.13.3
+   */
+  public static boolean isAllowedDatabaseType (@Nullable final EDatabaseSystemType eDBType)
+  {
+    return eDBType != null && ALLOWED_DB_TYPES.contains (eDBType);
+  }
+
+  /**
+   * @param sConfiguredDBType
+   *        The configured database type as is. May be <code>null</code>.
+   * @return The error message for a missing or unsupported database type. Never <code>null</code>.
+   * @since 0.13.3
+   */
+  @NonNull
+  public static String getInvalidDatabaseTypeMessage (@Nullable final String sConfiguredDBType)
+  {
+    return "The database type MUST be provided and MUST be one of " +
+           StringImplode.imploder ().source (ALLOWED_DB_TYPES, EDatabaseSystemType::getID).separator (", ").build () +
+           " - provided value is '" +
+           sConfiguredDBType +
+           "'";
+  }
+
+  /**
    * @return The global singleton instance of this manager. Never <code>null</code>.
    */
   @NonNull
@@ -97,17 +125,8 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
 
       // Resolve database type
       final EDatabaseSystemType eDBType = m_aJdbcConfig.getJdbcDatabaseSystemType ();
-      if (eDBType == null || !ALLOWED_DB_TYPES.contains (eDBType))
-      {
-        throw new IllegalStateException ("The database type MUST be provided and MUST be one of " +
-                                         StringImplode.imploder ()
-                                                      .source (ALLOWED_DB_TYPES, EDatabaseSystemType::getID)
-                                                      .separator (", ")
-                                                      .build () +
-                                         " - provided value is '" +
-                                         m_aJdbcConfig.getJdbcDatabaseType () +
-                                         "'");
-      }
+      if (!isAllowedDatabaseType (eDBType))
+        throw new IllegalStateException (getInvalidDatabaseTypeMessage (m_aJdbcConfig.getJdbcDatabaseType ()));
 
       // Run Flyway
       final FlywayConfiguration aFlywayConfig = new APFlywayConfigurationBuilder (aConfig, m_aJdbcConfig).build ();

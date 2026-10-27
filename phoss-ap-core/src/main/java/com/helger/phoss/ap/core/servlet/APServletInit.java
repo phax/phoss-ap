@@ -335,6 +335,9 @@ public class APServletInit
     _initAS4 ();
     _initPeppolNetwork ();
 
+    // Load the document verifiers early, so that the POST_INIT checks can verify them
+    APCoreMetaManager.initVerifierSPIs ();
+
     // Run the checks that need the AS4 configuration, e.g. the key store and the AP certificate
     APStartupCheckRunner.performAllChecksOrThrow (EAPStartupCheckPhase.POST_INIT);
 

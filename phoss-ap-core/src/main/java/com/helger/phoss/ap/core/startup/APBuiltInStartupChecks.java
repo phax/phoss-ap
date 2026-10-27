@@ -50,11 +50,15 @@ public final class APBuiltInStartupChecks
                                     new StartupCheckPeppolReceiverCheck (),
                                     new StartupCheckPhase4EndpointAddress (),
                                     new StartupCheckApiToken (),
+                                    new StartupCheckDatabase (),
+                                    new StartupCheckStorage (),
+                                    new StartupCheckForwarding (),
                                     new StartupCheckRetryScheduler (),
                                     new StartupCheckArchivalScheduler (),
                                     new StartupCheckCleanupScheduler (),
                                     new StartupCheckAS4KeyStore (),
                                     new StartupCheckPeppolAPCertificate (),
-                                    new StartupCheckPeppolSeatIDCertificate ());
+                                    new StartupCheckPeppolSeatIDCertificate (),
+                                    new StartupCheckDocumentVerifiers ());
   }
 }

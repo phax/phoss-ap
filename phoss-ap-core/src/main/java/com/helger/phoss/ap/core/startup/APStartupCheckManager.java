@@ -33,10 +33,10 @@ import com.helger.phoss.ap.api.spi.IAPStartupCheckSPI;
 
 /**
  * Manager for the startup checks. The built-in checks come first, in the order of
- * {@link APBuiltInStartupChecks#getAll()}, followed by the checks loaded via
- * {@link ServiceLoader}, ordered by their name - the {@link ServiceLoader} order is not part of
- * its contract. Manually registered checks come last, in registration order - also if they were
- * registered before {@link #initSPI()} was called.
+ * {@link APBuiltInStartupChecks#getAll()}, followed by the checks loaded via {@link ServiceLoader},
+ * ordered by their name - the {@link ServiceLoader} order is not part of its contract. Manually
+ * registered checks come last, in registration order - also if they were registered before
+ * {@link #initSPI()} was called.
  *
  * @author Philip Helger
  * @since 0.13.3
@@ -45,8 +45,8 @@ public final class APStartupCheckManager
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APStartupCheckManager.class);
 
-  private static final ICommonsList <IAPStartupCheckSPI> s_aChecks = new CommonsArrayList <> ();
-  private static final ICommonsList <IAPStartupCheckSPI> s_aManualChecks = new CommonsArrayList <> ();
+  private static final ICommonsList <IAPStartupCheckSPI> CHECKS = new CommonsArrayList <> ();
+  private static final ICommonsList <IAPStartupCheckSPI> MANUALS = new CommonsArrayList <> ();
   private static boolean s_bInitialized = false;
 
   private APStartupCheckManager ()
@@ -63,15 +63,17 @@ public final class APStartupCheckManager
     s_bInitialized = true;
 
     for (final IAPStartupCheckSPI aCheck : APBuiltInStartupChecks.getAll ())
-      s_aChecks.add (aCheck);
+      CHECKS.add (aCheck);
 
+    // Load all SPIs and sort by check name for consistency
     final ICommonsList <IAPStartupCheckSPI> aSPIChecks = new CommonsArrayList <> ();
     for (final IAPStartupCheckSPI aCheck : ServiceLoader.load (IAPStartupCheckSPI.class))
       aSPIChecks.add (aCheck);
     aSPIChecks.sort (Comparator.comparing (IAPStartupCheckSPI::getCheckName));
+
     for (final IAPStartupCheckSPI aCheck : aSPIChecks)
     {
-      s_aChecks.add (aCheck);
+      CHECKS.add (aCheck);
       LOGGER.info ("Loaded startup check '" + aCheck.getCheckName () + "': " + aCheck.getClass ().getName ());
     }
   }
@@ -86,7 +88,7 @@ public final class APStartupCheckManager
   public static void registerCheck (@NonNull final IAPStartupCheckSPI aCheck)
   {
     ValueEnforcer.notNull (aCheck, "Check");
-    s_aManualChecks.add (aCheck);
+    MANUALS.add (aCheck);
   }
 
   /**
@@ -97,8 +99,8 @@ public final class APStartupCheckManager
   @ReturnsMutableCopy
   public static ICommonsList <IAPStartupCheckSPI> getAllChecks ()
   {
-    final ICommonsList <IAPStartupCheckSPI> ret = s_aChecks.getClone ();
-    ret.addAll (s_aManualChecks);
+    final ICommonsList <IAPStartupCheckSPI> ret = CHECKS.getClone ();
+    ret.addAll (MANUALS);
     return ret;
   }
 
@@ -108,8 +110,8 @@ public final class APStartupCheckManager
   @VisibleForTesting
   static void reset ()
   {
-    s_aChecks.clear ();
-    s_aManualChecks.clear ();
+    CHECKS.clear ();
+    MANUALS.clear ();
     s_bInitialized = false;
   }
 }

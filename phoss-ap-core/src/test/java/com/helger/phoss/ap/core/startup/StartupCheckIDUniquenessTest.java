@@ -14,31 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.helger.phoss.ap.core;
+package com.helger.phoss.ap.core.startup;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 
 import com.helger.annotation.Nonempty;
-import com.helger.base.exception.InitializationException;
 import com.helger.collection.commons.CommonsArrayList;
+import com.helger.diagnostics.error.list.ErrorList;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IProcessIdentifier;
 import com.helger.phoss.ap.api.mgr.IDocumentForwarder;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.spi.IDocumentForwarderProviderSPI;
+import com.helger.phoss.ap.api.spi.IDocumentVerifier;
 import com.helger.phoss.ap.api.spi.IInboundDocumentVerifierSPI;
 import com.helger.phoss.ap.api.spi.IOutboundDocumentVerifierSPI;
 
 /**
- * Test class for the ID uniqueness checks of {@link APCoreMetaManager}. See
+ * Test class for the ID uniqueness checks of {@link StartupCheckDocumentVerifiers} and
+ * {@link StartupCheckForwarding}. See
  * <a href="https://github.com/phax/phoss-ap/issues/80">issue 80</a>.
  *
  * @author Philip Helger
  */
-public final class APCoreMetaManagerIDUniquenessTest
+public final class StartupCheckIDUniquenessTest
 {
   /** A verifier that only carries an ID - the verification itself is irrelevant here */
   private static class MockInboundVerifier implements IInboundDocumentVerifierSPI
@@ -124,14 +126,28 @@ public final class APCoreMetaManagerIDUniquenessTest
     }
   }
 
+  private static int _verifierErrors (@NonNull final Iterable <? extends IDocumentVerifier> aVerifiers)
+  {
+    final ErrorList aErrors = new ErrorList ();
+    StartupCheckDocumentVerifiers.checkVerifierIDsAreUnique (aVerifiers, aErrors);
+    return aErrors.size ();
+  }
+
+  private static int _providerErrors (@NonNull final Iterable <? extends IDocumentForwarderProviderSPI> aProviders)
+  {
+    final ErrorList aErrors = new ErrorList ();
+    StartupCheckForwarding.checkForwarderProviderIDsAreUnique (aProviders, aErrors);
+    return aErrors.size ();
+  }
+
   @Test
   public void testUniqueVerifierIDsAreAccepted ()
   {
-    APCoreMetaManager.checkVerifierIDsAreUnique (new CommonsArrayList <> (new MockInboundVerifier ("a"),
-                                                                          new OtherInboundVerifier ("b")));
+    assertEquals (0, _verifierErrors (new CommonsArrayList <> (new MockInboundVerifier ("a"),
+                                                               new OtherInboundVerifier ("b"))));
 
     // No verifier at all is fine as well
-    APCoreMetaManager.checkVerifierIDsAreUnique (new CommonsArrayList <> ());
+    assertEquals (0, _verifierErrors (new CommonsArrayList <> ()));
   }
 
   @Test
@@ -139,73 +155,41 @@ public final class APCoreMetaManagerIDUniquenessTest
   {
     // A verifier implementing both SPIs is loaded once per SPI, so the very same ID shows up twice
     // - that is not a duplicate
-    APCoreMetaManager.checkVerifierIDsAreUnique (new CommonsArrayList <> (new MockBothDirectionsVerifier ("phorm"),
-                                                                          new MockBothDirectionsVerifier ("phorm")));
+    assertEquals (0, _verifierErrors (new CommonsArrayList <> (new MockBothDirectionsVerifier ("phorm"),
+                                                               new MockBothDirectionsVerifier ("phorm"))));
   }
 
   @Test
   public void testDuplicateVerifierIDIsRejected ()
   {
-    try
-    {
-      APCoreMetaManager.checkVerifierIDsAreUnique (new CommonsArrayList <> (new MockInboundVerifier ("dup"),
-                                                                            new OtherInboundVerifier ("dup")));
-      fail ("Two different verifier classes with the same ID must be rejected");
-    }
-    catch (final InitializationException ex)
-    {
-      // expected
-    }
+    assertEquals (1, _verifierErrors (new CommonsArrayList <> (new MockInboundVerifier ("dup"),
+                                                               new OtherInboundVerifier ("dup"))));
   }
 
   @Test
   public void testEmptyVerifierIDIsRejected ()
   {
-    try
-    {
-      APCoreMetaManager.checkVerifierIDsAreUnique (new CommonsArrayList <> (new MockInboundVerifier ("")));
-      fail ("A verifier without an ID must be rejected");
-    }
-    catch (final InitializationException ex)
-    {
-      // expected
-    }
+    assertEquals (1, _verifierErrors (new CommonsArrayList <> (new MockInboundVerifier (""))));
   }
 
   @Test
   public void testUniqueForwarderProviderIDsAreAccepted ()
   {
-    APCoreMetaManager.checkForwarderProviderIDsAreUnique (new CommonsArrayList <> (new MockForwarderProvider ("a"),
-                                                                                   new OtherForwarderProvider ("b")));
-    APCoreMetaManager.checkForwarderProviderIDsAreUnique (new CommonsArrayList <> ());
+    assertEquals (0, _providerErrors (new CommonsArrayList <> (new MockForwarderProvider ("a"),
+                                                               new OtherForwarderProvider ("b"))));
+    assertEquals (0, _providerErrors (new CommonsArrayList <> ()));
   }
 
   @Test
   public void testDuplicateForwarderProviderIDIsRejected ()
   {
-    try
-    {
-      APCoreMetaManager.checkForwarderProviderIDsAreUnique (new CommonsArrayList <> (new MockForwarderProvider ("dup"),
-                                                                                     new OtherForwarderProvider ("dup")));
-      fail ("Two forwarder providers with the same ID must be rejected");
-    }
-    catch (final InitializationException ex)
-    {
-      // expected
-    }
+    assertEquals (1, _providerErrors (new CommonsArrayList <> (new MockForwarderProvider ("dup"),
+                                                               new OtherForwarderProvider ("dup"))));
   }
 
   @Test
   public void testEmptyForwarderProviderIDIsRejected ()
   {
-    try
-    {
-      APCoreMetaManager.checkForwarderProviderIDsAreUnique (new CommonsArrayList <> (new MockForwarderProvider ("")));
-      fail ("A forwarder provider without an ID must be rejected");
-    }
-    catch (final InitializationException ex)
-    {
-      // expected
-    }
+    assertEquals (1, _providerErrors (new CommonsArrayList <> (new MockForwarderProvider (""))));
   }
 }

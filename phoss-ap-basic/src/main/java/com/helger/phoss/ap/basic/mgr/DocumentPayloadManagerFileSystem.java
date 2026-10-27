@@ -36,6 +36,7 @@ import com.helger.base.exception.InitializationException;
 import com.helger.base.io.stream.StreamHelper;
 import com.helger.base.string.StringHelper;
 import com.helger.io.file.FileHelper;
+import com.helger.io.file.FilenameHelper;
 import com.helger.io.file.FileOperationManager;
 import com.helger.io.file.IFileOperationManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
@@ -107,6 +108,47 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
   }
 
   /**
+   * Make a caller-supplied filename safe to use as a single path segment under the date/hour
+   * storage directory. SBDH Instance Identifiers may contain characters that are illegal or
+   * meaningful in filesystem paths (notably {@code '/'} and spaces). Without sanitization,
+   * {@link Path#resolve(String)} treats those as nested directories and {@link Files#write} fails
+   * with {@link java.nio.file.NoSuchFileException} because only the hour directory is created.
+   * <p>
+   * Rules match {@code ForwardingFilenamePattern}: keep letters, digits, {@code '.'}, {@code '-'}
+   * and {@code '_'}; replace everything else with {@code '_'}. Then apply
+   * {@link FilenameHelper#getAsSecureValidASCIIFilename(String)} for Windows reserved names.
+   *
+   * @param sFilename
+   *        The raw filename. May not be <code>null</code>.
+   * @return A non-empty safe filename. Never <code>null</code>.
+   */
+  @NonNull
+  @Nonempty
+  static String getSafeFilename (@NonNull final String sFilename)
+  {
+    ValueEnforcer.notNull (sFilename, "Filename");
+
+    final StringBuilder aSafe = new StringBuilder (sFilename.length ());
+    for (final char c : sFilename.toCharArray ())
+      if ((c >= 'a' && c <= 'z') ||
+          (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') ||
+          c == '.' ||
+          c == '-' ||
+          c == '_')
+        aSafe.append (c);
+      else
+        aSafe.append ('_');
+
+    // Strip leading dots so the file is not hidden from pollers; fall back if nothing usable remains
+    String sSafe = StringHelper.trimStartRepeatedly (aSafe.toString (), '.');
+    sSafe = FilenameHelper.getAsSecureValidASCIIFilename (sSafe);
+    if (StringHelper.isEmpty (sSafe))
+      return "document";
+    return sSafe;
+  }
+
+  /**
    * Store a document as a file on the filesystem under a date/hour organized directory structure.
    *
    * @param sBaseDir
@@ -131,11 +173,12 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     ValueEnforcer.notNull (sFilename, "Filename");
     ValueEnforcer.notNull (aBytes, "Bytes");
 
+    final String sSafeFilename = getSafeFilename (sFilename);
     final File aEffectiveBaseDir = _getStorageDir (new File (sBaseDir), aReferenceDT);
     try
     {
       Files.createDirectories (aEffectiveBaseDir.toPath ());
-      final Path aFilePath = aEffectiveBaseDir.toPath ().resolve (sFilename);
+      final Path aFilePath = aEffectiveBaseDir.toPath ().resolve (sSafeFilename);
 
       LOGGER.info ("Storing document with " + aBytes.length + " bytes to '" + aFilePath.toString () + "'");
 
@@ -145,7 +188,7 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
     catch (final Exception ex)
     {
       throw new IllegalStateException ("Failed to store document '" +
-                                       sFilename +
+                                       sSafeFilename +
                                        "' in " +
                                        aEffectiveBaseDir.getAbsolutePath () +
                                        "'",
@@ -158,7 +201,8 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
                                          @NonNull @Nonempty final String sFilename,
                                          @NonNull @Nonempty final String sFileExt)
   {
-    File aFilePath = new File (aBaseDir, sFilename + sFileExt);
+    final String sSafeFilename = getSafeFilename (sFilename);
+    File aFilePath = new File (aBaseDir, sSafeFilename + sFileExt);
 
     // Make sure the file does not exist yet
     if (aFilePath.exists ())
@@ -167,7 +211,7 @@ public class DocumentPayloadManagerFileSystem implements IDocumentPayloadManager
       int nSuffix = 1;
       do
       {
-        aFilePath = new File (aBaseDir, sFilename + "-" + nSuffix + sFileExt);
+        aFilePath = new File (aBaseDir, sSafeFilename + "-" + nSuffix + sFileExt);
         nSuffix++;
         if (nSuffix >= MAX_UNIQUENESS_TRIES)
         {

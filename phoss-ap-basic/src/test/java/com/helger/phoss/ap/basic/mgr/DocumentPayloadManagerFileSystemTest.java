@@ -16,10 +16,18 @@
  */
 package com.helger.phoss.ap.basic.mgr;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+
+import org.junit.Test;
 
 import com.helger.io.file.FilenameHelper;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
@@ -90,5 +98,29 @@ public final class DocumentPayloadManagerFileSystemTest extends AbstractDocument
         // Ignore cleanup errors
       }
     }
+  }
+
+  @Test
+  public void testGetSafeFilenameReplacesPathSeparatorsAndSpaces ()
+  {
+    assertEquals ("IM_2026_10_4807678.sbd",
+                  DocumentPayloadManagerFileSystem.getSafeFilename ("IM 2026/10/4807678.sbd"));
+    assertEquals ("plain.sbd", DocumentPayloadManagerFileSystem.getSafeFilename ("plain.sbd"));
+  }
+
+  @Test
+  public void testStoreDocumentWithSlashySbdhInstanceId ()
+  {
+    // Real-world Digiteal SBDH Instance Identifier used as the inbound filename
+    final byte [] aPayload = "<SBD/>".getBytes (StandardCharsets.UTF_8);
+    final IDocumentPayloadManager aMgr = createManager ();
+    final String sPath = aMgr.storeDocument (getBaseDir (),
+                                             REFERENCE_DT,
+                                             "IM 2026/10/4807678.sbd",
+                                             aPayload);
+    assertTrue (sPath.endsWith ("IM_2026_10_4807678.sbd"));
+    assertFalse ("Must not create nested directories from the instance id",
+                 sPath.contains ("IM 2026") || sPath.contains ("/10/4807678"));
+    assertArrayEquals (aPayload, aMgr.readDocument (sPath));
   }
 }

@@ -219,7 +219,11 @@ public interface IOutboundTransactionManager
   ESuccess updateStatusCompleted (@NonNull String sID, @NonNull EOutboundStatus eStatus);
 
   /**
-   * Update MLS reception status for an outbound business document.
+   * Update MLS reception status for an outbound business document. Only the first MLS received for
+   * a transaction is stored: the update is only performed while the MLS reception status is still
+   * {@link EMlsReceptionStatus#PENDING}, because the Peppol specifications only require the first
+   * MLS to be considered. The check and the update are a single atomic statement, so that two MLS
+   * received at the same time cannot both win.
    *
    * @param sID
    *        The transaction ID. Never <code>null</code>.
@@ -232,7 +236,9 @@ public interface IOutboundTransactionManager
    * @param sMlsInboundTransactionID
    *        The ID of the inbound transaction representing the received MLS message. May be
    *        <code>null</code>.
-   * @return {@link ESuccess}
+   * @return {@link ESuccess#SUCCESS} if the MLS status was stored, {@link ESuccess#FAILURE} if the
+   *         transaction does not exist or if an MLS was already received for it.
+   * @since 0.14.0 - only the first MLS is stored
    */
   @NonNull
   ESuccess updateMlsStatus (@NonNull String sID,

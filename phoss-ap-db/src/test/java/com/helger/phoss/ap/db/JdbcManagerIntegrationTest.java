@@ -449,6 +449,34 @@ public final class JdbcManagerIntegrationTest
   }
 
   @Test
+  public void testOutboundUpdateMlsStatusOnlyFirstWins ()
+  {
+    final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final String sID = _createOutboundTx ();
+    assertNotNull (sID);
+    assertEquals (EMlsReceptionStatus.PENDING, aMgr.getByID (sID).getMlsStatus ());
+
+    assertTrue (aMgr.updateMlsStatus (sID,
+                                      EMlsReceptionStatus.RECEIVED_AB,
+                                      _now (),
+                                      "mls-msg-first",
+                                      "inbound-mls-tx-first").isSuccess ());
+
+    // Only the first MLS needs to be considered - a second, different one is not stored
+    assertTrue (aMgr.updateMlsStatus (sID,
+                                      EMlsReceptionStatus.RECEIVED_RE,
+                                      _now (),
+                                      "mls-msg-second",
+                                      "inbound-mls-tx-second").isFailure ());
+
+    final IOutboundTransaction aTx = aMgr.getByID (sID);
+    assertNotNull (aTx);
+    assertEquals (EMlsReceptionStatus.RECEIVED_AB, aTx.getMlsStatus ());
+    assertEquals ("mls-msg-first", aTx.getMlsID ());
+    assertEquals ("inbound-mls-tx-first", aTx.getMlsInboundTransactionID ());
+  }
+
+  @Test
   public void testOutboundUpdateReportingStatus ()
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();

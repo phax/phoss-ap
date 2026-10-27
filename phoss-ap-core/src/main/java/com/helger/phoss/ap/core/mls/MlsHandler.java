@@ -510,7 +510,10 @@ public final class MlsHandler
   }
 
   /**
-   * Correlate an incoming MLS to a previous outbound transaction.
+   * Correlate an incoming MLS to a previous outbound transaction. Only the first MLS received for an
+   * outbound transaction is correlated, as only that one needs to be considered according to the
+   * Peppol specifications. Every later MLS is ignored: the outbound transaction is not modified, the
+   * inbound MLS is not linked to it and no lifecycle event is fired.
    *
    * @param sLogPrefix
    *        Log prefix. Never <code>null</code>.
@@ -524,7 +527,9 @@ public final class MlsHandler
    *        The MLS document ID received. May not be <code>null</code>.
    * @param sMlsInboundTransactionID
    *        The transaction ID of the inbound MLS transaction. May not be <code>null</code>.
-   * @return {@link ESuccess}
+   * @return {@link ESuccess#FAILURE} if the MLS could not be correlated, {@link ESuccess#SUCCESS}
+   *         if it was correlated or if it was ignored because it is not the first MLS for the
+   *         outbound transaction.
    */
   @NonNull
   public static ESuccess handleIncomingMls (@NonNull final String sLogPrefix,
@@ -556,10 +561,33 @@ public final class MlsHandler
       case REJECTION -> EMlsReceptionStatus.RECEIVED_RE;
     };
 
-    // Store in DB
+    // Store in DB - only the first MLS wins
     if (aOutboundMgr.updateMlsStatus (aTx.getID (), eMlsStatus, aMlsAS4ReceivedDT, sMlsID, sMlsInboundTransactionID)
                     .isFailure ())
+    {
+      // Re-read, because another MLS may have won in the meantime
+      final IOutboundTransaction aCurrentTx = aOutboundMgr.getByID (aTx.getID ());
+      final EMlsReceptionStatus eCurrentMlsStatus = aCurrentTx == null ? null : aCurrentTx.getMlsStatus ();
+      if (eCurrentMlsStatus == EMlsReceptionStatus.RECEIVED_AP ||
+          eCurrentMlsStatus == EMlsReceptionStatus.RECEIVED_AB ||
+          eCurrentMlsStatus == EMlsReceptionStatus.RECEIVED_RE)
+      {
+        LOGGER.warn (sLogPrefix +
+                     "Ignoring the MLS response (" +
+                     eResponseCode.getID () +
+                     ") of inbound transaction '" +
+                     sMlsInboundTransactionID +
+                     "' for outbound transaction '" +
+                     aTx.getID () +
+                     "', because an MLS was already received for it with status '" +
+                     eCurrentMlsStatus.getID () +
+                     "' from inbound transaction '" +
+                     aCurrentTx.getMlsInboundTransactionID () +
+                     "' - only the first MLS is considered");
+        return ESuccess.SUCCESS;
+      }
       return ESuccess.FAILURE;
+    }
 
     LOGGER.info (sLogPrefix +
                  "Updated MLS status for transaction '" +

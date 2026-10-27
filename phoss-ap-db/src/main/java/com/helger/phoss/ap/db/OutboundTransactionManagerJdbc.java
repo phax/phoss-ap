@@ -319,12 +319,13 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
                                                                       " SET mls_status=?, mls_received_dt=?, mls_id=?, mls_inbound_transaction_id=?" +
-                                                                      " WHERE id=?",
+                                                                      " WHERE id=? AND (mls_status IS NULL OR mls_status=?)",
                                                                       new ConstantPreparedStatementDataProvider (eMlsStatus.getID (),
                                                                                                                  DBValueHelper.toTimestamp (aMlsReceivedDT),
                                                                                                                  sMlsID,
                                                                                                                  sMlsInboundTransactionID,
-                                                                                                                 sID));
+                                                                                                                 sID,
+                                                                                                                 EMlsReceptionStatus.PENDING.getID ()));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 

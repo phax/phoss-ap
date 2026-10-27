@@ -19,14 +19,9 @@ package com.helger.phoss.ap.core.servlet;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.time.OffsetDateTime;
-
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -36,15 +31,12 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.helger.base.debug.GlobalDebug;
 import com.helger.base.exception.InitializationException;
-import com.helger.base.state.ETriState;
 import com.helger.base.string.StringHelper;
 import com.helger.base.url.URLHelper;
 import com.helger.httpclient.HttpDebugger;
 import com.helger.mime.CMimeType;
-import com.helger.peppol.reporting.api.PeppolReportingHelper;
 import com.helger.peppol.reporting.api.backend.IPeppolReportingBackendSPI;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
-import com.helger.peppol.security.PeppolTrustedCA;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.phase4.config.AS4Configuration;
 import com.helger.phase4.crypto.AS4CryptoFactoryConfiguration;
@@ -59,10 +51,9 @@ import com.helger.phase4.peppol.servlet.Phase4PeppolDefaultReceiverConfiguration
 import com.helger.phase4.profile.peppol.AS4PeppolProfileRegistarSPI;
 import com.helger.phase4.profile.peppol.PeppolCRLDownloader;
 import com.helger.phase4.profile.peppol.Phase4PeppolCRLHttpClientSettings;
-import com.helger.phoss.ap.api.CPhossAP;
+import com.helger.phoss.ap.api.codelist.EAPStartupCheckPhase;
 import com.helger.phoss.ap.api.codelist.EReceiverCheckMode;
 import com.helger.phoss.ap.api.config.APConfigProvider;
-import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.basic.APBasicConfig;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
@@ -75,10 +66,11 @@ import com.helger.phoss.ap.core.job.ArchivalScheduler;
 import com.helger.phoss.ap.core.job.CleanupScheduler;
 import com.helger.phoss.ap.core.job.RetryScheduler;
 import com.helger.phoss.ap.core.phase4.APAS4ManagerFactory;
+import com.helger.phoss.ap.core.startup.APStartupCheckManager;
+import com.helger.phoss.ap.core.startup.APStartupCheckRunner;
+import com.helger.phoss.ap.core.startup.StartupCheckPeppolAPCertificate;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.photon.io.WebFileIO;
-import com.helger.security.certificate.ECertificateCheckResult;
-import com.helger.security.certificate.TrustedCAChecker;
 import com.helger.security.revocation.CertificateRevocationCheckerDefaults;
 import com.helger.security.revocation.ERevocationCheckMode;
 import com.helger.servlet.ServletHelper;
@@ -176,50 +168,6 @@ public class APServletInit
     CertificateRevocationCheckerDefaults.setExecuteInSynchronizedBlock (false);
   }
 
-  /**
-   * Verify that the TLS trust store used for outbound HTTPS connections (SMP lookup and AS4
-   * sending) actually contains trust anchors. Since phase4 4.5.0 the AP HTTP client uses the JVM
-   * default trust store, honoring the <code>javax.net.ssl.trustStore</code> system property. If
-   * that trust store is empty - e.g. because it was overridden with an empty or invalid file - all
-   * outbound TLS handshakes fail with "PKIX path building failed" and the underlying cause is
-   * easily masked. Fail fast at startup instead of on every transmission.
-   */
-  private static void _checkOutboundTlsTrustStore ()
-  {
-    final String sConfiguredTrustStore = System.getProperty ("javax.net.ssl.trustStore");
-    final String sTrustStoreDesc = StringHelper.isNotEmpty (sConfiguredTrustStore) ? " (configured via javax.net.ssl.trustStore='" +
-                                                                                     sConfiguredTrustStore +
-                                                                                     "')" : " (JRE default)";
-    try
-    {
-      final TrustManagerFactory aTMF = TrustManagerFactory.getInstance (TrustManagerFactory.getDefaultAlgorithm ());
-      // Passing null loads the JVM default trust store following the standard JSSE algorithm:
-      // javax.net.ssl.trustStore, else jssecacerts, else the bundled cacerts. This is exactly the
-      // trust material phase4 uses for outbound HTTPS.
-      aTMF.init ((KeyStore) null);
-
-      int nTrustAnchorCount = 0;
-      for (final TrustManager aTM : aTMF.getTrustManagers ())
-        if (aTM instanceof final X509TrustManager aX509TM)
-          nTrustAnchorCount += aX509TM.getAcceptedIssuers ().length;
-
-      if (nTrustAnchorCount == 0)
-        throw new InitializationException ("The TLS trust store used for outbound HTTPS connections is empty" +
-                                           sTrustStoreDesc +
-                                           ". Without trust anchors all outbound SMP lookups and AS4 transmissions fail with 'PKIX path building failed'. " +
-                                           "Fix the configuration - either remove the javax.net.ssl.trustStore override to use the JRE default, or point it to a valid trust store containing the required CA certificates.");
-
-      LOGGER.info ("The outbound TLS trust store contains " + nTrustAnchorCount + " trust anchor(s)" + sTrustStoreDesc);
-    }
-    catch (final GeneralSecurityException ex)
-    {
-      throw new InitializationException ("Failed to load the TLS trust store used for outbound HTTPS connections" +
-                                         sTrustStoreDesc +
-                                         " - fix the configuration",
-                                         ex);
-    }
-  }
-
   private static void _initAS4 ()
   {
     // Explicitly set the configuration so that the Spring stuff gets propagated
@@ -262,7 +210,7 @@ public class APServletInit
     MessageHelperMethods.setCustomMessageIDSuffix ("phoss-ap");
   }
 
-  private static void _initPeppolAS4 ()
+  private static void _initPeppolNetwork ()
   {
     // Configure global custom DNS servers for Peppol NAPTR lookup if provided
     {
@@ -292,75 +240,18 @@ public class APServletInit
       APBasicConfig.applyHttpProxySettings (aHCS);
       PeppolCRLDownloader.setAsDefaultCRLCache (aHCS);
     }
+  }
 
-    // Throws an exception if configuration parameters are missing
+  private static void _initPeppolAS4 ()
+  {
+    // Key store, private key and stage were verified by the startup checks
     final AS4CryptoFactoryInMemoryKeyStore aCryptoFactory = AS4CryptoFactoryConfiguration.getDefaultInstance ();
-
-    // Check if crypto factory configuration is valid
-    final KeyStore aKS = aCryptoFactory.getKeyStore ();
-    if (aKS == null)
-      throw new InitializationException ("Failed to load configured AS4 Key store - fix the configuration");
-    LOGGER.info ("Successfully loaded configured AS4 key store from the crypto factory");
-
     final KeyStore.PrivateKeyEntry aPKE = aCryptoFactory.getPrivateKeyEntry ();
-    if (aPKE == null)
-      throw new InitializationException ("Failed to load configured AS4 private key with the alias '" +
-                                         aCryptoFactory.getKeyAlias () +
-                                         "' - fix the configuration");
-    LOGGER.info ("Successfully loaded configured AS4 private key (alias '" +
-                 aCryptoFactory.getKeyAlias () +
-                 "') from the crypto factory");
-
-    // Configure the stage correctly
     final EPeppolNetwork ePeppolStage = APCoreConfig.getPeppolStage ();
-    if (ePeppolStage == null)
-      throw new InitializationException ("The Peppol Stage configuration is missing or invalid");
-
-    // Check if the private key is a proper Peppol AP certificate
     final X509Certificate aAPCert = (X509Certificate) aPKE.getCertificate ();
-    {
-      final TrustedCAChecker aAPCAChecker = ePeppolStage.isProduction () ? PeppolTrustedCA.peppolProductionAP ()
-                                                                         : PeppolTrustedCA.peppolTestAP ();
 
-      // Check the configured Peppol AP certificate
-      // * No caching
-      // * Use global certificate check mode
-      final ECertificateCheckResult eCheckResult = aAPCAChecker.checkCertificate (aAPCert,
-                                                                                  MetaAS4Manager.getTimestampMgr ()
-                                                                                                .getCurrentDateTime (),
-                                                                                  ETriState.FALSE,
-                                                                                  null);
-      if (eCheckResult.isInvalid ())
-      {
-        if (!"true".equals (System.getProperty ("phossap.internal.skip-peppol-certificate-check")))
-          throw new InitializationException ("The provided certificate is not a Peppol AP certificate. Check result: " +
-                                             eCheckResult);
-
-        LOGGER.error ("No Peppol certificate present - skipping for unit test only!");
-      }
-      LOGGER.info ("Successfully checked that the provided Peppol AP certificate is from the correct CA");
-
-      // Must be set independent on the enabled/disable status
-      Phase4PeppolDefaultReceiverConfiguration.setAPCAChecker (aAPCAChecker);
-    }
-
-    // Check Seat ID configuration
-    final String sSeatID = APCoreConfig.getPeppolOwnerSeatID ();
-    if (!CPhossAP.isPeppolSeatID (sSeatID))
-    {
-      throw new InitializationException ("The configured Peppol Seat ID '" +
-                                         sSeatID +
-                                         "' does not match the syntactial requirements.");
-    }
-
-    // Check owner country
-    final String sOwnerCountry = APCoreConfig.getPeppolOwnerCountryCode ();
-    if (!PeppolReportingHelper.isValidCountryCode (sOwnerCountry))
-    {
-      throw new InitializationException ("The configured Peppol Owner Country Code '" +
-                                         sOwnerCountry +
-                                         "' does not match the syntactial requirements.");
-    }
+    // Must be set independent on the enabled/disable status
+    Phase4PeppolDefaultReceiverConfiguration.setAPCAChecker (StartupCheckPeppolAPCertificate.getAPCAChecker (ePeppolStage));
 
     // Eventually enable the receiver check, so that for each incoming request
     // the validity is crosscheck against the owning SMP
@@ -369,18 +260,9 @@ public class APServletInit
     {
       case SMP:
       {
-        // Constant SMP
+        // Constant SMP - the required properties were verified by the startup checks
         final String sSMPURL = APCoreConfig.getPeppolSmpUrl ();
-        if (StringHelper.isEmpty (sSMPURL))
-          throw new InitializationException ("Receiver check mode 'smp' requires configuration property '" +
-                                             APConfigurationProperties.PEPPOL_SMP_URL +
-                                             "' to be set");
-
         final String sAPURL = AS4Configuration.getThisEndpointAddress ();
-        if (StringHelper.isEmpty (sAPURL))
-          throw new InitializationException ("Receiver check mode 'smp' requires configuration property '" +
-                                             APConfigurationProperties.PHASE4_ENDPOINT_ADDRESS +
-                                             "' to be set");
 
         Phase4PeppolDefaultReceiverConfiguration.setReceiverCheckEnabled (true);
 
@@ -394,12 +276,9 @@ public class APServletInit
       }
       case SML:
       {
-        // Using variable SMPs via dynamic discovery
+        // Using variable SMPs via dynamic discovery - the required property was verified by the
+        // startup checks
         final String sAPURL = AS4Configuration.getThisEndpointAddress ();
-        if (StringHelper.isEmpty (sAPURL))
-          throw new InitializationException ("Receiver check mode 'sml' requires configuration property '" +
-                                             APConfigurationProperties.PHASE4_ENDPOINT_ADDRESS +
-                                             "' to be set");
 
         Phase4PeppolDefaultReceiverConfiguration.setReceiverCheckEnabled (true);
         Phase4PeppolDefaultReceiverConfiguration.setSMLInfo (ePeppolStage.getSMLInfo ());
@@ -412,8 +291,8 @@ public class APServletInit
       }
       case NONE:
       {
+        // The startup checks emit a warning for this
         Phase4PeppolDefaultReceiverConfiguration.setReceiverCheckEnabled (false);
-        LOGGER.warn ("phase4 Peppol receiver checks are disabled");
         break;
       }
       default:
@@ -439,8 +318,9 @@ public class APServletInit
     WebScopeManager.onGlobalBegin (aSC);
     _initGlobalSettings (aSC);
 
-    // Fail fast if the outbound TLS trust store is empty, before touching the DB or any managers
-    _checkOutboundTlsTrustStore ();
+    // Run the configuration-only checks before touching the DB or any managers
+    APStartupCheckManager.initSPI ();
+    APStartupCheckRunner.performAllChecksOrThrow (EAPStartupCheckPhase.PRE_INIT);
 
     // JDBC managers must be initialized before _initAS4() because the AS4
     // duplicate manager (provided by APAS4ManagerFactory) is JDBC-backed and
@@ -453,6 +333,11 @@ public class APServletInit
     SMPClientManager.init ();
 
     _initAS4 ();
+    _initPeppolNetwork ();
+
+    // Run the checks that need the AS4 configuration, e.g. the key store and the AP certificate
+    APStartupCheckRunner.performAllChecksOrThrow (EAPStartupCheckPhase.POST_INIT);
+
     _initPeppolAS4 ();
 
     // Initialize remaining managers

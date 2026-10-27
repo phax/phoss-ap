@@ -26,10 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
-import com.helger.base.exception.InitializationException;
 import com.helger.base.timing.StopWatch;
 import com.helger.phoss.ap.api.IArchivalManager;
-import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
@@ -166,8 +164,8 @@ public final class CleanupScheduler
 
   /**
    * Start the cleanup scheduler. If the cleanup scheduler is disabled via configuration, this
-   * method does nothing. Validates configuration preconditions and throws
-   * {@link InitializationException} on misconfiguration.
+   * method does nothing. The configuration preconditions are verified by the startup check
+   * {@link com.helger.phoss.ap.core.startup.StartupCheckCleanupScheduler}.
    */
   public static void start ()
   {
@@ -177,36 +175,11 @@ public final class CleanupScheduler
       return;
     }
 
-    if (!APCoreConfig.isArchivalSchedulerEnabled ())
-      throw new InitializationException ("Cleanup scheduler is enabled but the archival scheduler is disabled. " +
-                                         "Cleanup only operates on already-archived transactions, so archival must be enabled.");
-
+    // The configuration was verified by StartupCheckCleanupScheduler
     final Duration aRetention = APCoreConfig.getCleanupSchedulerRetention ();
-    if (aRetention.compareTo (APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION_MIN) < 0)
-      throw new InitializationException ("Cleanup retention '" +
-                                         aRetention +
-                                         "' is below the minimum of " +
-                                         APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION_MIN +
-                                         " - reconfigure '" +
-                                         APConfigurationProperties.CLEANUP_SCHEDULER_RETENTION +
-                                         "' to a value of at least 2 days.");
-
-    final Duration aArchivalSafetyWindow = APCoreConfig.getArchivalSchedulerInterval ().multipliedBy (2);
-    if (aRetention.compareTo (aArchivalSafetyWindow) < 0)
-      throw new InitializationException ("Cleanup retention '" +
-                                         aRetention +
-                                         "' must be greater than 2x the archival interval (" +
-                                         aArchivalSafetyWindow +
-                                         ") so the archiver has time to land completed transactions before cleanup considers them.");
-
     final int nBatchSize = APCoreConfig.getCleanupSchedulerBatchSize ();
-    if (nBatchSize < 1)
-      throw new InitializationException ("The cleanup scheduler batch size must be >= 1, but is " + nBatchSize);
-
     final Duration aInterval = APCoreConfig.getCleanupSchedulerInterval ();
     final long nIntervalMs = aInterval.toMillis ();
-    if (nIntervalMs < 1)
-      throw new InitializationException ("The cleanup scheduler interval must be >= 1 ms, but is " + aInterval);
 
     LOGGER.info ("Starting phoss AP cleanup scheduler with interval " +
                  aInterval +

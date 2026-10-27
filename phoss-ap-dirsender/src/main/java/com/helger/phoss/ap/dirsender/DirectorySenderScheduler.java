@@ -63,8 +63,8 @@ public final class DirectorySenderScheduler
   }
 
   /**
-   * Start the directory sender scheduler if enabled. Validates configuration, creates
-   * subdirectories ({@code pending/}, {@code success/}, {@code error/}), runs startup recovery on
+   * Start the directory sender scheduler if enabled. The configuration is verified by the startup
+   * check {@link StartupCheckDirectorySender}. Creates subdirectories ({@code pending/}, {@code success/}, {@code error/}), runs startup recovery on
    * pending files, and starts the periodic scan timer.
    */
   public static void start ()
@@ -75,15 +75,9 @@ public final class DirectorySenderScheduler
       return;
     }
 
+    // The configuration was verified by StartupCheckDirectorySender
     final String sDirectory = APDirSenderConfig.getDirectory ();
-    if (sDirectory == null)
-      throw new InitializationException ("Directory sender is enabled but 'dirsender.directory' is not configured");
-
     final File aWatchDir = new File (sDirectory);
-    if (!aWatchDir.isDirectory ())
-      throw new InitializationException ("Directory sender watch directory '" +
-                                         sDirectory +
-                                         "' does not exist or is not a directory");
 
     // Create subdirectories
     final File aPendingDir = new File (aWatchDir, DirectoryFileProcessor.DIR_PENDING);

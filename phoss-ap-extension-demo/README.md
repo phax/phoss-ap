@@ -7,12 +7,13 @@ rebuilding the Access Point**.
 
 ## What it contains
 
-Two SPI implementations that do nothing but log every callback they receive:
+Two SPI implementations that do nothing but log every callback they receive, and one startup check:
 
 | Class | Implements | Fires on |
 |-------|-----------|----------|
 | `DemoLifecycleEventSPI` | `com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI` | positive events (document received / forwarded / sent, reporting success, scheduler cycles, …) |
 | `DemoNotificationHandlerSPI` | `com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI` | failure events (verification rejections, permanent send/forward failures, unexpected exceptions, …) |
+| `DemoStartupCheckSPI` | `com.helger.phoss.ap.api.spi.IAPStartupCheckSPI` | the startup of the AP, before the database is touched - emits a warning if the JVM default charset is not UTF-8 |
 
 Each is registered the same way phoss-ap's own modules register their SPIs:
 
@@ -20,7 +21,7 @@ Each is registered the same way phoss-ap's own modules register their SPIs:
 - listed in a `META-INF/services/<fully-qualified-interface-name>` file under
   `src/main/resources`.
 
-Both are discovered through the standard `java.util.ServiceLoader`, so once the jar is on the
+All are discovered through the standard `java.util.ServiceLoader`, so once the jar is on the
 classpath there is no further wiring.
 
 ## How the packaging works (the important bit)

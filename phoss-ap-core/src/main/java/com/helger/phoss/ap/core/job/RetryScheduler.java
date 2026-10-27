@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
-import com.helger.base.exception.InitializationException;
 import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
@@ -355,9 +354,8 @@ public final class RetryScheduler
    */
   public static void start ()
   {
+    // The configuration was verified by StartupCheckRetryScheduler
     final int nBatchSize = APCoreConfig.getRetrySchedulerBatchSize ();
-    if (nBatchSize < 1)
-      throw new InitializationException ("The retry scheduler batch size must be >= 1, but is " + nBatchSize);
 
     final Duration aInterval = APCoreConfig.getRetrySchedulerInterval ();
     final long nIntervalMs = aInterval.toMillis ();

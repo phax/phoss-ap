@@ -54,6 +54,10 @@
     </dependency>
     <dependency>
       <groupId>com.helger.commons</groupId>
+      <artifactId>ph-diagnostics</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger.commons</groupId>
       <artifactId>ph-io</artifactId>
     </dependency>
     <dependency>

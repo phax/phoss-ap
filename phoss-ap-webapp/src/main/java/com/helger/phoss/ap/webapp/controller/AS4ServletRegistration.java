@@ -16,13 +16,30 @@
  */
 package com.helger.phoss.ap.webapp.controller;
 
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Collections;
+
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslBundles;
+import org.springframework.boot.web.server.Ssl;
+import org.springframework.boot.web.server.WebServerSslBundle;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.helger.base.string.StringHelper;
+import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.phase4.peppol.servlet.Phase4PeppolAS4Servlet;
 import com.helger.phoss.ap.core.servlet.APServletInit;
+import com.helger.phoss.ap.core.startup.APStartupCheckManager;
+import com.helger.phoss.ap.core.startup.StartupCheckTlsCertificateSeparation;
 import com.helger.phoss.ap.dirsender.DirectorySenderScheduler;
 import com.helger.phoss.ap.webapp.config.SpringProfileConfigIntegration;
 import com.helger.web.scope.mgr.WebScopeManager;
@@ -33,6 +50,9 @@ import jakarta.servlet.ServletContext;
 @Configuration
 public class AS4ServletRegistration
 {
+  private final ObjectProvider <ServerProperties> m_aServerProperties;
+  private final ObjectProvider <SslBundles> m_aSslBundles;
+
   /**
    * Constructor. The injected {@link SpringProfileConfigIntegration} parameter ensures that Spring
    * profile-specific properties are loaded into ph-config before
@@ -40,10 +60,56 @@ public class AS4ServletRegistration
    *
    * @param aProfileConfigIntegration
    *        Injected solely for bean ordering. Not used directly.
+   * @param aServerProperties
+   *        The Spring Boot server properties, to determine the TLS server certificate. May be
+   *        unavailable.
+   * @param aSslBundles
+   *        The Spring Boot SSL bundles, to resolve <code>server.ssl.bundle</code>. May be
+   *        unavailable.
    */
-  public AS4ServletRegistration (final SpringProfileConfigIntegration aProfileConfigIntegration)
+  public AS4ServletRegistration (final SpringProfileConfigIntegration aProfileConfigIntegration,
+                                 final ObjectProvider <ServerProperties> aServerProperties,
+                                 final ObjectProvider <SslBundles> aSslBundles)
   {
     // Dependency injection ensures profile config is loaded first
+    m_aServerProperties = aServerProperties;
+    m_aSslBundles = aSslBundles;
+  }
+
+  /**
+   * @return The certificates of the TLS server key store of the embedded web server, or an empty
+   *         list if the web server does not terminate TLS. Never <code>null</code>.
+   */
+  @NonNull
+  private ICommonsList <X509Certificate> _getTlsServerCertificates ()
+  {
+    final ICommonsList <X509Certificate> ret = new CommonsArrayList <> ();
+    final ServerProperties aServerProperties = m_aServerProperties.getIfAvailable ();
+    final Ssl aSsl = aServerProperties == null ? null : aServerProperties.getSsl ();
+    if (!Ssl.isEnabled (aSsl))
+      return ret;
+
+    final SslBundle aBundle = WebServerSslBundle.get (aSsl, m_aSslBundles.getIfAvailable ());
+    final KeyStore aKeyStore = aBundle.getStores ().getKeyStore ();
+    if (aKeyStore == null)
+      return ret;
+
+    final String sKeyAlias = aBundle.getKey ().getAlias ();
+    try
+    {
+      for (final String sAlias : Collections.list (aKeyStore.aliases ()))
+        if ((StringHelper.isEmpty (sKeyAlias) || sKeyAlias.equals (sAlias)) && aKeyStore.isKeyEntry (sAlias))
+        {
+          final Certificate aCert = aKeyStore.getCertificate (sAlias);
+          if (aCert instanceof final X509Certificate aX509Cert)
+            ret.add (aX509Cert);
+        }
+    }
+    catch (final KeyStoreException ex)
+    {
+      throw new IllegalStateException ("Failed to read the TLS server key store", ex);
+    }
+    return ret;
   }
 
   private void _init (@NonNull final ServletContext aSC)
@@ -51,6 +117,8 @@ public class AS4ServletRegistration
     // Do it only once
     if (!WebScopeManager.isGlobalScopePresent ())
     {
+      // Only Spring knows the TLS configuration - so the check is registered from here
+      APStartupCheckManager.registerCheck (new StartupCheckTlsCertificateSeparation (this::_getTlsServerCertificates));
       APServletInit.init (aSC);
       DirectorySenderScheduler.start ();
     }

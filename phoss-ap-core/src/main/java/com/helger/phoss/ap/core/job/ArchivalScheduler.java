@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.Nonnegative;
-import com.helger.base.exception.InitializationException;
 import com.helger.base.timing.StopWatch;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
@@ -163,9 +162,8 @@ public final class ArchivalScheduler
       return;
     }
 
+    // The configuration was verified by StartupCheckArchivalScheduler
     final int nBatchSize = APCoreConfig.getArchivalSchedulerBatchSize ();
-    if (nBatchSize < 1)
-      throw new InitializationException ("The archival scheduler batch size must be >= 1, but is " + nBatchSize);
 
     final Duration aInterval = APCoreConfig.getArchivalSchedulerInterval ();
     final long nIntervalMs = aInterval.toMillis ();

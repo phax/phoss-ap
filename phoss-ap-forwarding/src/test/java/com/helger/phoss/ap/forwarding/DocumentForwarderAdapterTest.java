@@ -35,6 +35,7 @@ import com.helger.phoss.ap.api.model.ForwardableDocument;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IForwardableDocument;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 
 /**
  * Test class that proves the {@link IInboundTransaction} adapter of
@@ -97,6 +98,8 @@ public final class DocumentForwarderAdapterTest
     assertEquals (aExpected.localID (), aActual.localID ());
     assertSame (aExpected.verificationResult (), aActual.verificationResult ());
     assertEquals (aExpected.verificationDetails (), aActual.verificationDetails ());
+    assertEquals (aExpected.correlatedOutboundTransactionID (), aActual.correlatedOutboundTransactionID ());
+    assertSame (aExpected.correlatedOutboundTransaction (), aActual.correlatedOutboundTransaction ());
     assertNotNull (aActual.metadataJson ());
     assertEquals (aExpected.metadataJson ().get (), aActual.metadataJson ().get ());
   }
@@ -108,13 +111,13 @@ public final class DocumentForwarderAdapterTest
     final CapturingForwarder aForwarder = new CapturingForwarder ();
 
     // Route 1: the default adapter of the interface
-    assertTrue (aForwarder.forwardDocument (ForwardableDocument.fromInbound (aTx)).isSuccess ());
+    assertTrue (aForwarder.forwardDocument (ForwardableDocument.fromInbound (aTx, null)).isSuccess ());
     final IForwardableDocument aViaAdapter = aForwarder.m_aCaptured;
     assertNotNull (aViaAdapter);
 
     // Route 2: the new overload, called with an explicitly adapted document
     aForwarder.m_aCaptured = null;
-    aForwarder.forwardDocument (ForwardableDocument.fromInbound (aTx));
+    aForwarder.forwardDocument (ForwardableDocument.fromInbound (aTx, null));
     final IForwardableDocument aViaOverload = aForwarder.m_aCaptured;
     assertNotNull (aViaOverload);
 
@@ -125,7 +128,7 @@ public final class DocumentForwarderAdapterTest
   public void testEveryFieldIsMapped ()
   {
     final IInboundTransaction aTx = new MockInboundTransaction (EVerificationResult.REJECTED, "[]");
-    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx);
+    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx, null);
 
     assertEquals (MockInboundTransaction.ID, aDoc.id ());
     assertEquals (MockInboundTransaction.SBDH_INSTANCE_ID, aDoc.sbdhInstanceID ());
@@ -145,16 +148,40 @@ public final class DocumentForwarderAdapterTest
   @Test
   public void testKindOfABusinessDocument ()
   {
-    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (new MockInboundTransaction (null, null));
+    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (new MockInboundTransaction (null, null), null);
     assertSame (EForwardableKind.INBOUND_DOCUMENT, aDoc.kind ());
     assertNull (aDoc.verificationResult ());
+    assertNull (aDoc.correlatedOutboundTransactionID ());
+    assertNull (aDoc.correlatedOutboundTransaction ());
+  }
+
+  @Test
+  public void testCorrelatedOutboundTransaction ()
+  {
+    final IOutboundTransaction aOutboundTx = new MockOutboundMlsTransaction ();
+    final IInboundTransaction aTx = new MockInboundTransaction (null, null, aOutboundTx.getID ());
+    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx, aOutboundTx);
+
+    assertEquals (aOutboundTx.getID (), aDoc.correlatedOutboundTransactionID ());
+    assertSame (aOutboundTx, aDoc.correlatedOutboundTransaction ());
+  }
+
+  @Test
+  public void testCorrelatedOutboundTransactionNotFound ()
+  {
+    // The correlation is known, but the outbound transaction could not be resolved
+    final IInboundTransaction aTx = new MockInboundTransaction (null, null, "out-1");
+    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx, null);
+
+    assertEquals ("out-1", aDoc.correlatedOutboundTransactionID ());
+    assertNull (aDoc.correlatedOutboundTransaction ());
   }
 
   @Test
   public void testMetadataJsonMatchesTheTransaction ()
   {
     final IInboundTransaction aTx = new MockInboundTransaction (EVerificationResult.PASSED, null);
-    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx);
+    final ForwardableDocument aDoc = ForwardableDocument.fromInbound (aTx, null);
 
     assertNotNull (aDoc.metadataJson ());
     final String sJson = aDoc.metadataJson ().get ();

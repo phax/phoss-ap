@@ -887,6 +887,27 @@ public final class JdbcManagerIntegrationTest
   }
 
   @Test
+  public void testInboundUpdateMlsCorrelatedOutboundTransactionID ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+    assertNotNull (sID);
+
+    // Not correlated yet
+    assertNull (aMgr.getByID (sID).getMlsCorrelatedOutboundTransactionID ());
+
+    final String sOutboundTxID = _uniqueID ();
+    assertTrue (aMgr.updateMlsCorrelatedOutboundTransactionID (sID, sOutboundTxID).isSuccess ());
+    assertEquals (sOutboundTxID, aMgr.getByID (sID).getMlsCorrelatedOutboundTransactionID ());
+
+    // The other MLS fields are not touched
+    assertNull (aMgr.getByID (sID).getMlsOutboundTransactionID ());
+
+    // Unknown transaction
+    assertTrue (aMgr.updateMlsCorrelatedOutboundTransactionID (_uniqueID (), sOutboundTxID).isFailure ());
+  }
+
+  @Test
   public void testInboundUpdateC4CountryCode ()
   {
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
@@ -1365,10 +1386,18 @@ public final class JdbcManagerIntegrationTest
                         null);
     aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
 
+    assertNotNull (aTxMgr.getByIDIncludingArchive (sTxID));
+
     assertTrue (aArchivalMgr.archiveOutboundTransaction (sTxID).isSuccess ());
 
     assertNull (aTxMgr.getByID (sTxID));
     assertTrue (aAttemptMgr.getByTransactionID (sTxID).isEmpty ());
+
+    // Still found in the archive
+    final IOutboundTransaction aArchivedTx = aTxMgr.getByIDIncludingArchive (sTxID);
+    assertNotNull (aArchivedTx);
+    assertEquals (sTxID, aArchivedTx.getID ());
+    assertEquals (EOutboundStatus.SENT, aArchivedTx.getStatus ());
   }
 
   @Test
@@ -1402,6 +1431,8 @@ public final class JdbcManagerIntegrationTest
 
     final String sDetails = "[{\"level\":\"error\",\"type\":\"business_rule\",\"code\":\"PEPPOL-EN16931-R001\",\"description\":\"Missing ID\"}]";
     assertTrue (aTxMgr.updateVerificationResult (sTxID, EVerificationResult.REJECTED, sDetails).isSuccess ());
+    final String sOutboundTxID = _uniqueID ();
+    assertTrue (aTxMgr.updateMlsCorrelatedOutboundTransactionID (sTxID, sOutboundTxID).isSuccess ());
     aTxMgr.updateStatusCompleted (sTxID, EInboundStatus.FORWARDED);
 
     // Archival copies rows with "INSERT INTO ..._archive SELECT * FROM ...", so a column order
@@ -1413,6 +1444,7 @@ public final class JdbcManagerIntegrationTest
     assertNotNull (aArchived);
     assertEquals (EVerificationResult.REJECTED, aArchived.getVerificationResult ());
     assertEquals (sDetails, aArchived.getVerificationDetails ());
+    assertEquals (sOutboundTxID, aArchived.getMlsCorrelatedOutboundTransactionID ());
   }
 
   @Test

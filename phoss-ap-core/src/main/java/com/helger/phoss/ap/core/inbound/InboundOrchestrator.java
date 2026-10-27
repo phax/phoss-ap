@@ -57,6 +57,7 @@ import com.helger.peppolid.peppol.spis.SPIDHelper;
 import com.helger.phoss.ap.api.CPhossAP;
 import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
+import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EDuplicateDetectionMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
@@ -71,6 +72,7 @@ import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.api.model.ForwardableDocument;
 import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
@@ -391,6 +393,39 @@ public final class InboundOrchestrator
   }
 
   /**
+   * Adapt an inbound transaction to the document handed to the forwarders. For an inbound MLS that
+   * was correlated, the correlated outbound transaction is resolved, so that a forwarder has access
+   * to e.g. its custom fields.
+   *
+   * @param sLogPrefix
+   *        Log message prefix. May not be <code>null</code>.
+   * @param aInboundTx
+   *        The inbound transaction to adapt. May not be <code>null</code>.
+   * @return The forwardable document. Never <code>null</code>.
+   */
+  @NonNull
+  private static ForwardableDocument _createForwardableDocument (@NonNull final String sLogPrefix,
+                                                                 @NonNull final IInboundTransaction aInboundTx)
+  {
+    IOutboundTransaction aCorrelatedOutboundTx = null;
+    final String sCorrelatedOutboundTxID = aInboundTx.getMlsCorrelatedOutboundTransactionID ();
+    if (StringHelper.isNotEmpty (sCorrelatedOutboundTxID))
+    {
+      // The outbound transaction may have been archived in the meantime
+      final IOutboundTransactionManager aOutboundMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+      aCorrelatedOutboundTx = aOutboundMgr.getByIDIncludingArchive (sCorrelatedOutboundTxID);
+      if (aCorrelatedOutboundTx == null)
+        LOGGER.warn (sLogPrefix +
+                     "The outbound transaction '" +
+                     sCorrelatedOutboundTxID +
+                     "' correlated with the inbound MLS '" +
+                     aInboundTx.getID () +
+                     "' could not be found");
+    }
+    return ForwardableDocument.fromInbound (aInboundTx, aCorrelatedOutboundTx);
+  }
+
+  /**
    * Dispatch a copy of an inbound document to all provided document forwarders asynchronously. This
    * has no effect on the inbound transaction at all: no status change, no forwarding attempt row
    * and no retry. A forwarder that fails or throws is logged only and does not prevent the
@@ -423,7 +458,7 @@ public final class InboundOrchestrator
       return;
 
     // Adapt once - all forwarders of this dispatch see the very same document
-    final ForwardableDocument aForwardableDoc = ForwardableDocument.fromInbound (aInboundTx);
+    final ForwardableDocument aForwardableDoc = _createForwardableDocument (sLogPrefix, aInboundTx);
 
     PhotonWorkerPool.getInstance ().run (sTaskName, () -> {
       int nIndex = 0;
@@ -1290,6 +1325,14 @@ public final class InboundOrchestrator
           if (_handleIncomingMls (sLogPrefix, aVerifiedTx, aPeppolSBD.getBusinessMessageNoClone (), aProcessingErrors)
                                                                                                                       .isFailure ())
             return aProcessingErrors;
+
+          // The correlation wrote the correlated outbound transaction ID to the database, but this
+          // instance was loaded before it ran - so re-read it for the forwarding
+          aVerifiedTx = aInboundMgr.getByID (sTxID);
+          if (aVerifiedTx == null)
+            throw new IllegalStateException ("Failed to re-read the inbound transaction '" +
+                                             sTxID +
+                                             "' after its MLS correlation");
         }
 
         // Forward - Business Document and MLS
@@ -1383,7 +1426,7 @@ public final class InboundOrchestrator
             Throwable aForwardingCause = null;
             try
             {
-              aResult = aForwarder.forwardDocument (ForwardableDocument.fromInbound (aInboundTx));
+              aResult = aForwarder.forwardDocument (_createForwardableDocument (sLogPrefix, aInboundTx));
             }
             catch (final Exception ex)
             {
@@ -1718,8 +1761,22 @@ public final class InboundOrchestrator
 
     // Now do what was skipped when the document was received
     if (CPhossAP.isMLS (aVerifiedTx.getDocTypeID (), aVerifiedTx.getProcessID ()))
+    {
       if (_correlateStoredMls (sLogPrefix, aVerifiedTx).isFailure ())
         return ESuccess.FAILURE;
+
+      // The correlation wrote the correlated outbound transaction ID to the database - re-read it,
+      // exactly as the initial receive path does
+      aVerifiedTx = aTxMgr.getByID (sTxID);
+      if (aVerifiedTx == null)
+      {
+        LOGGER.error (sLogPrefix +
+                      "Failed to re-read the inbound transaction '" +
+                      sTxID +
+                      "' after its MLS correlation");
+        return ESuccess.FAILURE;
+      }
+    }
 
     // Forward - Business Document and MLS
     final ESuccess eForward = forwardDocument (sLogPrefix, aVerifiedTx);

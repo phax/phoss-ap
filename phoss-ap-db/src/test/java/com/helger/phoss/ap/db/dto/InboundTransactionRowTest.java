@@ -52,7 +52,7 @@ public final class InboundTransactionRowTest
   {
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
-    // 32 columns, matching InboundTransactionRow constructor order
+    // 33 columns, matching InboundTransactionRow constructor order
     // 0 id
     // 1 incomingID
     // 2 c2SeatID
@@ -85,6 +85,7 @@ public final class InboundTransactionRowTest
     // 29 mlsOutboundTransactionID (nullable)
     // 30 verificationResult (nullable)
     // 31 verificationDetails (nullable)
+    // 32 mlsCorrelatedOutboundTransactionID (nullable)
     return DBResultRowHelper.createRow ("ib-001",
                                         "incoming-001",
                                         "POP000001",
@@ -113,6 +114,7 @@ public final class InboundTransactionRowTest
                                         null,
                                         null,
                                         "ALWAYS_SEND",
+                                        null,
                                         null,
                                         null,
                                         null,
@@ -163,6 +165,7 @@ public final class InboundTransactionRowTest
     assertNull (aTx.getMlsOutboundTransactionID ());
     assertNull (aTx.getVerificationResult ());
     assertNull (aTx.getVerificationDetails ());
+    assertNull (aTx.getMlsCorrelatedOutboundTransactionID ());
   }
 
   @Test
@@ -201,7 +204,8 @@ public final class InboundTransactionRowTest
                                                           "RE",
                                                           "mls-out-ver",
                                                           "rejected",
-                                                          "[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]");
+                                                          "[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]",
+                                                          "out-ver");
     final InboundTransactionRow aTx = new InboundTransactionRow (aRow);
 
     // The verdict is independent of the status - a rejected document may well be "forwarded"
@@ -209,6 +213,7 @@ public final class InboundTransactionRowTest
     assertEquals (EVerificationResult.REJECTED, aTx.getVerificationResult ());
     assertEquals ("[{\"level\":\"error\",\"type\":\"business_rule\",\"description\":\"Nope\"}]",
                   aTx.getVerificationDetails ());
+    assertEquals ("out-ver", aTx.getMlsCorrelatedOutboundTransactionID ());
   }
 
   @Test
@@ -244,6 +249,7 @@ public final class InboundTransactionRowTest
                                                           null,
                                                           null,
                                                           "ALWAYS_SEND",
+                                                          null,
                                                           null,
                                                           null,
                                                           null,

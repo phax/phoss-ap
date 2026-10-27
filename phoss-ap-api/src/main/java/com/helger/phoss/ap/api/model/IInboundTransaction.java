@@ -254,4 +254,13 @@ public interface IInboundTransaction extends IHasID <String>
    */
   @Nullable
   String getVerificationDetails ();
+
+  /**
+   * @return The ID of the outbound business document transaction that this inbound MLS was
+   *         correlated with, or <code>null</code> if this is not an MLS or if the MLS could not be
+   *         correlated (yet).
+   * @since 0.14.0
+   */
+  @Nullable
+  String getMlsCorrelatedOutboundTransactionID ();
 }

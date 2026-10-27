@@ -27,6 +27,7 @@ import com.helger.base.enforce.ValueEnforcer;
 import com.helger.collection.commons.CommonsLinkedHashMap;
 import com.helger.collection.commons.ICommonsOrderedMap;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
@@ -133,15 +134,14 @@ public class APNotificationHandlerSentry implements IAPNotificationHandlerSPI
   }
 
   /** {@inheritDoc} */
-  public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                 @NonNull final String sSbdhInstanceID,
+  public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                  @Nullable final String sErrorDetails)
   {
     _logError ("onPermanentSendingFailure",
                _params ("transactionID",
-                        sTransactionID,
+                        aTransaction.getID (),
                         "sbdhInstanceID",
-                        sSbdhInstanceID,
+                        aTransaction.getSbdhInstanceID (),
                         "errorDetails",
                         sErrorDetails));
   }

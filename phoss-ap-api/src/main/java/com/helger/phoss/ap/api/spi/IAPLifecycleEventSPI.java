@@ -28,6 +28,7 @@ import com.helger.annotation.style.IsSPIInterface;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 
 /**
  * SPI interface for receiving notifications about positive lifecycle events of the AP — e.g.
@@ -101,12 +102,12 @@ public interface IAPLifecycleEventSPI
    *
    * @param sMlsTransactionID
    *        The inbound MLS transaction ID. Never <code>null</code>.
-   * @param sReferencedSbdhInstanceID
-   *        The SBDH Instance Identifier of the original outbound document. Never <code>null</code>.
-   * @param sCorrelatedOutboundTransactionID
-   *        The transaction ID of the original outbound business document this MLS was correlated
-   *        with. Use this to look up the full business-level details (sender, receiver, document
-   *        type, process) of the referenced transaction. Never <code>null</code>.
+   * @param aCorrelatedOutboundTransaction
+   *        The original outbound business document transaction this MLS was correlated with. It
+   *        provides the business-level details (sender, receiver, document type, process, SBDH
+   *        Instance Identifier) and the custom fields of the referenced transaction. It reflects
+   *        the state <em>before</em> the correlation, so its MLS fields do not yet contain the
+   *        values of this MLS - use the other parameters for them. Never <code>null</code>.
    * @param eMlsResponseCode
    *        The response code carried by the MLS. Never <code>null</code>.
    * @param eMlsReceptionStatus
@@ -122,10 +123,11 @@ public interface IAPLifecycleEventSPI
    *        The wall-clock duration between the original outbound send completion and the MLS
    *        reception, or <code>null</code> if either timestamp was not available. When present,
    *        this value powers MLS-1 / MLS-2 SLA histograms.
+   * @since 0.14.0 - the referenced SBDH Instance Identifier and the correlated outbound transaction
+   *        ID parameters were replaced with the {@link IOutboundTransaction}
    */
   void onInboundMLSCorrelated (@NonNull String sMlsTransactionID,
-                               @NonNull String sReferencedSbdhInstanceID,
-                               @NonNull String sCorrelatedOutboundTransactionID,
+                               @NonNull IOutboundTransaction aCorrelatedOutboundTransaction,
                                @NonNull EPeppolMLSResponseCode eMlsResponseCode,
                                @NonNull EMlsReceptionStatus eMlsReceptionStatus,
                                @Nullable String sMlsDocumentID,
@@ -187,19 +189,20 @@ public interface IAPLifecycleEventSPI
    * Called when an outbound transaction has been successfully transmitted via AS4 and the receipt
    * has been confirmed.
    *
-   * @param sTransactionID
-   *        The transaction ID. Never <code>null</code>.
-   * @param sSbdhInstanceID
-   *        The SBDH Instance Identifier. Never <code>null</code>.
+   * @param aTransaction
+   *        The outbound transaction, including its custom fields. It reflects the state
+   *        <em>before</em> this sending attempt, so its status, attempt count and completion date
+   *        time are not yet updated - use the other parameters for them. Never <code>null</code>.
    * @param aSendingDuration
    *        The wall-clock duration from the outbound transaction creation to the successful send,
    *        or <code>null</code> if the creation timestamp was not available.
    * @param nAttempts
    *        The total number of attempts that were made before the message was confirmed. Always
    *        &gt;= 1.
+   * @since 0.14.0 - the transaction ID and SBDH Instance Identifier parameters were replaced with
+   *        the {@link IOutboundTransaction}
    */
-  void onOutboundDocumentSent (@NonNull String sTransactionID,
-                               @NonNull String sSbdhInstanceID,
+  void onOutboundDocumentSent (@NonNull IOutboundTransaction aTransaction,
                                @Nullable Duration aSendingDuration,
                                @Nonnegative int nAttempts);
 

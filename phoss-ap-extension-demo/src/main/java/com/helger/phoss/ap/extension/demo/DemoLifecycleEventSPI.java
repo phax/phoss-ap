@@ -30,6 +30,7 @@ import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 
 /**
@@ -98,8 +99,7 @@ public final class DemoLifecycleEventSPI implements IAPLifecycleEventSPI
 
   /** {@inheritDoc} */
   public void onInboundMLSCorrelated (@NonNull final String sMlsTransactionID,
-                                      @NonNull final String sReferencedSbdhInstanceID,
-                                      @NonNull final String sCorrelatedOutboundTransactionID,
+                                      @NonNull final IOutboundTransaction aCorrelatedOutboundTransaction,
                                       @NonNull final EPeppolMLSResponseCode eMlsResponseCode,
                                       @NonNull final EMlsReceptionStatus eMlsReceptionStatus,
                                       @Nullable final String sMlsDocumentID,
@@ -110,9 +110,11 @@ public final class DemoLifecycleEventSPI implements IAPLifecycleEventSPI
                  "onInboundMLSCorrelated: mlsTransactionID=" +
                  sMlsTransactionID +
                  ", referencedSbdhInstanceID=" +
-                 sReferencedSbdhInstanceID +
+                 aCorrelatedOutboundTransaction.getSbdhInstanceID () +
                  ", correlatedOutboundTransactionID=" +
-                 sCorrelatedOutboundTransactionID +
+                 aCorrelatedOutboundTransaction.getID () +
+                 ", custom1=" +
+                 aCorrelatedOutboundTransaction.getCustom1 () +
                  ", mlsResponseCode=" +
                  eMlsResponseCode +
                  ", mlsReceptionStatus=" +
@@ -169,16 +171,17 @@ public final class DemoLifecycleEventSPI implements IAPLifecycleEventSPI
   }
 
   /** {@inheritDoc} */
-  public void onOutboundDocumentSent (@NonNull final String sTransactionID,
-                                      @NonNull final String sSbdhInstanceID,
+  public void onOutboundDocumentSent (@NonNull final IOutboundTransaction aTransaction,
                                       @Nullable final Duration aSendingDuration,
                                       @Nonnegative final int nAttempts)
   {
     LOGGER.info (PREFIX +
                  "onOutboundDocumentSent: transactionID=" +
-                 sTransactionID +
+                 aTransaction.getID () +
                  ", sbdhInstanceID=" +
-                 sSbdhInstanceID +
+                 aTransaction.getSbdhInstanceID () +
+                 ", custom1=" +
+                 aTransaction.getCustom1 () +
                  ", sendingDuration=" +
                  aSendingDuration +
                  ", attempts=" +

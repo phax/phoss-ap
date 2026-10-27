@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
@@ -218,13 +219,12 @@ public final class SafeNotificationHandler implements IAPNotificationHandlerSPI
   }
 
   /** {@inheritDoc} */
-  public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                 @NonNull final String sSbdhInstanceID,
+  public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                  @Nullable final String sErrorDetails)
   {
     try
     {
-      m_aHdl.onOutboundPermanentSendingFailure (sTransactionID, sSbdhInstanceID, sErrorDetails);
+      m_aHdl.onOutboundPermanentSendingFailure (aTransaction, sErrorDetails);
     }
     catch (final Exception ex)
     {

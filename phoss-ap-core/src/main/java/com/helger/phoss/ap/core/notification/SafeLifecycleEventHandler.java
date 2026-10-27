@@ -31,6 +31,7 @@ import com.helger.base.tostring.ToStringGenerator;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 
 /**
@@ -115,8 +116,7 @@ public final class SafeLifecycleEventHandler implements IAPLifecycleEventSPI
 
   /** {@inheritDoc} */
   public void onInboundMLSCorrelated (@NonNull final String sMlsTransactionID,
-                                      @NonNull final String sReferencedSbdhInstanceID,
-                                      @NonNull final String sCorrelatedOutboundTransactionID,
+                                      @NonNull final IOutboundTransaction aCorrelatedOutboundTransaction,
                                       @NonNull final EPeppolMLSResponseCode eMlsResponseCode,
                                       @NonNull final EMlsReceptionStatus eMlsReceptionStatus,
                                       @Nullable final String sMlsDocumentID,
@@ -126,8 +126,7 @@ public final class SafeLifecycleEventHandler implements IAPLifecycleEventSPI
     try
     {
       m_aHdl.onInboundMLSCorrelated (sMlsTransactionID,
-                                     sReferencedSbdhInstanceID,
-                                     sCorrelatedOutboundTransactionID,
+                                     aCorrelatedOutboundTransaction,
                                      eMlsResponseCode,
                                      eMlsReceptionStatus,
                                      sMlsDocumentID,
@@ -185,14 +184,13 @@ public final class SafeLifecycleEventHandler implements IAPLifecycleEventSPI
   }
 
   /** {@inheritDoc} */
-  public void onOutboundDocumentSent (@NonNull final String sTransactionID,
-                                      @NonNull final String sSbdhInstanceID,
+  public void onOutboundDocumentSent (@NonNull final IOutboundTransaction aTransaction,
                                       @Nullable final Duration aSendingDuration,
                                       @Nonnegative final int nAttempts)
   {
     try
     {
-      m_aHdl.onOutboundDocumentSent (sTransactionID, sSbdhInstanceID, aSendingDuration, nAttempts);
+      m_aHdl.onOutboundDocumentSent (aTransaction, aSendingDuration, nAttempts);
     }
     catch (final Exception ex)
     {

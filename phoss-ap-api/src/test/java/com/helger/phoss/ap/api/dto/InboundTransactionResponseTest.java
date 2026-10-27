@@ -474,6 +474,11 @@ public final class InboundTransactionResponseTest
       {
         return sVerificationDetails;
       }
+
+      public String getMlsCorrelatedOutboundTransactionID ()
+      {
+        return null;
+      }
     };
   }
 }

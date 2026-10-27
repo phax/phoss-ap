@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
@@ -80,11 +81,10 @@ public class APMetricsNotificationHandler implements IAPNotificationHandlerSPI
                                                                        .build ());
   }
 
-  public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                 @NonNull final String sSbdhInstanceID,
+  public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                  @Nullable final String sErrorDetails)
   {
-    APMetrics.OUTBOUND_SENDING_PERMANENT_FAILURES.add (1, _baseTxAttrs (sTransactionID, sSbdhInstanceID));
+    APMetrics.OUTBOUND_SENDING_PERMANENT_FAILURES.add (1, _baseTxAttrs (aTransaction.getID (), aTransaction.getSbdhInstanceID ()));
   }
 
   public void onInboundReceiverNotServiced (@NonNull final String sSenderID,

@@ -568,14 +568,25 @@ public final class MlsHandler
                  eMlsStatus.getID () +
                  "'");
 
+    // Remember the correlation on the inbound MLS, so that the forwarding (also a later retry) can
+    // tell a correlated MLS apart from an uncorrelated one
+    if (APJdbcMetaManager.getInboundTransactionMgr ()
+                         .updateMlsCorrelatedOutboundTransactionID (sMlsInboundTransactionID, aTx.getID ())
+                         .isFailure ())
+      LOGGER.warn (sLogPrefix +
+                   "Failed to store the correlated outbound transaction '" +
+                   aTx.getID () +
+                   "' on the inbound MLS transaction '" +
+                   sMlsInboundTransactionID +
+                   "'");
+
     // Compute round-trip duration if the original outbound send completion timestamp is known
     final OffsetDateTime aOutboundCompletedDT = aTx.getCompletedDT ();
     final Duration aRoundTrip = aOutboundCompletedDT != null ? Duration.between (aOutboundCompletedDT,
                                                                                  aMlsAS4ReceivedDT) : null;
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onInboundMLSCorrelated (sMlsInboundTransactionID,
-                                       sSbdhInstanceID,
-                                       aTx.getID (),
+                                       aTx,
                                        eResponseCode,
                                        eMlsStatus,
                                        sMlsID,

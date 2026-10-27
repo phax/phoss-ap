@@ -325,6 +325,20 @@ public interface IInboundTransactionManager
                                      @Nullable String sVerificationDetails);
 
   /**
+   * Remember the outbound business document transaction that an inbound MLS was correlated with.
+   *
+   * @param sID
+   *        The ID of the inbound MLS transaction. Never <code>null</code>.
+   * @param sCorrelatedOutboundTransactionID
+   *        The ID of the correlated outbound transaction. Never <code>null</code>.
+   * @return {@link ESuccess}
+   * @since 0.14.0
+   */
+  @NonNull
+  ESuccess updateMlsCorrelatedOutboundTransactionID (@NonNull String sID,
+                                                     @NonNull String sCorrelatedOutboundTransactionID);
+
+  /**
    * Update the reporting status for a transaction.
    *
    * @param sID

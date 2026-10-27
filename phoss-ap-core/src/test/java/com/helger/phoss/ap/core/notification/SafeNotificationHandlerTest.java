@@ -30,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
@@ -138,8 +139,7 @@ public final class SafeNotificationHandlerTest
       m_aInboundPermanentForwardingFailureCount.incrementAndGet ();
     }
 
-    public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                   @NonNull final String sSbdhInstanceID,
+    public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                    @Nullable final String sErrorDetails)
     {
       m_aOutboundPermanentSendingFailureCount.incrementAndGet ();
@@ -249,8 +249,7 @@ public final class SafeNotificationHandlerTest
       throw new IllegalStateException ("test-onInboundPermanentForwardingFailure");
     }
 
-    public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                   @NonNull final String sSbdhInstanceID,
+    public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                    @Nullable final String sErrorDetails)
     {
       throw new IllegalStateException ("test-onOutboundPermanentSendingFailure");
@@ -318,7 +317,7 @@ public final class SafeNotificationHandlerTest
     aSafe.onInboundPermanentForwardingFailure ("tx-4", "sbdh-4", "permanent error");
     assertEquals (1, aInner.m_aInboundPermanentForwardingFailureCount.get ());
 
-    aSafe.onOutboundPermanentSendingFailure ("tx-5", "sbdh-5", null);
+    aSafe.onOutboundPermanentSendingFailure (new MockOutboundTransaction ("tx-5", "sbdh-5"), null);
     assertEquals (1, aInner.m_aOutboundPermanentSendingFailureCount.get ());
 
     aSafe.onPeppolReportingTSRFailure (YearMonth.of (2026, 1));
@@ -356,7 +355,7 @@ public final class SafeNotificationHandlerTest
     aSafe.onSpecialMlsToNotReachable ("tx-mls", "ref-sbdh", "0242:987654-MLS", "0242:987654");
     aSafe.onInboundForwardingError ("tx-3", true);
     aSafe.onInboundPermanentForwardingFailure ("tx-4", "sbdh-4", null);
-    aSafe.onOutboundPermanentSendingFailure ("tx-5", "sbdh-5", "details");
+    aSafe.onOutboundPermanentSendingFailure (new MockOutboundTransaction ("tx-5", "sbdh-5"), "details");
     aSafe.onPeppolReportingTSRFailure (YearMonth.of (2026, 3));
     aSafe.onPeppolReportingEUSRFailure (YearMonth.of (2026, 3));
     aSafe.onUnexpectedException ("ctx", "msg", new Exception ("inner"));
@@ -397,7 +396,7 @@ public final class SafeNotificationHandlerTest
     aSafe.onInboundPermanentForwardingFailure ("tx-2", "sbdh-2", null);
     assertEquals (1, aInner.m_aInboundPermanentForwardingFailureCount.get ());
 
-    aSafe.onOutboundPermanentSendingFailure ("tx-3", "sbdh-3", null);
+    aSafe.onOutboundPermanentSendingFailure (new MockOutboundTransaction ("tx-3", "sbdh-3"), null);
     assertEquals (1, aInner.m_aOutboundPermanentSendingFailureCount.get ());
   }
 }

@@ -71,4 +71,13 @@ public final class ForwardableMlsCopyTest
     // OutboundTransactionResponse has no JSON rendering, so no metadata sidecar is offered
     assertNull (aDoc.metadataJson ());
   }
+
+  @Test
+  public void testNeverCorrelated ()
+  {
+    final ForwardableDocument aDoc = ForwardableDocument.fromOutboundMlsCopy (new MockOutboundMlsTransaction ());
+    // Only a received MLS is correlated with an outbound transaction
+    assertNull (aDoc.correlatedOutboundTransactionID ());
+    assertNull (aDoc.correlatedOutboundTransaction ());
+  }
 }

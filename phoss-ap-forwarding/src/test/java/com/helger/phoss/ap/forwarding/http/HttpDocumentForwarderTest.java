@@ -68,7 +68,8 @@ public final class HttpDocumentForwarderTest
   private static IForwardableDocument _doc (@Nullable final EVerificationResult eVerificationResult,
                                             @Nullable final String sVerificationDetails)
   {
-    return ForwardableDocument.fromInbound (new MockInboundTransaction (eVerificationResult, sVerificationDetails));
+    return ForwardableDocument.fromInbound (new MockInboundTransaction (eVerificationResult, sVerificationDetails),
+                                            null);
   }
 
   @NonNull

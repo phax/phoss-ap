@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import com.helger.annotation.style.IsSPIInterface;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
@@ -231,15 +232,17 @@ public interface IAPNotificationHandlerSPI
   /**
    * Called when an outbound transaction permanently fails after exhausting all sending retries.
    *
-   * @param sTransactionID
-   *        The transaction ID. Never <code>null</code>.
-   * @param sSbdhInstanceID
-   *        The SBDH Instance Identifier. Never <code>null</code>.
+   * @param aTransaction
+   *        The outbound transaction, including its custom fields. It reflects the state
+   *        <em>before</em> the last sending attempt, so its status, attempt count and error details
+   *        are not yet updated - use the other parameter for the error details. Never
+   *        <code>null</code>.
    * @param sErrorDetails
    *        Optional error details. May be <code>null</code>.
+   * @since 0.14.0 - the transaction ID and SBDH Instance Identifier parameters were replaced with
+   *        the {@link IOutboundTransaction}
    */
-  void onOutboundPermanentSendingFailure (@NonNull String sTransactionID,
-                                          @NonNull String sSbdhInstanceID,
+  void onOutboundPermanentSendingFailure (@NonNull IOutboundTransaction aTransaction,
                                           @Nullable String sErrorDetails);
 
   /**

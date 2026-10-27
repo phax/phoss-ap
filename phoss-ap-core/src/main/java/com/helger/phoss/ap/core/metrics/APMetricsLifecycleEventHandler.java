@@ -28,6 +28,7 @@ import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EVerificationResult;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.api.spi.IAPLifecycleEventSPI;
 import com.helger.telemetry.TelemetryAttributes;
@@ -83,8 +84,7 @@ public class APMetricsLifecycleEventHandler implements IAPLifecycleEventSPI
   }
 
   public void onInboundMLSCorrelated (@NonNull final String sMlsTransactionID,
-                                      @NonNull final String sReferencedSbdhInstanceID,
-                                      @NonNull final String sCorrelatedOutboundTransactionID,
+                                      @NonNull final IOutboundTransaction aCorrelatedOutboundTransaction,
                                       @NonNull final EPeppolMLSResponseCode eMlsResponseCode,
                                       @NonNull final EMlsReceptionStatus eMlsReceptionStatus,
                                       @Nullable final String sMlsDocumentID,
@@ -130,8 +130,7 @@ public class APMetricsLifecycleEventHandler implements IAPLifecycleEventSPI
     APMetrics.OUTBOUND_ACCEPTED.add (1);
   }
 
-  public void onOutboundDocumentSent (@NonNull final String sTransactionID,
-                                      @NonNull final String sSbdhInstanceID,
+  public void onOutboundDocumentSent (@NonNull final IOutboundTransaction aTransaction,
                                       @Nullable final Duration aSendingDuration,
                                       @Nonnegative final int nAttempts)
   {

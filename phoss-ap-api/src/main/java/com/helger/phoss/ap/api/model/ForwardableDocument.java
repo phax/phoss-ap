@@ -59,10 +59,15 @@ import com.helger.phoss.ap.api.dto.InboundTransactionResponse;
  *        The verdict of the inbound document verification. May be <code>null</code>.
  * @param verificationDetails
  *        The findings of the verification as a JSON array. May be <code>null</code>.
+ * @param correlatedOutboundTransactionID
+ *        The ID of the outbound transaction an inbound MLS was correlated with. May be
+ *        <code>null</code>.
+ * @param correlatedOutboundTransaction
+ *        The outbound transaction an inbound MLS was correlated with. May be <code>null</code>.
  * @param metadataJson
  *        A supplier of the metadata JSON sidecar content. May be <code>null</code>.
  * @author Philip Helger
- * @since 0.12.0
+ * @since 0.12.0 - the correlated outbound transaction components were added in 0.14.0
  */
 public record ForwardableDocument (@NonNull @Nonempty String id,
                                    @NonNull EForwardableKind kind,
@@ -77,6 +82,8 @@ public record ForwardableDocument (@NonNull @Nonempty String id,
                                    @NonNull @Nonempty String localID,
                                    @Nullable EVerificationResult verificationResult,
                                    @Nullable String verificationDetails,
+                                   @Nullable String correlatedOutboundTransactionID,
+                                   @Nullable IOutboundTransaction correlatedOutboundTransaction,
                                    @Nullable Supplier <String> metadataJson) implements IForwardableDocument
 {
   /**
@@ -86,10 +93,16 @@ public record ForwardableDocument (@NonNull @Nonempty String id,
    *
    * @param aTransaction
    *        The inbound transaction to adapt. May not be <code>null</code>.
+   * @param aCorrelatedOutboundTransaction
+   *        The outbound transaction that an inbound MLS was correlated with, as resolved from
+   *        {@link IInboundTransaction#getMlsCorrelatedOutboundTransactionID()}. May be
+   *        <code>null</code>.
    * @return The adapted document. Never <code>null</code>.
+   * @since 0.12.0 - the correlated outbound transaction parameter was added in 0.14.0
    */
   @NonNull
-  public static ForwardableDocument fromInbound (@NonNull final IInboundTransaction aTransaction)
+  public static ForwardableDocument fromInbound (@NonNull final IInboundTransaction aTransaction,
+                                                 @Nullable final IOutboundTransaction aCorrelatedOutboundTransaction)
   {
     final EForwardableKind eKind = CPhossAP.isMLS (aTransaction.getDocTypeID (), aTransaction.getProcessID ())
                                                                                                                ? EForwardableKind.INBOUND_MLS
@@ -107,6 +120,8 @@ public record ForwardableDocument (@NonNull @Nonempty String id,
                                     aTransaction.getIncomingID (),
                                     aTransaction.getVerificationResult (),
                                     aTransaction.getVerificationDetails (),
+                                    aTransaction.getMlsCorrelatedOutboundTransactionID (),
+                                    aCorrelatedOutboundTransaction,
                                     () -> InboundTransactionResponse.fromDomain (aTransaction)
                                                                     .toJson ()
                                                                     .getAsJsonString (JsonWriterSettings.DEFAULT_SETTINGS_FORMATTED));
@@ -142,6 +157,9 @@ public record ForwardableDocument (@NonNull @Nonempty String id,
                                     aTransaction.getCreatedDT (),
                                     aTransaction.getID (),
                                     // A self-generated document is never verified
+                                    null,
+                                    null,
+                                    // A self-generated MLS is never correlated
                                     null,
                                     null,
                                     // No sidecar: OutboundTransactionResponse has no JSON

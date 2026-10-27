@@ -71,6 +71,7 @@ public class InboundTransactionRow implements IInboundTransaction
   private final String m_sMlsOutboundTransactionID;
   private final EVerificationResult m_eVerificationResult;
   private final String m_sVerificationDetails;
+  private final String m_sMlsCorrelatedOutboundTransactionID;
 
   /**
    * Construct an inbound transaction row from a JDBC result row.
@@ -112,6 +113,7 @@ public class InboundTransactionRow implements IInboundTransaction
     m_sMlsOutboundTransactionID = aRow.getAsString (29);
     m_eVerificationResult = EVerificationResult.getFromIDOrNull (aRow.getAsString (30));
     m_sVerificationDetails = aRow.getAsString (31);
+    m_sMlsCorrelatedOutboundTransactionID = aRow.getAsString (32);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notEmpty (m_sIncomingID, "IncomingID");
     ValueEnforcer.notEmpty (m_sC2SeatID, "C2SeatID");
@@ -367,5 +369,12 @@ public class InboundTransactionRow implements IInboundTransaction
   public String getVerificationDetails ()
   {
     return m_sVerificationDetails;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getMlsCorrelatedOutboundTransactionID ()
+  {
+    return m_sMlsCorrelatedOutboundTransactionID;
   }
 }

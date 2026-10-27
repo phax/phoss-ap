@@ -49,12 +49,21 @@ public final class MockInboundTransaction implements IInboundTransaction
 
   private final EVerificationResult m_eVerificationResult;
   private final String m_sVerificationDetails;
+  private final String m_sMlsCorrelatedOutboundTransactionID;
 
   public MockInboundTransaction (@Nullable final EVerificationResult eVerificationResult,
                                  @Nullable final String sVerificationDetails)
   {
+    this (eVerificationResult, sVerificationDetails, null);
+  }
+
+  public MockInboundTransaction (@Nullable final EVerificationResult eVerificationResult,
+                                 @Nullable final String sVerificationDetails,
+                                 @Nullable final String sMlsCorrelatedOutboundTransactionID)
+  {
     m_eVerificationResult = eVerificationResult;
     m_sVerificationDetails = sVerificationDetails;
+    m_sMlsCorrelatedOutboundTransactionID = sMlsCorrelatedOutboundTransactionID;
   }
 
   @NonNull
@@ -243,5 +252,11 @@ public final class MockInboundTransaction implements IInboundTransaction
   public String getVerificationDetails ()
   {
     return m_sVerificationDetails;
+  }
+
+  @Nullable
+  public String getMlsCorrelatedOutboundTransactionID ()
+  {
+    return m_sMlsCorrelatedOutboundTransactionID;
   }
 }

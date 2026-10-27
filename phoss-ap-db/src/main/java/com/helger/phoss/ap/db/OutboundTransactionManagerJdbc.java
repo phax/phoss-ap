@@ -169,6 +169,37 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
   }
 
   /** {@inheritDoc} */
+  @Nullable
+  public IOutboundTransaction getByIDIncludingArchive (@NonNull final String sID)
+  {
+    // Active table first
+    final IOutboundTransaction aActive = getByID (sID);
+    if (aActive != null)
+      return aActive;
+
+    // Fall back to archive table
+    final ICommonsList <DBResultRow> aRows = newExecutor ().queryAll ("SELECT " +
+                                                                      COLS +
+                                                                      " FROM " +
+                                                                      m_sTableName +
+                                                                      "_archive" +
+                                                                      " WHERE id=?",
+                                                                      new ConstantPreparedStatementDataProvider (sID));
+    if (aRows != null)
+    {
+      if (aRows.size () == 1)
+        return new OutboundTransactionRow (aRows.getFirstOrNull ());
+      if (aRows.size () > 1)
+        LOGGER.warn ("Found " +
+                     aRows.size () +
+                     " archived transactions that all match the Transaction Identifier '" +
+                     sID +
+                     "'");
+    }
+    return null;
+  }
+
+  /** {@inheritDoc} */
   public boolean containsTransactionWithID (@NonNull final String sID)
   {
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" + " FROM " + m_sTableName + " WHERE id=?",

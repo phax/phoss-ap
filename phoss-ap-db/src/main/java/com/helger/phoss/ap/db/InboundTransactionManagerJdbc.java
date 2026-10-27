@@ -62,7 +62,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                      " status, attempt_count, received_dt, completed_dt," +
                                      " reporting_status, next_retry_dt, error_details," +
                                      " mls_to, mls_type, mls_response_code, mls_outbound_transaction_id," +
-                                     " verification_result, verification_details";
+                                     " verification_result, verification_details, mls_correlated_outbound_transaction_id";
   private static final Logger LOGGER = LoggerFactory.getLogger (InboundTransactionManagerJdbc.class);
 
   private final String m_sTableName;
@@ -113,7 +113,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                  " (" +
                                                                  COLS +
                                                                  ")" +
-                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                                                  new ConstantPreparedStatementDataProvider (sID,
                                                                                                             sIncomingID,
                                                                                                             sC2SeatID,
@@ -142,6 +142,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                                                             null,
                                                                                                             sMlsTo,
                                                                                                             eMlsType.getID (),
+                                                                                                            null,
                                                                                                             null,
                                                                                                             null,
                                                                                                             null,
@@ -421,6 +422,20 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " WHERE id=?",
                                                                       new ConstantPreparedStatementDataProvider (eVerificationResult.getID (),
                                                                                                                  sVerificationDetails,
+                                                                                                                 sID));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  /** {@inheritDoc} */
+  @NonNull
+  public ESuccess updateMlsCorrelatedOutboundTransactionID (@NonNull final String sID,
+                                                            @NonNull final String sCorrelatedOutboundTransactionID)
+  {
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
+                                                                      " SET mls_correlated_outbound_transaction_id=?" +
+                                                                      " WHERE id=?",
+                                                                      new ConstantPreparedStatementDataProvider (sCorrelatedOutboundTransactionID,
                                                                                                                  sID));
     return ESuccess.valueOf (nRowsAffected == 1);
   }

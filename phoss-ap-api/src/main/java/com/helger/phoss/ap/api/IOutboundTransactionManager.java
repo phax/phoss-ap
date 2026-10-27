@@ -125,6 +125,20 @@ public interface IOutboundTransactionManager
   IOutboundTransaction getByID (@NonNull String sID);
 
   /**
+   * Look up a transaction by its unique ID, searching both the active {@code outbound_transaction}
+   * table and the {@code outbound_transaction_archive} table. The active table is queried first;
+   * the archive table is only consulted if no match is found there.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @return The transaction (from the active table if present, otherwise from the archive), or
+   *         <code>null</code> if not found in either.
+   * @since 0.14.0
+   */
+  @Nullable
+  IOutboundTransaction getByIDIncludingArchive (@NonNull String sID);
+
+  /**
    * Check if the transaction with the provided ID exists in the DB or not.
    *
    * @param sID

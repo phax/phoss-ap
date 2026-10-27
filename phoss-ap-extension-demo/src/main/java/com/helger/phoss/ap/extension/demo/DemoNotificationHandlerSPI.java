@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.style.IsSPIImplementation;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.phoss.ap.api.model.IOutboundTransaction;
 import com.helger.phoss.ap.api.model.MlsOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.api.spi.IAPNotificationHandlerSPI;
@@ -208,15 +209,16 @@ public final class DemoNotificationHandlerSPI implements IAPNotificationHandlerS
   }
 
   /** {@inheritDoc} */
-  public void onOutboundPermanentSendingFailure (@NonNull final String sTransactionID,
-                                                 @NonNull final String sSbdhInstanceID,
+  public void onOutboundPermanentSendingFailure (@NonNull final IOutboundTransaction aTransaction,
                                                  @Nullable final String sErrorDetails)
   {
     LOGGER.info (PREFIX +
                  "onOutboundPermanentSendingFailure: transactionID=" +
-                 sTransactionID +
+                 aTransaction.getID () +
                  ", sbdhInstanceID=" +
-                 sSbdhInstanceID +
+                 aTransaction.getSbdhInstanceID () +
+                 ", custom1=" +
+                 aTransaction.getCustom1 () +
                  ", errorDetails=" +
                  sErrorDetails);
   }

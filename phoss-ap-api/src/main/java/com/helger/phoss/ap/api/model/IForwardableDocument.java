@@ -135,6 +135,27 @@ public interface IForwardableDocument
   String verificationDetails ();
 
   /**
+   * @return The ID of the outbound business document transaction that an
+   *         {@link EForwardableKind#INBOUND_MLS} was correlated with, or <code>null</code> if the
+   *         MLS could not be correlated or if this document is not an inbound MLS. An MLS is
+   *         forwarded whether it was correlated or not, so this is how a forwarder can tell the two
+   *         cases apart.
+   * @since 0.14.0
+   */
+  @Nullable
+  String correlatedOutboundTransactionID ();
+
+  /**
+   * @return The outbound business document transaction that an {@link EForwardableKind#INBOUND_MLS}
+   *         was correlated with - e.g. to access its custom fields - or <code>null</code> if there
+   *         is no {@link #correlatedOutboundTransactionID()} or if the transaction could not be
+   *         found anymore. It may come from the archive.
+   * @since 0.14.0
+   */
+  @Nullable
+  IOutboundTransaction correlatedOutboundTransaction ();
+
+  /**
    * @return A supplier of the metadata JSON that a forwarder may write as a sidecar next to the
    *         document, or <code>null</code> if this document has no metadata to offer. It is
    *         deliberately a supplier and not a plain value: rendering the JSON is only worth doing

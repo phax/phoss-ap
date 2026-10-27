@@ -1006,7 +1006,7 @@ public final class OutboundOrchestrator
 
           // Notify
           for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
-            aHandler.onOutboundPermanentSendingFailure (sTxID, aTx.getSbdhInstanceID (), sErrMsg);
+            aHandler.onOutboundPermanentSendingFailure (aTx, sErrMsg);
         };
 
         // Callback on recoverable error - fails permanently once the maximum number of attempts is
@@ -1547,10 +1547,7 @@ public final class OutboundOrchestrator
                                                                                            aTimestampMgr.getCurrentDateTimeUTC ())
                                                                        : null;
                   for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
-                    aHandler.onOutboundDocumentSent (sTxID,
-                                                     aTx.getSbdhInstanceID (),
-                                                     aSendingDuration,
-                                                     nNewAttemptCount);
+                    aHandler.onOutboundDocumentSent (aTx, aSendingDuration, nNewAttemptCount);
                 }
 
                 // Store Reporting data on success only

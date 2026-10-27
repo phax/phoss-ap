@@ -38,6 +38,7 @@ import com.helger.phoss.ap.api.IInboundForwardingAttemptManager;
 import com.helger.phoss.ap.api.IInboundTransactionManager;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
+import com.helger.phoss.ap.api.ITransactionAuditManager;
 import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.db.config.APFlywayConfigurationBuilder;
@@ -68,6 +69,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   private IArchivalManager m_aArchivalMgr;
   private MlsMetricsManagerJdbc m_aMlsMetricsMgr;
   private AS4DuplicateManagerJdbc m_aAS4DuplicateMgr;
+  private ITransactionAuditManager m_aTransactionAuditMgr;
 
   /**
    * @deprecated Only called via reflection
@@ -147,6 +149,7 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aMlsMetricsMgr = new MlsMetricsManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aAS4DuplicateMgr = new AS4DuplicateManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aTransactionAuditMgr = new TransactionAuditManagerJdbc (aTimestampMgr, sTableNamePrefix);
 
       LOGGER.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }
@@ -243,5 +246,14 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
   public static IAS4DuplicateManager getAS4DuplicateMgr ()
   {
     return getInstance ().m_aAS4DuplicateMgr;
+  }
+
+  /**
+   * @return The transaction audit manager. Never <code>null</code>.
+   */
+  @NonNull
+  public static ITransactionAuditManager getTransactionAuditMgr ()
+  {
+    return getInstance ().m_aTransactionAuditMgr;
   }
 }

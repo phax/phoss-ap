@@ -18,6 +18,7 @@ package com.helger.phoss.ap.core.startup;
 
 import static com.helger.phoss.ap.core.startup.StartupCheckTestHelper.assertErrors;
 import static com.helger.phoss.ap.core.startup.StartupCheckTestHelper.createConfig;
+import static org.junit.Assume.assumeTrue;
 
 import java.util.Map;
 
@@ -38,12 +39,34 @@ public final class StartupCheckAS4KeyStoreTest
 {
   static final String KEYSTORE_PREFIX = "org.apache.wss4j.crypto.merlin.keystore.";
 
+  private static final String KEYSTORE_FILE = "startup-check/invalid-keystore-pw-peppol.p12";
+  private static final String POP_KEYSTORE_FILE = "startup-check/pop000001.p12";
+
+  /**
+   * Skip the calling test if the key store file is not on the class path - key store files are not
+   * available in every build environment.
+   *
+   * @param sPath
+   *        The class path relative path of the key store. May not be <code>null</code>.
+   */
+  private static void _assumeKeyStoreIsPresent (@NonNull final String sPath)
+  {
+    assumeTrue ("The test key store '" + sPath + "' is not available - skipping",
+                StartupCheckAS4KeyStoreTest.class.getClassLoader ().getResource (sPath) != null);
+  }
+
+  /**
+   * @return The configuration of the test key store whose certificate is not a Peppol AP
+   *         certificate. Skips the calling test if the key store is not available.
+   */
   @NonNull
   static ICommonsMap <String, String> createKeyStoreConfig ()
   {
+    _assumeKeyStoreIsPresent (KEYSTORE_FILE);
+
     final ICommonsMap <String, String> ret = new CommonsHashMap <> ();
     ret.put (KEYSTORE_PREFIX + "type", "pkcs12");
-    ret.put (KEYSTORE_PREFIX + "file", "startup-check/invalid-keystore-pw-peppol.p12");
+    ret.put (KEYSTORE_PREFIX + "file", KEYSTORE_FILE);
     ret.put (KEYSTORE_PREFIX + "password", "peppol");
     ret.put (KEYSTORE_PREFIX + "alias", "private_key_for_pkcs12_certificate");
     ret.put (KEYSTORE_PREFIX + "private.password", "peppol");
@@ -52,14 +75,16 @@ public final class StartupCheckAS4KeyStoreTest
 
   /**
    * @return The configuration of a self-signed test key store whose certificate has the subject CN
-   *         <code>POP000001</code>.
+   *         <code>POP000001</code>. Skips the calling test if the key store is not available.
    */
   @NonNull
   static ICommonsMap <String, String> createPopKeyStoreConfig ()
   {
+    _assumeKeyStoreIsPresent (POP_KEYSTORE_FILE);
+
     final ICommonsMap <String, String> ret = new CommonsHashMap <> ();
     ret.put (KEYSTORE_PREFIX + "type", "pkcs12");
-    ret.put (KEYSTORE_PREFIX + "file", "startup-check/pop000001.p12");
+    ret.put (KEYSTORE_PREFIX + "file", POP_KEYSTORE_FILE);
     ret.put (KEYSTORE_PREFIX + "password", "password");
     ret.put (KEYSTORE_PREFIX + "alias", "ap");
     ret.put (KEYSTORE_PREFIX + "private.password", "password");

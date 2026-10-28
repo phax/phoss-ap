@@ -1852,4 +1852,36 @@ public final class InboundOrchestrator
       _sendPositiveMlsAfterForwarding (aVerifiedTx, aMlsWarnings.get ());
     return eForward;
   }
+
+  /**
+   * Forward an inbound document again, outside of the initial receive path - by the retry scheduler
+   * or by the operations replay. If it succeeds, the positive MLS is sent to C2, exactly as after a
+   * successful forwarding in
+   * {@link #processIncomingDocument(String, String, String, java.security.cert.X509Certificate, OffsetDateTime, PeppolSBDHData, byte[])}.
+   * If C2 was already answered for this transaction, no second MLS is created, because the MLS slot
+   * of the transaction is claimed atomically.
+   * <p>
+   * The warnings of the original verification are not available anymore, so the positive MLS
+   * carries no line responses.
+   * </p>
+   *
+   * @param sLogPrefix
+   *        Log message prefix for traceability. May not be <code>null</code>.
+   * @param aInboundTx
+   *        The inbound transaction to be forwarded again. May not be <code>null</code>.
+   * @return The result of {@link #forwardDocument(String, IInboundTransaction)}.
+   * @since 0.14.0
+   */
+  @NonNull
+  public static ESuccess forwardDocumentAndSendMls (@NonNull final String sLogPrefix,
+                                                    @NonNull final IInboundTransaction aInboundTx)
+  {
+    ValueEnforcer.notNull (sLogPrefix, "LogPrefix");
+    ValueEnforcer.notNull (aInboundTx, "InboundTx");
+
+    final ESuccess eForward = forwardDocument (sLogPrefix, aInboundTx);
+    if (eForward.isSuccess ())
+      _sendPositiveMlsAfterForwarding (aInboundTx, null);
+    return eForward;
+  }
 }

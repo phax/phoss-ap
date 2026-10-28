@@ -142,17 +142,24 @@ public class OperationsController
   }
 
   /**
-   * Voluntarily replay (re-forward) an inbound transaction.
+   * Voluntarily replay (re-forward) an inbound transaction. If C2 was not answered yet, the positive
+   * MLS is sent after a successful forwarding.
    *
    * @param sbdhInstanceID
    *        The SBDH Instance ID of the transaction to replay.
-   * @return 200 on success, 404 if not found, 500 on failure.
+   * @return 200 on success, 404 if not found, 409 if the verification of the transaction is not
+   *         finished yet (status <code>received</code>, <code>receive_recovering</code> or
+   *         <code>verification_deferred</code>), 500 on failure.
    */
   @PostMapping ("/inbound/{sbdhInstanceID}/replay")
   @Operation (summary = "Replay an inbound transaction",
-              description = "Forces a re-forwarding of an existing inbound transaction.")
+              description = "Forces a re-forwarding of an existing inbound transaction. Transactions whose verification is not finished yet are rejected with 409: 'received' and 'receive_recovering' are processed automatically, use 'reverify-and-forward' for 'verification_deferred'.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction replay initiated"),
-                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content) })
+                   @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content),
+                   @ApiResponse (responseCode = "409",
+                                 description = "The verification of the transaction is not finished yet",
+                                 content = @Content),
+                   @ApiResponse (responseCode = "500", description = "Forwarding failed", content = @Content) })
   public ResponseEntity <InboundTransactionResponse> replayInbound (@Parameter (description = "SBDH Instance ID",
                                                                                 required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
   {
@@ -161,7 +168,24 @@ public class OperationsController
     if (aTx == null)
       return ResponseEntity.notFound ().build ();
 
-    final ESuccess eSuccess = InboundOrchestrator.forwardDocument ("API Replay: ", aTx);
+    // A replay does not verify. Forwarding a document whose verification is not finished yet would
+    // deliver an unverified document to C4 and answer C2 with a positive MLS for it. "received" and
+    // "receive_recovering" are still processed by the receive path or the receive recovery, and a
+    // replay would race with them
+    final EInboundStatus eStatus = aTx.getStatus ();
+    if (eStatus == EInboundStatus.RECEIVED ||
+        eStatus == EInboundStatus.RECEIVE_RECOVERING ||
+        eStatus == EInboundStatus.VERIFICATION_DEFERRED)
+    {
+      LOGGER.warn ("The inbound transaction '" +
+                   sbdhInstanceID +
+                   "' is in status '" +
+                   eStatus.getID () +
+                   "' and its verification is not finished yet - not replaying it");
+      return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aTx));
+    }
+
+    final ESuccess eSuccess = InboundOrchestrator.forwardDocumentAndSendMls ("API Replay: ", aTx);
     final IInboundTransaction aUpdatedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
     final IInboundTransaction aFinalTx = aUpdatedTx != null ? aUpdatedTx : aTx;
 

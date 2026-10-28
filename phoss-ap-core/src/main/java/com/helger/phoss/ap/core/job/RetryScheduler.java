@@ -360,7 +360,7 @@ public final class RetryScheduler
 
             nProcessed++;
             // Re-forward using the original InboundOrchestrator logic
-            if (InboundOrchestrator.forwardDocument (sLogPrefix, aInboundTx).isFailure ())
+            if (InboundOrchestrator.forwardDocumentAndSendMls (sLogPrefix, aInboundTx).isFailure ())
             {
               for (final var aHandler : APCoreMetaManager.getAllNotificationHandlers ())
                 aHandler.onInboundForwardingError (aInboundTx.getID (), true);

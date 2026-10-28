@@ -148,13 +148,52 @@ final class OperationsControllerTest
       when (aTxMgr.getBySbdhInstanceIDIncludingArchive ("tx-123")).thenReturn (aTx);
       aMockJdbc.when (APJdbcMetaManager::getInboundTransactionMgr).thenReturn (aTxMgr);
 
-      aMockOrchestrator.when (() -> InboundOrchestrator.forwardDocument ("API Replay: ", aTx))
+      aMockOrchestrator.when (() -> InboundOrchestrator.forwardDocumentAndSendMls ("API Replay: ", aTx))
                        .thenReturn (ESuccess.SUCCESS);
 
       final ResponseEntity <InboundTransactionResponse> aResp = m_aController.replayInbound ("tx-123");
       assertEquals (HttpStatus.OK, aResp.getStatusCode ());
       assertNotNull (aResp.getBody ());
     }
+  }
+
+  private void _assertReplayRejected (final com.helger.phoss.ap.api.codelist.EInboundStatus eStatus)
+  {
+    try (final MockedStatic <APJdbcMetaManager> aMockJdbc = mockStatic (APJdbcMetaManager.class);
+         final MockedStatic <InboundOrchestrator> aMockOrchestrator = mockStatic (InboundOrchestrator.class))
+    {
+      final IInboundTransactionManager aTxMgr = mock (IInboundTransactionManager.class);
+      final IInboundTransaction aTx = mock (IInboundTransaction.class);
+      when (aTx.getStatus ()).thenReturn (eStatus);
+      when (aTx.getReportingStatus ()).thenReturn (com.helger.phoss.ap.api.codelist.EReportingStatus.PENDING);
+      when (aTx.getMlsType ()).thenReturn (com.helger.peppol.sbdh.EPeppolMLSType.ALWAYS_SEND);
+      when (aTxMgr.getBySbdhInstanceIDIncludingArchive ("tx-123")).thenReturn (aTx);
+      aMockJdbc.when (APJdbcMetaManager::getInboundTransactionMgr).thenReturn (aTxMgr);
+
+      final ResponseEntity <InboundTransactionResponse> aResp = m_aController.replayInbound ("tx-123");
+      assertEquals (HttpStatus.CONFLICT, aResp.getStatusCode ());
+      assertNotNull (aResp.getBody ());
+      // Neither forwarded nor answered
+      aMockOrchestrator.verifyNoInteractions ();
+    }
+  }
+
+  @Test
+  void testReplayInboundReceived ()
+  {
+    _assertReplayRejected (com.helger.phoss.ap.api.codelist.EInboundStatus.RECEIVED);
+  }
+
+  @Test
+  void testReplayInboundReceiveRecovering ()
+  {
+    _assertReplayRejected (com.helger.phoss.ap.api.codelist.EInboundStatus.RECEIVE_RECOVERING);
+  }
+
+  @Test
+  void testReplayInboundVerificationDeferred ()
+  {
+    _assertReplayRejected (com.helger.phoss.ap.api.codelist.EInboundStatus.VERIFICATION_DEFERRED);
   }
 
   @Test

@@ -52,7 +52,7 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.57.4</awssdk.version>
+    <awssdk.version>2.57.5</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.21.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>

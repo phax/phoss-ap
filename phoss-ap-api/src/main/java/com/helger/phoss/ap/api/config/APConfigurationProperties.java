@@ -315,10 +315,7 @@ public final class APConfigurationProperties
   public static final long RETRY_FORWARDING_MAX_BACKOFF_MS_DEFAULT = 3_600_000L;
 
   // Retry scheduler
-  /** @since 0.14.0 */
-  public static final String RETRY_SCHEDULER_ENABLED = "retry.scheduler.enabled";
-  /** @since 0.14.0 */
-  public static final boolean RETRY_SCHEDULER_ENABLED_DEFAULT = true;
+  // Deliberately no "retry.scheduler.enabled" - the retry scheduler must run on every instance
   /** @since 0.9.0 */
   public static final String RETRY_SCHEDULER_INTERVAL = "retry.scheduler.interval";
   /** @since 0.9.0 */

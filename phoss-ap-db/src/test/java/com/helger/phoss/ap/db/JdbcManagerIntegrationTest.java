@@ -1278,6 +1278,58 @@ public final class JdbcManagerIntegrationTest
   }
 
   @Test
+  public void testInboundClaimForReplay () throws Exception
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sID = _createInboundTx ();
+
+    // Not due yet - a replay ignores the next retry date time
+    aMgr.updateStatusAndRetry (sID, EInboundStatus.FORWARD_FAILED, 1, _now ().plusHours (1), "test error");
+
+    // The status was read before somebody else changed it
+    assertFalse (aMgr.claimForReplay (sID, EInboundStatus.RECOVERING).isSuccess ());
+    assertEquals (EInboundStatus.FORWARD_FAILED, aMgr.getByID (sID).getStatus ());
+
+    assertTrue (aMgr.claimForReplay (sID, EInboundStatus.FORWARD_FAILED).isSuccess ());
+    assertEquals (EInboundStatus.FORWARDING, aMgr.getByID (sID).getStatus ());
+
+    // A second replay or the retry scheduler loses
+    assertFalse (_onOtherConnection ( () -> aMgr.claimForReplay (sID, EInboundStatus.FORWARD_FAILED)).isSuccess ());
+    assertFalse (aMgr.claimForRetry (sID).isSuccess ());
+
+    // A final status can be replayed as well
+    aMgr.updateStatusCompleted (sID, EInboundStatus.PERMANENTLY_FAILED);
+    assertTrue (aMgr.claimForReplay (sID, EInboundStatus.PERMANENTLY_FAILED).isSuccess ());
+    assertEquals (EInboundStatus.FORWARDING, aMgr.getByID (sID).getStatus ());
+
+    assertFalse (aMgr.claimForReplay ("does-not-exist", EInboundStatus.FORWARD_FAILED).isSuccess ());
+  }
+
+  @Test
+  public void testInboundArchivedCannotBeClaimedOrAnswered ()
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+
+    final String sTxID = _createInboundTx ();
+    final String sSbdhID = aTxMgr.getByID (sTxID).getSbdhInstanceID ();
+    aTxMgr.updateStatusCompleted (sTxID, EInboundStatus.FORWARDED);
+    aTxMgr.updateReportingStatus (sTxID, EReportingStatus.REPORTED);
+    assertTrue (aArchivalMgr.archiveInboundTransaction (sTxID, false).isSuccess ());
+
+    // Only found including the archive
+    assertNull (aTxMgr.getBySbdhInstanceID (sSbdhID));
+    final IInboundTransaction aArchived = aTxMgr.getBySbdhInstanceIDIncludingArchive (sSbdhID);
+    assertNotNull (aArchived);
+    assertEquals (EInboundStatus.FORWARDED, aArchived.getStatus ());
+
+    // Neither a replay nor an MLS can touch an archived transaction
+    assertFalse (aTxMgr.claimForReplay (sTxID, EInboundStatus.FORWARDED).isSuccess ());
+    assertFalse (aTxMgr.claimMlsResponseCode (sTxID, EPeppolMLSResponseCode.ACCEPTANCE).isSuccess ());
+    assertEquals (EInboundStatus.FORWARDED, aTxMgr.getBySbdhInstanceIDIncludingArchive (sSbdhID).getStatus ());
+  }
+
+  @Test
   public void testInboundMarkAllInFlightAsRecovering ()
   {
     final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();

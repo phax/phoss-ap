@@ -567,17 +567,6 @@ public final class APCoreConfig
   }
 
   /**
-   * @return {@code true} if the retry background scheduler is enabled. It also runs the
-   *         re-verification of deferred documents and the MLS watchdog.
-   * @since 0.14.0
-   */
-  public static boolean isRetrySchedulerEnabled ()
-  {
-    return _getConfig ().getAsBoolean (APConfigurationProperties.RETRY_SCHEDULER_ENABLED,
-                                       APConfigurationProperties.RETRY_SCHEDULER_ENABLED_DEFAULT);
-  }
-
-  /**
    * @return The interval at which the retry scheduler checks for transactions to retry. Never
    *         <code>null</code>.
    * @since 0.9.0

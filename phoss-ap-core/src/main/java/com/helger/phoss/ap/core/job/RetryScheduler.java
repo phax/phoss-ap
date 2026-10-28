@@ -504,17 +504,17 @@ public final class RetryScheduler
 
   /**
    * Start the retry scheduler. It periodically checks for outbound and inbound transactions that
-   * are eligible for retry and processes them. If the retry scheduler is disabled via
-   * configuration, this method does nothing.
+   * are eligible for retry and processes them.
+   * <p>
+   * The retry scheduler is deliberately not configurable to be disabled: it also runs the stale
+   * transaction recovery, the receive recovery, the re-verification of deferred documents and the
+   * MLS watchdog, and the atomic claims make it safe on every instance of a multi-instance
+   * deployment. An instance without it would leave its own interrupted transactions unrecovered
+   * and gain nothing.
+   * </p>
    */
   public static void start ()
   {
-    if (!APCoreConfig.isRetrySchedulerEnabled ())
-    {
-      LOGGER.info ("phoss AP retry scheduler is disabled");
-      return;
-    }
-
     // The configuration was verified by StartupCheckRetryScheduler
     final int nBatchSize = APCoreConfig.getRetrySchedulerBatchSize ();
 

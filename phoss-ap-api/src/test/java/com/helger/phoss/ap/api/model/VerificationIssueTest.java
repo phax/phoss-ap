@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import com.helger.json.IJsonObject;
+import com.helger.json.JsonObject;
 import com.helger.phoss.ap.api.codelist.EVerificationIssueLevel;
 import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
 
@@ -89,6 +90,39 @@ public final class VerificationIssueTest
     assertNull (aJson.get ("code"));
     assertNull (aJson.get ("location"));
     assertEquals ("Nope", aJson.getAsString ("description"));
+  }
+
+  @Test
+  public void testGetFromJsonOrNull ()
+  {
+    final VerificationIssue a = new VerificationIssue (EVerificationIssueLevel.WARNING,
+                                                       EVerificationIssueType.BUSINESS_RULE,
+                                                       "PEPPOL-EN16931-R001",
+                                                       "/Invoice/cbc:ID",
+                                                       "Missing ID");
+    final VerificationIssue b = VerificationIssue.getFromJsonOrNull (a.getAsJson ());
+    assertNotNull (b);
+    assertSame (a.getLevel (), b.getLevel ());
+    assertSame (a.getType (), b.getType ());
+    assertEquals (a.getCode (), b.getCode ());
+    assertEquals (a.getLocation (), b.getLocation ());
+    assertEquals (a.getDescription (), b.getDescription ());
+
+    // Optional fields
+    final VerificationIssue c = VerificationIssue.getFromJsonOrNull (VerificationIssue.syntaxViolation (null,
+                                                                                                         null,
+                                                                                                         "d")
+                                                                                       .getAsJson ());
+    assertNotNull (c);
+    assertNull (c.getCode ());
+    assertNull (c.getLocation ());
+
+    // Invalid
+    assertNull (VerificationIssue.getFromJsonOrNull (null));
+    assertNull (VerificationIssue.getFromJsonOrNull (new JsonObject ()));
+    assertNull (VerificationIssue.getFromJsonOrNull (a.getAsJson ().add (VerificationIssue.JSON_LEVEL, "nope")));
+    assertNull (VerificationIssue.getFromJsonOrNull (a.getAsJson ().add (VerificationIssue.JSON_TYPE, "nope")));
+    assertNull (VerificationIssue.getFromJsonOrNull (a.getAsJson ().add (VerificationIssue.JSON_DESCRIPTION, "")));
   }
 
   @Test

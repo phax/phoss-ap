@@ -45,14 +45,6 @@ public final class StartupCheckRetrySchedulerTest
                                         "1",
                                         APConfigurationProperties.RETRY_SCHEDULER_INTERVAL,
                                         "1ms")));
-    // Not checked, if disabled
-    assertErrors (m_aCheck,
-                  0,
-                  performCheck (m_aCheck,
-                                Map.of (APConfigurationProperties.RETRY_SCHEDULER_ENABLED,
-                                        "false",
-                                        APConfigurationProperties.RETRY_SCHEDULER_BATCH_SIZE,
-                                        "0")));
   }
 
   @Test

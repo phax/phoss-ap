@@ -201,6 +201,23 @@ public interface IInboundTransactionManager
   ESuccess claimForRetry (@NonNull String sID);
 
   /**
+   * Atomically claim a transaction for a manual replay: change its status from the status it was
+   * read with to {@link EInboundStatus#FORWARDING}, if it is still in that status. Unlike
+   * {@link #claimForRetry(String)} this ignores the next retry date time, but it fails if anybody
+   * else changed the status in the meantime - e.g. the retry scheduler that claimed it first. An
+   * archived transaction can never be claimed.
+   *
+   * @param sID
+   *        The transaction ID. Never <code>null</code>.
+   * @param eExpectedStatus
+   *        The status the transaction was read with. Never <code>null</code>.
+   * @return {@link ESuccess#SUCCESS} if this call claimed the transaction.
+   * @since 0.14.0
+   */
+  @NonNull
+  ESuccess claimForReplay (@NonNull String sID, @NonNull EInboundStatus eExpectedStatus);
+
+  /**
    * Mark all transactions in {@link EInboundStatus#FORWARDING} as {@link EInboundStatus#RECOVERING},
    * due for a retry at the provided date time. A transaction that is still being forwarded leaves
    * that status again with its next regular status update; one that was left behind by an instance

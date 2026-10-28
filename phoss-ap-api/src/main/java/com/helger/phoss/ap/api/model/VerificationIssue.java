@@ -61,6 +61,17 @@ import com.helger.phoss.ap.api.codelist.EVerificationIssueType;
 @Immutable
 public final class VerificationIssue
 {
+  /** @since 0.14.0 */
+  public static final String JSON_LEVEL = "level";
+  /** @since 0.14.0 */
+  public static final String JSON_TYPE = "type";
+  /** @since 0.14.0 */
+  public static final String JSON_CODE = "code";
+  /** @since 0.14.0 */
+  public static final String JSON_LOCATION = "location";
+  /** @since 0.14.0 */
+  public static final String JSON_DESCRIPTION = "description";
+
   private final EVerificationIssueLevel m_eLevel;
   private final EVerificationIssueType m_eType;
   private final String m_sCode;
@@ -173,13 +184,38 @@ public final class VerificationIssue
   @NonNull
   public IJsonObject getAsJson ()
   {
-    final IJsonObject ret = new JsonObject ().add ("level", m_eLevel.getID ()).add ("type", m_eType.getID ());
+    final IJsonObject ret = new JsonObject ().add (JSON_LEVEL, m_eLevel.getID ()).add (JSON_TYPE, m_eType.getID ());
     if (hasCode ())
-      ret.add ("code", m_sCode);
+      ret.add (JSON_CODE, m_sCode);
     if (hasLocation ())
-      ret.add ("location", m_sLocation);
-    ret.add ("description", m_sDescription);
+      ret.add (JSON_LOCATION, m_sLocation);
+    ret.add (JSON_DESCRIPTION, m_sDescription);
     return ret;
+  }
+
+  /**
+   * Read an issue from the JSON format documented on this class. This is the inverse of
+   * {@link #getAsJson()}.
+   *
+   * @param aJson
+   *        The JSON object to read. May be <code>null</code>.
+   * @return <code>null</code> if the JSON object is <code>null</code>, or if the level, the type or
+   *         the description is missing or invalid.
+   * @since 0.14.0
+   */
+  @Nullable
+  public static VerificationIssue getFromJsonOrNull (@Nullable final IJsonObject aJson)
+  {
+    if (aJson == null)
+      return null;
+
+    final EVerificationIssueLevel eLevel = EVerificationIssueLevel.getFromIDOrNull (aJson.getAsString (JSON_LEVEL));
+    final EVerificationIssueType eType = EVerificationIssueType.getFromIDOrNull (aJson.getAsString (JSON_TYPE));
+    final String sDescription = aJson.getAsString (JSON_DESCRIPTION);
+    if (eLevel == null || eType == null || StringHelper.isEmpty (sDescription))
+      return null;
+
+    return new VerificationIssue (eLevel, eType, aJson.getAsString (JSON_CODE), aJson.getAsString (JSON_LOCATION), sDescription);
   }
 
   /** {@inheritDoc} */

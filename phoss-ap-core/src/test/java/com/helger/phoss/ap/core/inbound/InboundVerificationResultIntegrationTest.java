@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import com.helger.base.state.EContinue;
 import com.helger.collection.commons.CommonsArrayList;
+import com.helger.collection.commons.ICommonsList;
 import com.helger.config.fallback.ConfigWithFallback;
 import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.config.source.MultiConfigurationValueProvider;
@@ -54,6 +55,7 @@ import com.helger.phoss.ap.api.config.APConfigProvider;
 import com.helger.phoss.ap.api.config.APConfigurationProperties;
 import com.helger.phoss.ap.api.model.IInboundTransaction;
 import com.helger.phoss.ap.api.model.IOutboundTransaction;
+import com.helger.phoss.ap.api.model.MlsOutcomeIssue;
 import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
@@ -268,6 +270,42 @@ public final class InboundVerificationResultIntegrationTest
     assertTrue (sDetails.contains ("\"level\":\"warning\""));
     assertTrue (sDetails.contains ("\"code\":\"W-1\""));
     assertEquals (-1, sDetails.indexOf ("responseCode"));
+  }
+
+  @Test
+  public void testStoredMlsWarningsOfAPassedDocument ()
+  {
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final IInboundTransaction aTx = _createInboundTx ();
+    // Not verified at all
+    assertNull (InboundOrchestrator.getStoredMlsWarnings (aTx));
+
+    final VerificationIssue aWarning = VerificationIssue.businessRuleWarning ("W-1", "/Invoice", "Just a warning");
+    final VerifierResult aVR = VerifierResult.passed (VerificationOutcome.passed (new CommonsArrayList <> (aWarning)));
+    assertSame (EContinue.CONTINUE, InboundOrchestrator.handleVerifierResult (LOG_PREFIX, aTx, aVR));
+
+    // A forwarding retry only has the stored transaction - it must yield the same line responses
+    // as the in-memory findings of the initial receive path
+    final IInboundTransaction aUpdated = aMgr.getByID (aTx.getID ());
+    assertNotNull (aUpdated);
+    final ICommonsList <MlsOutcomeIssue> aStored = InboundOrchestrator.getStoredMlsWarnings (aUpdated);
+    assertNotNull (aStored);
+    final ICommonsList <MlsOutcomeIssue> aInMemory = InboundOrchestrator.getAllMlsIssues (aVR);
+    assertEquals (aInMemory.size (), aStored.size ());
+    assertEquals (1, aStored.size ());
+    assertSame (aInMemory.getFirstOrNull ().getStatusReasonCode (), aStored.getFirstOrNull ().getStatusReasonCode ());
+    assertEquals (aInMemory.getFirstOrNull ().getErrorField (), aStored.getFirstOrNull ().getErrorField ());
+    assertEquals (aInMemory.getFirstOrNull ().getDescription (), aStored.getFirstOrNull ().getDescription ());
+  }
+
+  @Test
+  public void testStoredMlsWarningsOfARejectedDocument ()
+  {
+    // The findings of a rejection were already sent as the negative MLS
+    final IInboundTransaction aRejected = _rejectWithMode (EVerificationRejectionForwarding.RETRY, EContinue.CONTINUE);
+    assertSame (EVerificationResult.REJECTED, aRejected.getVerificationResult ());
+    assertNotNull (aRejected.getVerificationDetails ());
+    assertNull (InboundOrchestrator.getStoredMlsWarnings (aRejected));
   }
 
   @NonNull

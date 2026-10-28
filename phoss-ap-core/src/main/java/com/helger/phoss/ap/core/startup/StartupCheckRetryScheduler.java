@@ -25,7 +25,7 @@ import com.helger.phoss.ap.api.codelist.EAPStartupCheckPhase;
 import com.helger.phoss.ap.core.APCoreConfig;
 
 /**
- * Check the configuration of the retry scheduler, if it is enabled.
+ * Check the configuration of the retry scheduler, which is always running.
  *
  * @author Philip Helger
  * @since 0.13.3
@@ -41,9 +41,6 @@ public class StartupCheckRetryScheduler extends AbstractAPStartupCheck
 
   public void performCheck (@NonNull final ErrorList aErrors)
   {
-    if (!APCoreConfig.isRetrySchedulerEnabled ())
-      return;
-
     final int nBatchSize = APCoreConfig.getRetrySchedulerBatchSize ();
     if (nBatchSize < 1)
       addError (aErrors, "The retry scheduler batch size must be >= 1, but is " + nBatchSize);

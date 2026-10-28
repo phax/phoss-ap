@@ -351,8 +351,25 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
   }
 
   /** {@inheritDoc} */
+  @NonNull
+  public ESuccess claimForReplay (@NonNull final String sID, @NonNull final EInboundStatus eExpectedStatus)
+  {
+    ValueEnforcer.notNull (sID, "ID");
+    ValueEnforcer.notNull (eExpectedStatus, "ExpectedStatus");
+
+    final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
+                                                                      m_sTableName +
+                                                                      " SET status=?" +
+                                                                      " WHERE id=? AND status=?",
+                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARDING.getID (),
+                                                                                                                 sID,
+                                                                                                                 eExpectedStatus.getID ()));
+    return ESuccess.valueOf (nRowsAffected == 1);
+  }
+
+  /** {@inheritDoc} */
   @Nonnegative
-  public long markAllInFlightAsRecovering (@NonNull final OffsetDateTime aRecoveryDueDT)
+  public long markAllInFlightAsRecovering(@NonNull final OffsetDateTime aRecoveryDueDT)
   {
     ValueEnforcer.notNull (aRecoveryDueDT, "RecoveryDueDT");
 

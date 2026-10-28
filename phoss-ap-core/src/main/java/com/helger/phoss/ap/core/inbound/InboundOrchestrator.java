@@ -41,6 +41,9 @@ import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.diagnostics.error.IError;
 import com.helger.diagnostics.error.list.ErrorList;
+import com.helger.json.IJsonArray;
+import com.helger.json.IJsonObject;
+import com.helger.json.serialize.JsonReader;
 import com.helger.peppol.mls.CPeppolMLS;
 import com.helger.peppol.mls.PeppolMLSBuilder;
 import com.helger.peppol.mls.PeppolMLSMarshaller;
@@ -215,6 +218,55 @@ public final class InboundOrchestrator
   static ICommonsList <MlsOutcomeIssue> getAllMlsIssues (@NonNull final VerifierResult aVR)
   {
     return aVR.outcome ().getAllIssues ().getAllMapped (MlsOutcomeIssue::fromVerificationIssue);
+  }
+
+  /**
+   * Get the findings of the verification that accepted the provided inbound transaction as MLS
+   * line responses, read back from its stored verification details. This is what a forwarding
+   * outside of the initial receive path uses instead of the in-memory findings of
+   * {@link #getAllMlsIssues(VerifierResult)}, which are long gone by then.
+   *
+   * @param aInboundTx
+   *        The inbound transaction. May not be <code>null</code>.
+   * @return <code>null</code> if the document was rejected or has no stored findings. Entries that
+   *         cannot be read are skipped.
+   */
+  @Nullable
+  @ReturnsMutableCopy
+  @VisibleForTesting
+  static ICommonsList <MlsOutcomeIssue> getStoredMlsWarnings (@NonNull final IInboundTransaction aInboundTx)
+  {
+    // The findings of a rejected document were already sent as the negative MLS
+    final EVerificationResult eVerificationResult = aInboundTx.getVerificationResult ();
+    if (eVerificationResult == null || eVerificationResult.isRejected ())
+      return null;
+
+    final String sDetails = aInboundTx.getVerificationDetails ();
+    if (StringHelper.isEmpty (sDetails))
+      return null;
+
+    final IJsonArray aIssues = JsonReader.builder ().source (sDetails).readAsArray ();
+    if (aIssues == null)
+    {
+      LOGGER.warn ("The verification details of the inbound transaction '" +
+                   aInboundTx.getID () +
+                   "' are no JSON array - sending the positive MLS without line responses");
+      return null;
+    }
+
+    final ICommonsList <MlsOutcomeIssue> ret = new CommonsArrayList <> ();
+    for (final IJsonObject aIssueJson : aIssues.iteratorObjects ())
+    {
+      final VerificationIssue aIssue = VerificationIssue.getFromJsonOrNull (aIssueJson);
+      if (aIssue != null)
+        ret.add (MlsOutcomeIssue.fromVerificationIssue (aIssue));
+      else
+        LOGGER.warn ("Skipping an unreadable verification issue of the inbound transaction '" +
+                     aInboundTx.getID () +
+                     "': " +
+                     aIssueJson.getAsJsonString ());
+    }
+    return ret;
   }
 
   /**
@@ -1861,8 +1913,9 @@ public final class InboundOrchestrator
    * If C2 was already answered for this transaction, no second MLS is created, because the MLS slot
    * of the transaction is claimed atomically.
    * <p>
-   * The warnings of the original verification are not available anymore, so the positive MLS
-   * carries no line responses.
+   * The findings of the verification that accepted the document are read back from the stored
+   * verification details, so the positive MLS carries the same line responses as after the
+   * initial forwarding.
    * </p>
    *
    * @param sLogPrefix
@@ -1881,7 +1934,7 @@ public final class InboundOrchestrator
 
     final ESuccess eForward = forwardDocument (sLogPrefix, aInboundTx);
     if (eForward.isSuccess ())
-      _sendPositiveMlsAfterForwarding (aInboundTx, null);
+      _sendPositiveMlsAfterForwarding (aInboundTx, getStoredMlsWarnings (aInboundTx));
     return eForward;
   }
 }

@@ -147,26 +147,36 @@ public class OperationsController
    *
    * @param sbdhInstanceID
    *        The SBDH Instance ID of the transaction to replay.
-   * @return 200 on success, 404 if not found, 409 if the verification of the transaction is not
-   *         finished yet (status <code>received</code>, <code>receive_recovering</code> or
-   *         <code>verification_deferred</code>), 500 on failure.
+   * @return 200 on success, 404 if not found, 409 if the transaction is archived, if its
+   *         verification is not finished yet (status <code>received</code>,
+   *         <code>receive_recovering</code> or <code>verification_deferred</code>), if it is being
+   *         forwarded right now (status <code>forwarding</code>) or if its status changed while the
+   *         replay was started, 500 on failure.
    */
   @PostMapping ("/inbound/{sbdhInstanceID}/replay")
   @Operation (summary = "Replay an inbound transaction",
-              description = "Forces a re-forwarding of an existing inbound transaction. Transactions whose verification is not finished yet are rejected with 409: 'received' and 'receive_recovering' are processed automatically, use 'reverify-and-forward' for 'verification_deferred'.")
+              description = "Forces a re-forwarding of an existing inbound transaction. Rejected with 409 are: archived transactions; transactions whose verification is not finished yet ('received' and 'receive_recovering' are processed automatically, use 'reverify-and-forward' for 'verification_deferred'); transactions in status 'forwarding'; and transactions whose status was changed concurrently, e.g. by the retry scheduler.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Transaction replay initiated"),
                    @ApiResponse (responseCode = "404", description = "Transaction not found", content = @Content),
                    @ApiResponse (responseCode = "409",
-                                 description = "The verification of the transaction is not finished yet",
+                                 description = "The transaction is archived, not verified yet, being forwarded or was changed concurrently",
                                  content = @Content),
                    @ApiResponse (responseCode = "500", description = "Forwarding failed", content = @Content) })
   public ResponseEntity <InboundTransactionResponse> replayInbound (@Parameter (description = "SBDH Instance ID",
                                                                                 required = true) @PathVariable ("sbdhInstanceID") final String sbdhInstanceID)
   {
     final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
-    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+    final IInboundTransaction aTx = aTxMgr.getBySbdhInstanceID (sbdhInstanceID);
     if (aTx == null)
-      return ResponseEntity.notFound ().build ();
+    {
+      // An archived transaction is done - and none of its status updates would reach the archive
+      final IInboundTransaction aArchivedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+      if (aArchivedTx == null)
+        return ResponseEntity.notFound ().build ();
+
+      LOGGER.warn ("The inbound transaction '" + sbdhInstanceID + "' is archived - not replaying it");
+      return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aArchivedTx));
+    }
 
     // A replay does not verify. Forwarding a document whose verification is not finished yet would
     // deliver an unverified document to C4 and answer C2 with a positive MLS for it. "received" and
@@ -183,6 +193,27 @@ public class OperationsController
                    eStatus.getID () +
                    "' and its verification is not finished yet - not replaying it");
       return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aTx));
+    }
+
+    // Somebody else is forwarding it right now - a replay would deliver it to C4 a second time
+    if (eStatus == EInboundStatus.FORWARDING)
+    {
+      LOGGER.warn ("The inbound transaction '" + sbdhInstanceID + "' is being forwarded right now - not replaying it");
+      return ResponseEntity.status (HttpStatus.CONFLICT).body (InboundTransactionResponse.fromDomain (aTx));
+    }
+
+    // Claim it atomically, so that neither the retry scheduler nor a concurrent replay forwards it
+    // at the same time
+    if (aTxMgr.claimForReplay (aTx.getID (), eStatus).isFailure ())
+    {
+      LOGGER.warn ("The status of the inbound transaction '" +
+                   sbdhInstanceID +
+                   "' changed from '" +
+                   eStatus.getID () +
+                   "' in the meantime - not replaying it");
+      final IInboundTransaction aChangedTx = aTxMgr.getBySbdhInstanceIDIncludingArchive (sbdhInstanceID);
+      return ResponseEntity.status (HttpStatus.CONFLICT)
+                           .body (InboundTransactionResponse.fromDomain (aChangedTx != null ? aChangedTx : aTx));
     }
 
     final ESuccess eSuccess = InboundOrchestrator.forwardDocumentAndSendMls ("API Replay: ", aTx);

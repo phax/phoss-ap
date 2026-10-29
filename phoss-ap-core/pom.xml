@@ -108,5 +108,11 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Needed to serialise a created MLS - provided by phoss-ap-webapp at runtime -->
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

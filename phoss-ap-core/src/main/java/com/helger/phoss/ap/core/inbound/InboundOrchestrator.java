@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -1023,9 +1024,12 @@ public final class InboundOrchestrator
    *        The findings of the verification that accepted the document. May be <code>null</code> or
    *        empty. MLS allows line responses on a positive response code, so they are reported to C2
    *        instead of being dropped.
+   * @return The completion of the asynchronous MLS sending, or <code>null</code> if no MLS is sent
+   *         from here.
    */
-  private static void _sendPositiveMlsAfterForwarding (@NonNull final IInboundTransaction aInboundTx,
-                                                       @Nullable final ICommonsList <MlsOutcomeIssue> aMlsWarnings)
+  @Nullable
+  private static CompletableFuture <Void> _sendPositiveMlsAfterForwarding (@NonNull final IInboundTransaction aInboundTx,
+                                                                           @Nullable final ICommonsList <MlsOutcomeIssue> aMlsWarnings)
   {
     if (isMlsSuppressedAfterRejection (aInboundTx))
     {
@@ -1034,7 +1038,7 @@ public final class InboundOrchestrator
       LOGGER.info ("Not sending a positive MLS for the rejected but forwarded inbound transaction '" +
                    aInboundTx.getID () +
                    "'");
-      return;
+      return null;
     }
 
     if (aInboundTx.getMlsType () == EPeppolMLSType.ALWAYS_SEND)
@@ -1052,11 +1056,11 @@ public final class InboundOrchestrator
           LOGGER.info ("Deferring the positive MLS of the inbound transaction '" +
                        aInboundTx.getID () +
                        "' until the Receiver Backend reports the outcome");
-          return;
+          return null;
         }
 
         // Send asynchronously
-        PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
+        return PhotonWorkerPool.getInstance ().run ("send-mls", () -> {
           // AP for delivery with confirmation (e.g. http), AB for delivery without
           // confirmation (e.g. SFTP, S3, file system)
           final MlsOutcome aOutcome = APCoreMetaManager.getForwarder ().isWithDeliveryConfirmation () ? MlsOutcome
@@ -1067,6 +1071,7 @@ public final class InboundOrchestrator
         });
       }
     }
+    return null;
   }
 
   /**
@@ -1906,6 +1911,37 @@ public final class InboundOrchestrator
   }
 
   /**
+   * Same as {@link #forwardDocumentAndSendMls(String, IInboundTransaction)}, but additionally hands
+   * out the completion of the asynchronous MLS sending, so that a test can wait for it.
+   *
+   * @param sLogPrefix
+   *        Log message prefix for traceability. May not be <code>null</code>.
+   * @param aInboundTx
+   *        The inbound transaction to be forwarded again. May not be <code>null</code>.
+   * @param aMlsCompletionHolder
+   *        Filled with the completion of the asynchronous MLS sending, or with <code>null</code> if
+   *        no MLS is sent from here. May be <code>null</code>.
+   * @return The result of {@link #forwardDocument(String, IInboundTransaction)}.
+   */
+  @NonNull
+  @VisibleForTesting
+  static ESuccess forwardDocumentAndSendMls (@NonNull final String sLogPrefix,
+                                            @NonNull final IInboundTransaction aInboundTx,
+                                            @Nullable final Wrapper <CompletableFuture <Void>> aMlsCompletionHolder)
+  {
+    ValueEnforcer.notNull (sLogPrefix, "LogPrefix");
+    ValueEnforcer.notNull (aInboundTx, "InboundTx");
+
+    final ESuccess eForward = forwardDocument (sLogPrefix, aInboundTx);
+    CompletableFuture <Void> aMlsCompletion = null;
+    if (eForward.isSuccess ())
+      aMlsCompletion = _sendPositiveMlsAfterForwarding (aInboundTx, getStoredMlsWarnings (aInboundTx));
+    if (aMlsCompletionHolder != null)
+      aMlsCompletionHolder.set (aMlsCompletion);
+    return eForward;
+  }
+
+  /**
    * Forward an inbound document again, outside of the initial receive path - by the retry scheduler
    * or by the operations replay. If it succeeds, the positive MLS is sent to C2, exactly as after a
    * successful forwarding in
@@ -1929,12 +1965,6 @@ public final class InboundOrchestrator
   public static ESuccess forwardDocumentAndSendMls (@NonNull final String sLogPrefix,
                                                     @NonNull final IInboundTransaction aInboundTx)
   {
-    ValueEnforcer.notNull (sLogPrefix, "LogPrefix");
-    ValueEnforcer.notNull (aInboundTx, "InboundTx");
-
-    final ESuccess eForward = forwardDocument (sLogPrefix, aInboundTx);
-    if (eForward.isSuccess ())
-      _sendPositiveMlsAfterForwarding (aInboundTx, getStoredMlsWarnings (aInboundTx));
-    return eForward;
+    return forwardDocumentAndSendMls (sLogPrefix, aInboundTx, null);
   }
 }

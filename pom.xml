@@ -52,11 +52,11 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.57.5</awssdk.version>
+    <awssdk.version>2.57.8</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.21.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>13.11.1</flyway.version>
+    <flyway.version>13.12.0</flyway.version>
     <h2.version>2.5.252</h2.version>
     <jackson.version>3.2.4</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
@@ -71,7 +71,7 @@
     <springdoc.version>3.2.0</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->
     <swagger-annotations.version>2.2.55</swagger-annotations.version>
-    <sshd-sftp.version>2.20.0</sshd-sftp.version>
+    <sshd-sftp.version>2.20.1</sshd-sftp.version>
 
     <ph-commons.version>12.5.3</ph-commons.version>
     <ph-telemetry.version>1.1.1</ph-telemetry.version>

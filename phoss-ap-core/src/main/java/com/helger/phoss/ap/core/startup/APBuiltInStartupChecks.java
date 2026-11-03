@@ -54,6 +54,7 @@ public final class APBuiltInStartupChecks
                                     new StartupCheckStorage (),
                                     new StartupCheckForwarding (),
                                     new StartupCheckRetryScheduler (),
+                                    new StartupCheckPhase4Sending (),
                                     new StartupCheckArchivalScheduler (),
                                     new StartupCheckCleanupScheduler (),
                                     new StartupCheckAS4KeyStore (),

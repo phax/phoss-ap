@@ -82,6 +82,42 @@ public final class APConfigurationProperties
   public static final String PHASE4_API_REQUIREDTOKEN = "phase4.api.requiredtoken";
   public static final String PHASE4_DUMP_MODE = "phase4.dump.mode";
   public static final String PHASE4_DUMP_MODE_DEFAULT = "direction";
+  /**
+   * The connect timeout for sending an AS4 message. The default equals the phase4 Peppol default.
+   *
+   * @since 0.14.0
+   */
+  public static final String PHASE4_SEND_TIMEOUT_CONNECT = "phase4.send.timeout.connect";
+  /** @since 0.14.0 */
+  public static final Duration PHASE4_SEND_TIMEOUT_CONNECT_DEFAULT = Duration.ofSeconds (10);
+  /**
+   * The response (read) timeout for sending an AS4 message. The default equals the phase4 Peppol
+   * default.
+   *
+   * @since 0.14.0
+   */
+  public static final String PHASE4_SEND_TIMEOUT_RESPONSE = "phase4.send.timeout.response";
+  /** @since 0.14.0 */
+  public static final Duration PHASE4_SEND_TIMEOUT_RESPONSE_DEFAULT = Duration.ofSeconds (120);
+  /**
+   * How often phase4 retries an AS4 message within one sending attempt, before the attempt fails
+   * and the retry scheduler takes over. The default equals the reception awareness of the default
+   * Peppol PMode.
+   *
+   * @since 0.14.0
+   */
+  public static final String PHASE4_SEND_HTTP_RETRY_MAX_RETRIES = "phase4.send.http-retry.max-retries";
+  /** @since 0.14.0 */
+  public static final int PHASE4_SEND_HTTP_RETRY_MAX_RETRIES_DEFAULT = 1;
+  /**
+   * The wait time before a phase4 retry within one sending attempt. The default equals the
+   * reception awareness of the default Peppol PMode.
+   *
+   * @since 0.14.0
+   */
+  public static final String PHASE4_SEND_HTTP_RETRY_INTERVAL = "phase4.send.http-retry.interval";
+  /** @since 0.14.0 */
+  public static final Duration PHASE4_SEND_HTTP_RETRY_INTERVAL_DEFAULT = Duration.ofSeconds (10);
 
   // Connection pooling
   public static final String JDBC_POOLING_MAX_CONNECTIONS = "pooling.max-connections";

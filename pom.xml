@@ -52,11 +52,11 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.57.8</awssdk.version>
+    <awssdk.version>2.57.9</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
     <commons-lang.version>3.21.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>13.12.0</flyway.version>
+    <flyway.version>13.12.1</flyway.version>
     <h2.version>2.5.252</h2.version>
     <jackson.version>3.2.4</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
@@ -66,7 +66,7 @@
     <opentelemetry.version>1.67.0</opentelemetry.version>
     <opentelemetry-instrumentation.version>2.33.1</opentelemetry-instrumentation.version>
     <postgres.version>42.7.14</postgres.version>
-    <sentry.version>8.62.0</sentry.version>
+    <sentry.version>8.63.0</sentry.version>
     <spring-boot.version>4.1.2</spring-boot.version>
     <springdoc.version>3.2.0</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->

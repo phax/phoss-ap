@@ -414,6 +414,52 @@ public final class APCoreConfig
   }
 
   /**
+   * @return The connect timeout for sending an AS4 message. Never <code>null</code>.
+   * @since 0.14.0
+   */
+  @NonNull
+  public static Duration getPhase4SendTimeoutConnect ()
+  {
+    return _getDuration (APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT,
+                         APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT_DEFAULT);
+  }
+
+  /**
+   * @return The response (read) timeout for sending an AS4 message. Never <code>null</code>.
+   * @since 0.14.0
+   */
+  @NonNull
+  public static Duration getPhase4SendTimeoutResponse ()
+  {
+    return _getDuration (APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE,
+                         APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE_DEFAULT);
+  }
+
+  /**
+   * @return How often phase4 retries an AS4 message within one sending attempt. 0 means no retry.
+   *         Must be &ge; 0, as verified by the startup check.
+   * @since 0.14.0
+   */
+  @CheckForSigned
+  public static int getPhase4SendHttpRetryMaxRetries ()
+  {
+    return _getConfig ().getAsInt (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES,
+                                   APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES_DEFAULT);
+  }
+
+  /**
+   * @return The wait time before a phase4 retry within one sending attempt. Never
+   *         <code>null</code>.
+   * @since 0.14.0
+   */
+  @NonNull
+  public static Duration getPhase4SendHttpRetryInterval ()
+  {
+    return _getDuration (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL,
+                         APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL_DEFAULT);
+  }
+
+  /**
    * @return The maximum number of retry attempts for outbound sending.
    */
   public static int getRetrySendingMaxAttempts ()

@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.apache.hc.core5.util.Timeout;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ import com.helger.phase4.dynamicdiscovery.AS4EndpointDetailProviderConstant;
 import com.helger.phase4.dynamicdiscovery.AS4EndpointDetailProviderPeppol;
 import com.helger.phase4.dynamicdiscovery.Phase4SMPException;
 import com.helger.phase4.logging.Phase4LogCustomizer;
+import com.helger.phase4.messaging.http.HttpRetrySettings;
 import com.helger.phase4.model.message.MessageHelperMethods;
 import com.helger.phase4.peppol.Phase4PeppolSender;
 import com.helger.phase4.peppol.Phase4PeppolSendingReport;
@@ -626,6 +628,35 @@ public final class OutboundOrchestrator
 
     final String sMainID = sValue.substring (sPrefix.length (), sPrefix.length () + SPIDHelper.LEN_MAIN_ID);
     return aIF.createParticipantIdentifierWithDefaultScheme (sPrefix + sMainID);
+  }
+
+  /**
+   * @return The HTTP client settings for sending an AS4 message, with the configured proxy and
+   *         timeouts. Never <code>null</code>.
+   * @since 0.14.0
+   */
+  @NonNull
+  @VisibleForTesting
+  static Phase4PeppolHttpClientSettings createSendingHttpClientSettings ()
+  {
+    final Phase4PeppolHttpClientSettings aHCS = new Phase4PeppolHttpClientSettings ();
+    APBasicConfig.applyHttpProxySettings (aHCS);
+    aHCS.setConnectTimeout (Timeout.of (APCoreConfig.getPhase4SendTimeoutConnect ()));
+    aHCS.setResponseTimeout (Timeout.of (APCoreConfig.getPhase4SendTimeoutResponse ()));
+    return aHCS;
+  }
+
+  /**
+   * @return The phase4 retry settings within one sending attempt. They replace the reception
+   *         awareness of the PMode. Never <code>null</code>.
+   * @since 0.14.0
+   */
+  @NonNull
+  @VisibleForTesting
+  static HttpRetrySettings createSendingHttpRetrySettings ()
+  {
+    return new HttpRetrySettings ().setMaxRetries (APCoreConfig.getPhase4SendHttpRetryMaxRetries ())
+                                   .setDurationBeforeRetry (APCoreConfig.getPhase4SendHttpRetryInterval ());
   }
 
   /**
@@ -1281,8 +1312,8 @@ public final class OutboundOrchestrator
             try
             {
               // Actual sending using Phase4PeppolSender
-              final Phase4PeppolHttpClientSettings aHCS = new Phase4PeppolHttpClientSettings ();
-              APBasicConfig.applyHttpProxySettings (aHCS);
+              final Phase4PeppolHttpClientSettings aHCS = createSendingHttpClientSettings ();
+              final HttpRetrySettings aHttpRetrySettings = createSendingHttpRetrySettings ();
 
               final EAS4UserMessageSendResult eResult;
 
@@ -1293,6 +1324,7 @@ public final class OutboundOrchestrator
                 {
                   final var aBuilder = Phase4PeppolSender.builder ()
                                                          .httpClientFactory (aHCS)
+                                                         .httpRetrySettings (aHttpRetrySettings)
                                                          // AS4 input
                                                          .messageID (sAS4MessageID)
                                                          .conversationID (sAS4ConversationID)
@@ -1445,6 +1477,7 @@ public final class OutboundOrchestrator
 
                   final var aBuilder = Phase4PeppolSender.sbdhBuilder ()
                                                          .httpClientFactory (aHCS)
+                                                         .httpRetrySettings (aHttpRetrySettings)
                                                          // AS4 input
                                                          .messageID (sAS4MessageID)
                                                          .conversationID (sAS4ConversationID)

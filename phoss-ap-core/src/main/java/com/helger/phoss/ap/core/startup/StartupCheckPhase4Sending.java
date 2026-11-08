@@ -65,11 +65,17 @@ public class StartupCheckPhase4Sending extends AbstractAPStartupCheck
       bValid = false;
     }
 
+    final Duration aInterval = APCoreConfig.getPhase4SendHttpRetryInterval ();
+    if (aInterval.isNegative ())
+    {
+      addError (aErrors, "The AS4 sending HTTP retry interval must be >= 0, but is " + aInterval);
+      bValid = false;
+    }
+
     if (!bValid)
       return;
 
     // An estimate only: the response timeout applies to each read, not to the whole response
-    final Duration aInterval = APCoreConfig.getPhase4SendHttpRetryInterval ();
     final Duration aLongestAttempt = aConnectTimeout.plus (aResponseTimeout)
                                                     .multipliedBy (nMaxRetries + 1L)
                                                     .plus (aInterval.multipliedBy (nMaxRetries));

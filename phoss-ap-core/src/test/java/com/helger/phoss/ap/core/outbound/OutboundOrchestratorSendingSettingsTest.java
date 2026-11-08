@@ -18,15 +18,20 @@ package com.helger.phoss.ap.core.outbound;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.apache.hc.core5.util.Timeout;
+import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 
 import com.helger.config.ConfigFactory;
 import com.helger.config.fallback.ConfigWithFallback;
 import com.helger.config.fallback.IConfigWithFallback;
+import com.helger.config.source.MultiConfigurationValueProvider;
+import com.helger.config.source.appl.ConfigurationSourceFunction;
 import com.helger.phase4.messaging.http.HttpRetrySettings;
 import com.helger.phase4.profile.peppol.Phase4PeppolHttpClientSettings;
 import com.helger.phoss.ap.api.config.APConfigProvider;
@@ -39,85 +44,76 @@ import com.helger.phoss.ap.api.config.APConfigurationProperties;
  */
 public final class OutboundOrchestratorSendingSettingsTest
 {
-  private static final String [] KEYS = { APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT,
-                                          APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE,
-                                          APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES,
-                                          APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL };
-
-  private interface ITestBody
+  private static void _withConfig (@NonNull final Map <String, String> aValues, @NonNull final Runnable aBody)
   {
-    void run ();
-  }
-
-  private static void _withProperties (final String [] aKeyValues, final ITestBody aBody)
-  {
-    final IConfigWithFallback aOldConfig = APConfigProvider.getConfig ();
-    final String [] aOldValues = new String [KEYS.length];
-    for (int i = 0; i < KEYS.length; ++i)
-    {
-      aOldValues[i] = System.getProperty (KEYS[i]);
-      System.clearProperty (KEYS[i]);
-    }
+    final MultiConfigurationValueProvider aVP = ConfigFactory.createDefaultValueProvider ();
+    // Highest priority wins over the values from application.properties
+    aVP.addConfigurationSource (new ConfigurationSourceFunction (aValues::get), Integer.MAX_VALUE);
+    final IConfigWithFallback aOldConfig = APConfigProvider.setConfig (new ConfigWithFallback (aVP));
     try
     {
-      for (int i = 0; i < aKeyValues.length; i += 2)
-        System.setProperty (aKeyValues[i], aKeyValues[i + 1]);
-      APConfigProvider.setConfig (new ConfigWithFallback (ConfigFactory.createDefaultValueProvider ()));
       aBody.run ();
     }
     finally
     {
-      for (int i = 0; i < KEYS.length; ++i)
-        if (aOldValues[i] == null)
-          System.clearProperty (KEYS[i]);
-        else
-          System.setProperty (KEYS[i], aOldValues[i]);
       APConfigProvider.setConfig (aOldConfig);
     }
   }
 
   @Test
-  public void testDefaultsEqualPhase4Defaults ()
+  public void testDefaultConstantsEqualPhase4Defaults ()
   {
-    _withProperties (new String [0], () -> {
+    // phoss-ap-api does not depend on phase4, so the defaults cannot reference the constants
+    assertEquals (Phase4PeppolHttpClientSettings.DEFAULT_PEPPOL_CONNECT_TIMEOUT,
+                  Timeout.of (APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT_DEFAULT));
+    assertEquals (Phase4PeppolHttpClientSettings.DEFAULT_PEPPOL_RESPONSE_TIMEOUT,
+                  Timeout.of (APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE_DEFAULT));
+  }
+
+  @Test
+  public void testDefaults ()
+  {
+    _withConfig (Map.of (), () -> {
       final Phase4PeppolHttpClientSettings aHCS = OutboundOrchestrator.createSendingHttpClientSettings ();
       assertEquals (Phase4PeppolHttpClientSettings.DEFAULT_PEPPOL_CONNECT_TIMEOUT, aHCS.getConnectTimeout ());
       assertEquals (Phase4PeppolHttpClientSettings.DEFAULT_PEPPOL_RESPONSE_TIMEOUT, aHCS.getResponseTimeout ());
 
-      // Same as the reception awareness of the default Peppol PMode
+      // No phase4 retry - all retries are done by the retry scheduler
       final HttpRetrySettings aRetry = OutboundOrchestrator.createSendingHttpRetrySettings ();
-      assertEquals (1, aRetry.getMaxRetries ());
-      assertEquals (Duration.ofSeconds (10), aRetry.getDurationBeforeRetry ());
+      assertEquals (0, aRetry.getMaxRetries ());
+      assertFalse (aRetry.isRetryEnabled ());
+      assertEquals (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL_DEFAULT,
+                    aRetry.getDurationBeforeRetry ());
     });
   }
 
   @Test
   public void testConfiguredValuesAreUsed ()
   {
-    _withProperties (new String [] { APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT,
-                                     "5s",
-                                     APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE,
-                                     "60s",
-                                     APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES,
-                                     "0",
-                                     APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL,
-                                     "3s" }, () -> {
-                                       final Phase4PeppolHttpClientSettings aHCS = OutboundOrchestrator.createSendingHttpClientSettings ();
-                                       assertEquals (Timeout.ofSeconds (5), aHCS.getConnectTimeout ());
-                                       assertEquals (Timeout.ofSeconds (60), aHCS.getResponseTimeout ());
+    _withConfig (Map.of (APConfigurationProperties.PHASE4_SEND_TIMEOUT_CONNECT,
+                         "5s",
+                         APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE,
+                         "60s",
+                         APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES,
+                         "2",
+                         APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL,
+                         "3s"), () -> {
+                           final Phase4PeppolHttpClientSettings aHCS = OutboundOrchestrator.createSendingHttpClientSettings ();
+                           assertEquals (Timeout.ofSeconds (5), aHCS.getConnectTimeout ());
+                           assertEquals (Timeout.ofSeconds (60), aHCS.getResponseTimeout ());
 
-                                       final HttpRetrySettings aRetry = OutboundOrchestrator.createSendingHttpRetrySettings ();
-                                       assertEquals (0, aRetry.getMaxRetries ());
-                                       assertFalse (aRetry.isRetryEnabled ());
-                                       assertEquals (Duration.ofSeconds (3), aRetry.getDurationBeforeRetry ());
-                                     });
+                           final HttpRetrySettings aRetry = OutboundOrchestrator.createSendingHttpRetrySettings ();
+                           assertEquals (2, aRetry.getMaxRetries ());
+                           assertTrue (aRetry.isRetryEnabled ());
+                           assertEquals (Duration.ofSeconds (3), aRetry.getDurationBeforeRetry ());
+                         });
   }
 
   @Test
   public void testUnparsableDurationFallsBackToDefault ()
   {
     // Values that parse but are out of range are rejected by StartupCheckPhase4Sending
-    _withProperties (new String [] { APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE, "soon" }, () -> {
+    _withConfig (Map.of (APConfigurationProperties.PHASE4_SEND_TIMEOUT_RESPONSE, "soon"), () -> {
       assertEquals (Phase4PeppolHttpClientSettings.DEFAULT_PEPPOL_RESPONSE_TIMEOUT,
                     OutboundOrchestrator.createSendingHttpClientSettings ().getResponseTimeout ());
     });

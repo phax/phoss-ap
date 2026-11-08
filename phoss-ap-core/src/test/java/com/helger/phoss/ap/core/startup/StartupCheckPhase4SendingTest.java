@@ -65,14 +65,27 @@ public final class StartupCheckPhase4SendingTest
     assertErrors (m_aCheck,
                   1,
                   performCheck (m_aCheck, Map.of (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES, "-1")));
+    assertErrors (m_aCheck,
+                  1,
+                  performCheck (m_aCheck, Map.of (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_INTERVAL, "-1s")));
   }
 
   @Test
   public void testLongestSendExceedsRecoveryGracePeriod ()
   {
-    // Defaults: 2 x (10s + 120s) + 10s = 270s
+    // Defaults: 1 x (10s + 120s) = 130s
+    assertErrors (m_aCheck,
+                  0,
+                  performCheck (m_aCheck, Map.of (APConfigurationProperties.RECOVERY_GRACE_PERIOD_IN_FLIGHT, "131s")));
     assertOneWarning (m_aCheck,
-                      performCheck (m_aCheck, Map.of (APConfigurationProperties.RECOVERY_GRACE_PERIOD_IN_FLIGHT, "4m")));
+                      performCheck (m_aCheck, Map.of (APConfigurationProperties.RECOVERY_GRACE_PERIOD_IN_FLIGHT, "130s")));
+    // 2 x (10s + 120s) + 10s = 270s
+    assertOneWarning (m_aCheck,
+                      performCheck (m_aCheck,
+                                    Map.of (APConfigurationProperties.PHASE4_SEND_HTTP_RETRY_MAX_RETRIES,
+                                            "1",
+                                            APConfigurationProperties.RECOVERY_GRACE_PERIOD_IN_FLIGHT,
+                                            "4m")));
     // 3 x (10s + 10m) + 2 x 10s = 30m 50s - longer than the default grace period of 30m
     assertOneWarning (m_aCheck,
                       performCheck (m_aCheck,

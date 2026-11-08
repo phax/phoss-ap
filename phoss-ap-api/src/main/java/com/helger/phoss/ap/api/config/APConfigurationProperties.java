@@ -101,17 +101,18 @@ public final class APConfigurationProperties
   public static final Duration PHASE4_SEND_TIMEOUT_RESPONSE_DEFAULT = Duration.ofSeconds (120);
   /**
    * How often phase4 retries an AS4 message within one sending attempt, before the attempt fails
-   * and the retry scheduler takes over. The default equals the reception awareness of the default
-   * Peppol PMode.
+   * and the retry scheduler takes over. The default is 0, so that all retries are done by the retry
+   * scheduler, each with a new sending attempt and a new AS4 Message ID.
    *
    * @since 0.14.0
    */
   public static final String PHASE4_SEND_HTTP_RETRY_MAX_RETRIES = "phase4.send.http-retry.max-retries";
   /** @since 0.14.0 */
-  public static final int PHASE4_SEND_HTTP_RETRY_MAX_RETRIES_DEFAULT = 1;
+  public static final int PHASE4_SEND_HTTP_RETRY_MAX_RETRIES_DEFAULT = 0;
   /**
-   * The wait time before a phase4 retry within one sending attempt. The default equals the
-   * reception awareness of the default Peppol PMode.
+   * The wait time before a phase4 retry within one sending attempt. Only used if
+   * {@link #PHASE4_SEND_HTTP_RETRY_MAX_RETRIES} is &gt; 0. The default equals the reception
+   * awareness of the default Peppol PMode.
    *
    * @since 0.14.0
    */

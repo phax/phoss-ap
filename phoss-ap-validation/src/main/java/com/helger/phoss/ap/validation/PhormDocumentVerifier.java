@@ -77,6 +77,14 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
   /** The ID of this verifier, as used in the telemetry and for the uniqueness check */
   public static final String VERIFIER_ID = "phorm";
 
+  /**
+   * The priority of this verifier. It is higher than the default, so that a verifier with the
+   * default priority (e.g. a virus scan) is invoked before the document validation.
+   *
+   * @since 0.14.0
+   */
+  public static final int VERIFIER_PRIORITY = 100;
+
   /** The bytes every PDF document starts with - see ISO 32000-1 chapter 7.5.2 */
   private static final byte [] PDF_HEADER_BYTES = { '%', 'P', 'D', 'F', '-' };
 
@@ -566,6 +574,12 @@ public class PhormDocumentVerifier implements IInboundDocumentVerifierSPI, IOutb
   public String getID ()
   {
     return VERIFIER_ID;
+  }
+
+  @Override
+  public int getPriority ()
+  {
+    return VERIFIER_PRIORITY;
   }
 
   @NonNull

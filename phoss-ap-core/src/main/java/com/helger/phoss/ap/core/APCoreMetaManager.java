@@ -16,6 +16,7 @@
  */
 package com.helger.phoss.ap.core;
 
+import java.util.Comparator;
 import java.util.ServiceLoader;
 
 import org.jspecify.annotations.NonNull;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.style.ReturnsMutableCopy;
+import com.helger.annotation.style.VisibleForTesting;
 import com.helger.base.exception.InitializationException;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
@@ -63,6 +65,14 @@ public final class APCoreMetaManager
   public static final int MAX_SECONDARY_FORWARDERS = 10;
   private static final Logger LOGGER = LoggerFactory.getLogger (APCoreMetaManager.class);
 
+  /**
+   * The order in which the document verifiers are invoked: ascending by priority, and by ID for
+   * the same priority. See issue #130.
+   */
+  @VisibleForTesting
+  static final Comparator <IDocumentVerifier> VERIFIER_ORDER = Comparator.comparingInt (IDocumentVerifier::getPriority)
+                                                                         .thenComparing (IDocumentVerifier::getID);
+
   private static EForwardingMode s_eForwardingMode;
   private static IDocumentForwarder s_aForwarder;
   private static final ICommonsList <IDocumentForwarder> s_aSecondaryForwarders = new CommonsArrayList <> ();
@@ -80,7 +90,9 @@ public final class APCoreMetaManager
    * Load all inbound and outbound document verifier SPIs. Called during startup before the
    * {@link com.helger.phoss.ap.api.codelist.EAPStartupCheckPhase#POST_INIT} startup checks, so that
    * {@link com.helger.phoss.ap.core.startup.StartupCheckDocumentVerifiers} can check them before
-   * anything else is initialized. May only be called once.
+   * anything else is initialized. The verifiers of each direction are sorted ascending by
+   * {@link IDocumentVerifier#getPriority()} and by ID for the same priority. May only be called
+   * once.
    *
    * @since 0.13.3
    */
@@ -91,22 +103,26 @@ public final class APCoreMetaManager
     s_bVerifiersInitialized = true;
 
     for (final IInboundDocumentVerifierSPI aVerifier : ServiceLoader.load (IInboundDocumentVerifierSPI.class))
-    {
       s_aInboundVerifiers.add (aVerifier);
+    s_aInboundVerifiers.sort (VERIFIER_ORDER);
+    for (final IInboundDocumentVerifierSPI aVerifier : s_aInboundVerifiers)
       LOGGER.info ("Loaded inbound document verifier '" +
                    aVerifier.getID () +
-                   "': " +
+                   "' with priority " +
+                   aVerifier.getPriority () +
+                   ": " +
                    aVerifier.getClass ().getName ());
-    }
 
     for (final IOutboundDocumentVerifierSPI aVerifier : ServiceLoader.load (IOutboundDocumentVerifierSPI.class))
-    {
       s_aOutboundVerifiers.add (aVerifier);
+    s_aOutboundVerifiers.sort (VERIFIER_ORDER);
+    for (final IOutboundDocumentVerifierSPI aVerifier : s_aOutboundVerifiers)
       LOGGER.info ("Loaded outbound document verifier '" +
                    aVerifier.getID () +
-                   "': " +
+                   "' with priority " +
+                   aVerifier.getPriority () +
+                   ": " +
                    aVerifier.getClass ().getName ());
-    }
   }
 
   /**
@@ -320,7 +336,8 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered inbound document verifiers. Never <code>null</code>.
+   * @return A mutable copy of all registered inbound document verifiers, in the order in which they
+   *         are invoked. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy
@@ -330,7 +347,8 @@ public final class APCoreMetaManager
   }
 
   /**
-   * @return A mutable copy of all registered outbound document verifiers. Never <code>null</code>.
+   * @return A mutable copy of all registered outbound document verifiers, in the order in which they
+   *         are invoked. Never <code>null</code>.
    */
   @NonNull
   @ReturnsMutableCopy

@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import com.helger.base.concurrent.ThreadHelper;
 import com.helger.base.state.EContinue;
 import com.helger.base.state.ESuccess;
 import com.helger.base.wrapper.Wrapper;
@@ -572,6 +573,26 @@ public final class InboundVerificationResultIntegrationTest
         APCoreMetaManager.init ();
     }
     assertTrue (APCoreMetaManager.getForwarder () instanceof MockControlledForwarder);
+
+    _waitForOutboundCountToSettle ();
+  }
+
+  /**
+   * The rejection tests send their MLS on the worker pool and nobody waits for it. Wait until such
+   * leftovers of previous tests have created their outbound transaction, because the tests that
+   * count the outbound transactions would otherwise see a transaction that is not theirs.
+   */
+  private static void _waitForOutboundCountToSettle ()
+  {
+    long nLast = _getOutboundCount ();
+    for (int i = 0; i < 50; ++i)
+    {
+      ThreadHelper.sleep (100);
+      final long nNow = _getOutboundCount ();
+      if (nNow == nLast)
+        return;
+      nLast = nNow;
+    }
   }
 
   /**

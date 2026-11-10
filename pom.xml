@@ -58,6 +58,7 @@
     <failsafe.version>3.3.2</failsafe.version>
     <flyway.version>13.12.1</flyway.version>
     <h2.version>2.5.252</h2.version>
+    <jackson-annotations.version>2.23</jackson-annotations.version>
     <jackson.version>3.2.4</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
     <log4j.version>2.26.1</log4j.version>
@@ -320,6 +321,11 @@
         <groupId>tools.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${jackson-annotations.version}</version>
       </dependency>
 
       <!-- OpenAPI related dependencies -->

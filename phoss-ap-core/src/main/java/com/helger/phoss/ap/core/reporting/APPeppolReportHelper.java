@@ -32,8 +32,10 @@ import com.helger.base.timing.StopWatch;
 import com.helger.base.wrapper.Wrapper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.json.JsonArray;
 import com.helger.peppol.reporting.api.CPeppolReporting;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
+import com.helger.peppol.reporting.api.PeppolReportingJsonHelper;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackendException;
 import com.helger.peppol.reporting.eusr.EndUserStatisticsReport;
@@ -100,6 +102,33 @@ public final class APPeppolReportHelper
       throw new IllegalArgumentException ("The month value " + nRealMonth + " is in the future");
 
     return YearMonth.of (nRealYear, nRealMonth);
+  }
+
+  /**
+   * Read all local records for a reporting period as the library's versioned JSON objects.
+   *
+   * @param aYearMonth
+   *        The UTC reporting period. May not be <code>null</code>.
+   * @return A JSON array, or <code>null</code> if the backend could not be read completely.
+   */
+  @Nullable
+  public static String getReportingRecordsAsString (@NonNull final YearMonth aYearMonth)
+  {
+    ValueEnforcer.notNull (aYearMonth, "YearMonth");
+    final JsonArray aRecords = new JsonArray ();
+    try
+    {
+      if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
+                                                aBackend -> aBackend.forEachReportingItem (aYearMonth,
+                                                                                           aItem -> aRecords.add (PeppolReportingJsonHelper.toJson (aItem))))
+                                .isSuccess ())
+        return aRecords.getAsJsonString ();
+    }
+    catch (final PeppolReportingBackendException ex)
+    {
+      LOGGER.error ("Failed to read Peppol Reporting records for " + aYearMonth, ex);
+    }
+    return null;
   }
 
   /**

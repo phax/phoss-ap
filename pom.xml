@@ -59,7 +59,7 @@
     <flyway.version>13.12.1</flyway.version>
     <h2.version>2.5.252</h2.version>
     <jackson-annotations.version>2.23</jackson-annotations.version>
-    <jackson.version>3.2.4</jackson.version>
+    <jackson.version>3.3.0</jackson.version>
     <jaxb-impl.version>4.0.9</jaxb-impl.version>
     <log4j.version>2.26.1</log4j.version>
     <mysql.version>26.10.0</mysql.version>

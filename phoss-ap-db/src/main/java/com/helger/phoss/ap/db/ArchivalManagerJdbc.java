@@ -66,7 +66,6 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
   // eligible for archival, because it may have changed since it was selected
   private boolean _lockLiveRow (@NonNull final DBExecutor aExecutor,
                                 @NonNull final String sTable,
-                                @NonNull final String sID,
                                 @NonNull final String sArchivalCondition,
                                 @NonNull final ConstantPreparedStatementDataProvider aParams)
   {
@@ -92,7 +91,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     final DBExecutor aExecutor = newExecutor ();
     final MutableBoolean aArchived = new MutableBoolean (false);
     final ESuccess eSuccess = aExecutor.performInTransaction (() -> {
-      if (!_lockLiveRow (aExecutor, "outbound_transaction", sID, sArchivalCondition, aParams))
+      if (!_lockLiveRow (aExecutor, "outbound_transaction", sArchivalCondition, aParams))
       {
         if (LOGGER.isDebugEnabled ())
           LOGGER.debug ("Outbound transaction '" +
@@ -146,7 +145,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
     final DBExecutor aExecutor = newExecutor ();
     final MutableBoolean aArchived = new MutableBoolean (false);
     final ESuccess eSuccess = aExecutor.performInTransaction (() -> {
-      if (!_lockLiveRow (aExecutor, "inbound_transaction", sID, sArchivalCondition, aParams))
+      if (!_lockLiveRow (aExecutor, "inbound_transaction", sArchivalCondition, aParams))
       {
         if (LOGGER.isDebugEnabled ())
           LOGGER.debug ("Inbound transaction '" +

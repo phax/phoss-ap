@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.helger</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>3.1.1</version>
+    <version>3.2.0</version>
   </parent>
   <groupId>com.helger.phoss.ap</groupId>
   <artifactId>phoss-ap-parent-pom</artifactId>
@@ -52,11 +52,11 @@
     <java.version>21</java.version>
 
     <!-- External dependency versions -->
-    <awssdk.version>2.57.12</awssdk.version>
+    <awssdk.version>2.59.0</awssdk.version>
     <commons-compression.version>1.28.0</commons-compression.version>
-    <commons-lang.version>3.21.0</commons-lang.version>
+    <commons-lang.version>3.22.0</commons-lang.version>
     <failsafe.version>3.3.2</failsafe.version>
-    <flyway.version>13.12.1</flyway.version>
+    <flyway.version>13.12.2</flyway.version>
     <h2.version>2.5.252</h2.version>
     <jackson-annotations.version>2.23</jackson-annotations.version>
     <jackson.version>3.3.0</jackson.version>
@@ -67,25 +67,25 @@
     <opentelemetry.version>1.68.0</opentelemetry.version>
     <opentelemetry-instrumentation.version>2.33.1</opentelemetry-instrumentation.version>
     <postgres.version>42.7.14</postgres.version>
-    <sentry.version>8.63.0</sentry.version>
+    <sentry.version>8.64.0</sentry.version>
     <spring-boot.version>4.1.2</spring-boot.version>
     <springdoc.version>3.2.0</springdoc.version>
     <!-- Aligned with the minor version pulled in transitively by springdoc -->
     <swagger-annotations.version>2.2.55</swagger-annotations.version>
     <sshd-sftp.version>2.20.1</sshd-sftp.version>
 
-    <ph-commons.version>12.6.0</ph-commons.version>
-    <ph-telemetry.version>1.1.1</ph-telemetry.version>
-    <ph-db.version>8.5.1</ph-db.version>
-    <ph-web.version>11.5.0</ph-web.version>
-    <ph-oton.version>10.8.0</ph-oton.version>
-    <peppol-commons.version>13.2.2</peppol-commons.version>
-    <phive.version>12.2.0</phive.version>
-    <phase4.version>4.9.0</phase4.version>
-    <ddd.version>0.9.3</ddd.version>
+    <ph-commons.version>12.7.1</ph-commons.version>
+    <ph-telemetry.version>1.1.2</ph-telemetry.version>
+    <ph-db.version>8.5.2</ph-db.version>
+    <ph-web.version>11.5.1</ph-web.version>
+    <ph-oton.version>10.8.1</ph-oton.version>
+    <peppol-commons.version>13.2.3</peppol-commons.version>
+    <phive.version>12.3.0</phive.version>
+    <phase4.version>4.9.1</phase4.version>
+    <ddd.version>0.9.4</ddd.version>
     <phorm-client.version>1.0.0</phorm-client.version>
-    <peppol-reporting.version>4.4.1</peppol-reporting.version>
-    <peppol-ap-support.version>2.4.1</peppol-ap-support.version>
+    <peppol-reporting.version>4.4.2</peppol-reporting.version>
+    <peppol-ap-support.version>2.4.2</peppol-ap-support.version>
   </properties>
 
   <dependencyManagement>
@@ -93,59 +93,179 @@
       <!-- BOM imports -->
       <dependency>
         <groupId>com.helger.commons</groupId>
-        <artifactId>ph-commons-parent-pom</artifactId>
+        <artifactId>ph-commons-bom</artifactId>
         <version>${ph-commons.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.telemetry</groupId>
-        <artifactId>ph-telemetry-parent-pom</artifactId>
+        <artifactId>ph-telemetry-bom</artifactId>
         <version>${ph-telemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.db</groupId>
-        <artifactId>ph-db-parent-pom</artifactId>
+        <artifactId>ph-db-bom</artifactId>
         <version>${ph-db.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.web</groupId>
-        <artifactId>ph-web-parent-pom</artifactId>
+        <artifactId>ph-web-bom</artifactId>
         <version>${ph-web.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.photon</groupId>
-        <artifactId>ph-oton-parent-pom</artifactId>
+        <artifactId>ph-oton-bom</artifactId>
         <version>${ph-oton.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.peppol</groupId>
-        <artifactId>peppol-commons-parent-pom</artifactId>
+        <artifactId>peppol-commons-bom</artifactId>
         <version>${peppol-commons.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.phase4</groupId>
-        <artifactId>phase4-parent-pom</artifactId>
+        <artifactId>phase4-bom</artifactId>
         <version>${phase4.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.helger.peppol</groupId>
-        <artifactId>peppol-reporting-parent-pom</artifactId>
+        <artifactId>peppol-reporting-bom</artifactId>
         <version>${peppol-reporting.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.helger</groupId>
+        <artifactId>ddd-bom</artifactId>
+        <version>${ddd.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.helger</groupId>
+        <artifactId>phorm-client</artifactId>
+        <version>${phorm-client.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jaxb</groupId>
+        <artifactId>jaxb-bom</artifactId>
+        <version>${jaxb-impl.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>${log4j.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>${jakarta.servlet-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compression.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.failsafe</groupId>
+        <artifactId>failsafe</artifactId>
+        <version>${failsafe.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>s3</artifactId>
+        <version>${awssdk.version}</version>
+      </dependency>
+      
+      <!-- DB stuff -->
+      <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgres.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.mysql</groupId>
+        <artifactId>mysql-connector-j</artifactId>
+        <version>${mysql.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${h2.version}</version>
+      </dependency>
+
+      <!-- OpenTelemetry -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry.instrumentation</groupId>
+        <artifactId>opentelemetry-instrumentation-bom</artifactId>
+        <version>${opentelemetry-instrumentation.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp-jvm</artifactId>
+        <version>${okhttp.version}</version>
+      </dependency>
+      
+      <!-- Make sure SpringBoot uses this version -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${jackson-annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <!-- OpenAPI related dependencies -->
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations-jakarta</artifactId>
+        <version>${swagger-annotations.version}</version>
       </dependency>
 
       <!-- Internal modules -->
@@ -204,136 +324,6 @@
         <artifactId>phoss-ap-validation</artifactId>
         <version>${project.version}</version>
       </dependency>
-
-      <!-- External dependencies -->
-      <dependency>
-        <groupId>com.helger</groupId>
-        <artifactId>ddd</artifactId>
-        <version>${ddd.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.helger</groupId>
-        <artifactId>phorm-client</artifactId>
-        <version>${phorm-client.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-compress</artifactId>
-        <version>${commons-compression.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-lang3</artifactId>
-        <version>${commons-lang.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-core</artifactId>
-        <version>${jaxb-impl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${jaxb-impl.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j2-impl</artifactId>
-        <version>${log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-core</artifactId>
-        <version>${flyway.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-database-postgresql</artifactId>
-        <version>${flyway.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-mysql</artifactId>
-        <version>${flyway.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>${postgres.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.mysql</groupId>
-        <artifactId>mysql-connector-j</artifactId>
-        <version>${mysql.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.h2database</groupId>
-        <artifactId>h2</artifactId>
-        <version>${h2.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>dev.failsafe</groupId>
-        <artifactId>failsafe</artifactId>
-        <version>${failsafe.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>s3</artifactId>
-        <version>${awssdk.version}</version>
-      </dependency>
-
-      <!-- OpenTelemetry -->
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-bom</artifactId>
-        <version>${opentelemetry.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.opentelemetry.instrumentation</groupId>
-        <artifactId>opentelemetry-instrumentation-bom</artifactId>
-        <version>${opentelemetry-instrumentation.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>okhttp-jvm</artifactId>
-        <version>${okhttp.version}</version>
-      </dependency>
-      
-      <!-- Make sure SpringBoot uses this version -->
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${jackson-annotations.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>tools.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>tools.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
-      </dependency>
-
-      <!-- OpenAPI related dependencies -->
-      <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-annotations-jakarta</artifactId>
-        <version>${swagger-annotations.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -357,6 +347,7 @@
   </dependencies>
 
   <modules>
+    <module>phoss-ap-bom</module>
     <module>phoss-ap-api</module>
     <module>phoss-ap-basic</module>
     <module>phoss-ap-db</module>

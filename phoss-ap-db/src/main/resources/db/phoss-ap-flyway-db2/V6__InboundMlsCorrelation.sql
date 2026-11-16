@@ -14,6 +14,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
+
 -- Correlated outbound transaction of an inbound MLS (issues #120 and #121)
 -- The ID of the outbound business document transaction that a received MLS was correlated with.
 -- It is persisted on the inbound MLS, so that a forwarding retry still knows the correlation and a

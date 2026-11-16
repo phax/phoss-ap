@@ -27,7 +27,7 @@
   </parent>
   <groupId>com.helger.phoss.ap</groupId>
   <artifactId>phoss-ap-bom</artifactId>
-  <version>0.14.0</version>
+  <version>0.14.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>phoss-ap-bom</name>
   <description>Bill of Materials for all phoss-ap artifacts</description>
@@ -94,8 +94,4 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <scm>
-    <tag>phoss-ap-parent-pom-0.14.0</tag>
-  </scm>
 </project>

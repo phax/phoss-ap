@@ -25,12 +25,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.helger.base.string.StringHelper;
+import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.reporting.APPeppolReportHelper;
 import com.helger.phoss.ap.webapp.config.OpenApiConfig;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -45,10 +49,53 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping ("/api/reporting")
 @Tag (name = "Peppol Reporting",
-      description = "Create and send Peppol TSR and EUSR reports. Requires a configured Peppol Reporting backend.")
+      description = "Read reporting records and create and send Peppol TSR and EUSR reports. Requires a configured Peppol Reporting backend.")
 @SecurityRequirement (name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class PeppolReportingController
 {
+  /**
+   * Read the local reporting records for one UTC calendar month without creating or sending reports.
+   */
+  @GetMapping (path = "/records/{year}/{month}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation (summary = "Read Peppol reporting records",
+              description = "Returns a JSON array of local PeppolReportingItem records using the library's versioned " +
+                            "JSON representation. An empty period returns []. Requires a configured API token. " +
+                            "The response contains raw records used by both TSR and EUSR, not generated reports.")
+  @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Reporting records as a JSON array",
+                                 content = @Content (mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                                     array = @ArraySchema (schema = @Schema (type = "object",
+                                                                                             description = "Versioned PeppolReportingItem JSON")))),
+                   @ApiResponse (responseCode = "400", description = "Invalid or future reporting period"),
+                   @ApiResponse (responseCode = "401", description = "Missing, invalid or unconfigured API token"),
+                   @ApiResponse (responseCode = "500", description = "Failed to read reporting records") })
+  public ResponseEntity <String> getPeppolReportingRecords (@Parameter (description = "Calendar year, at least 2024.",
+                                                                       required = true) @PathVariable ("year") final int nYear,
+                                                           @Parameter (description = "Calendar month, 1-12.",
+                                                                       required = true) @PathVariable ("month") final int nMonth)
+  {
+    // The shared filter permits requests when no token is configured. Never expose records in that case.
+    if (StringHelper.isEmpty (APCoreConfig.getPhase4ApiRequiredToken ()))
+      return ResponseEntity.status (401).body ("{\"error\":\"API token is not configured\"}");
+
+    if (nYear < 2024 || nMonth < 1 || nMonth > 12)
+      return ResponseEntity.badRequest ().body ("{\"error\":\"Invalid reporting period\"}");
+
+    final YearMonth aYearMonth;
+    try
+    {
+      aYearMonth = APPeppolReportHelper.getValidYearMonthInAPI (nYear, nMonth);
+    }
+    catch (final IllegalArgumentException ex)
+    {
+      return ResponseEntity.badRequest ().body ("{\"error\":\"Invalid or future reporting period\"}");
+    }
+
+    final String sRecords = APPeppolReportHelper.getReportingRecordsAsString (aYearMonth);
+    if (sRecords == null)
+      return ResponseEntity.internalServerError ().body ("{\"error\":\"Failed to read reporting records\"}");
+    return ResponseEntity.ok ().header ("Cache-Control", "no-store").body (sRecords);
+  }
+
   /**
    * This API creates a TSR report from the provided year and month
    *

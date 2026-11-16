@@ -40,6 +40,12 @@
   </licenses>
 
   <dependencies>
+    <!-- Jackson 3.2 requires annotations 2.22; older transitive versions break Flyway startup. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.22</version>
+    </dependency>
     <dependency>
       <groupId>com.helger.peppol</groupId>
       <artifactId>peppol-reporting-backend-sql</artifactId>
@@ -113,6 +119,11 @@
       <version>${sentry.version}</version>
     </dependency>
         
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>

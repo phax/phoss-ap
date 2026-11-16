@@ -27,21 +27,21 @@ import org.slf4j.Logger;
 
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.io.nonblocking.NonBlockingByteArrayInputStream;
+import com.helger.base.numeric.mutable.MutableInt;
 import com.helger.base.state.ESuccess;
 import com.helger.base.timing.StopWatch;
 import com.helger.base.wrapper.Wrapper;
-import com.helger.collection.commons.CommonsArrayList;
-import com.helger.collection.commons.ICommonsList;
 import com.helger.peppol.reporting.api.CPeppolReporting;
-import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackend;
 import com.helger.peppol.reporting.api.backend.PeppolReportingBackendException;
 import com.helger.peppol.reporting.eusr.EndUserStatisticsReport;
+import com.helger.peppol.reporting.eusr.model.EUSRReportingItemAccumulator;
 import com.helger.peppol.reporting.jaxb.eusr.EndUserStatisticsReport110Marshaller;
 import com.helger.peppol.reporting.jaxb.eusr.v110.EndUserStatisticsReportType;
 import com.helger.peppol.reporting.jaxb.tsr.TransactionStatisticsReport101Marshaller;
 import com.helger.peppol.reporting.jaxb.tsr.v101.TransactionStatisticsReportType;
 import com.helger.peppol.reporting.tsr.TransactionStatisticsReport;
+import com.helger.peppol.reporting.tsr.model.TSRReportingItemAccumulator;
 import com.helger.peppol.reportingsupport.EPeppolReportType;
 import com.helger.peppol.reportingsupport.IPeppolReportSenderCallback;
 import com.helger.peppol.reportingsupport.PeppolReportingSupport;
@@ -120,20 +120,23 @@ public final class APPeppolReportHelper
   {
     LOGGER.info ("Trying to create Peppol Reporting TSR for " + aYearMonth);
 
-    // Now get all items from data storage and store them in a list (we start
-    // with an initial size of 1K to avoid too many copy operations)
-    final ICommonsList <PeppolReportingItem> aReportingItems = new CommonsArrayList <> (1024);
+    // Feed all items from data storage one by one into the accumulator, without keeping them all
+    // in memory
+    final TSRReportingItemAccumulator aAccumulator = new TSRReportingItemAccumulator ();
+    final MutableInt aItemCount = new MutableInt (0);
     if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                              aBackend -> aBackend.forEachReportingItem (aYearMonth,
-                                                                                         aReportingItems::add))
+                                              aBackend -> aBackend.forEachReportingItem (aYearMonth, aItem -> {
+                                                aAccumulator.accept (aItem);
+                                                aItemCount.inc ();
+                                              }))
                               .isSuccess ())
     {
-      aItemCountSink.accept (aReportingItems.size ());
-      // Create report with the read transactions
+      aItemCountSink.accept (aItemCount.intValue ());
+      // Create report with the accumulated transactions
       return TransactionStatisticsReport.builder ()
                                         .monthOf (aYearMonth)
                                         .reportingServiceProviderID (APCoreConfig.getPeppolOwnerSeatID ())
-                                        .reportingItemList (aReportingItems)
+                                        .reportingItemAccumulator (aAccumulator)
                                         .build ();
     }
     return null;
@@ -157,20 +160,23 @@ public final class APPeppolReportHelper
   {
     LOGGER.info ("Trying to create Peppol Reporting EUSR for " + aYearMonth);
 
-    // Now get all items from data storage and store them in a list (we start
-    // with an initial size of 1K to avoid too many copy operations)
-    final ICommonsList <PeppolReportingItem> aReportingItems = new CommonsArrayList <> (1024);
+    // Feed all items from data storage one by one into the accumulator, without keeping them all
+    // in memory
+    final EUSRReportingItemAccumulator aAccumulator = new EUSRReportingItemAccumulator ();
+    final MutableInt aItemCount = new MutableInt (0);
     if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                              aBackend -> aBackend.forEachReportingItem (aYearMonth,
-                                                                                         aReportingItems::add))
+                                              aBackend -> aBackend.forEachReportingItem (aYearMonth, aItem -> {
+                                                aAccumulator.accept (aItem);
+                                                aItemCount.inc ();
+                                              }))
                               .isSuccess ())
     {
-      aItemCountSink.accept (aReportingItems.size ());
-      // Create report with the read transactions
+      aItemCountSink.accept (aItemCount.intValue ());
+      // Create report with the accumulated transactions
       return EndUserStatisticsReport.builder ()
                                     .monthOf (aYearMonth)
                                     .reportingServiceProviderID (APCoreConfig.getPeppolOwnerSeatID ())
-                                    .reportingItemList (aReportingItems)
+                                    .reportingItemAccumulator (aAccumulator)
                                     .build ();
     }
     return null;

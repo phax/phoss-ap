@@ -34,6 +34,7 @@ import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.IOutboundTransactionManager;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
@@ -59,7 +60,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                      " reporting_status, next_retry_dt, error_details, mls_to, mls_status," +
                                      " mls_received_dt, mls_id, mls_inbound_transaction_id," +
                                      " sbdh_standard, sbdh_type_version, sbdh_type, payload_mime_type," +
-                                     " custom1, custom2, custom3";
+                                     " custom1, custom2, custom3, mls_type, requested_as4_message_id";
 
   private final String m_sTableName;
 
@@ -121,7 +122,9 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                         @Nullable final String sPayloadMimeType,
                         @Nullable final String sCustom1,
                         @Nullable final String sCustom2,
-                        @Nullable final String sCustom3)
+                        @Nullable final String sCustom3,
+                        @Nullable final EPeppolMLSType eMlsType,
+                        @Nullable final String sRequestedAS4MessageID)
   {
     final String sID = createUniqueRowID ();
 
@@ -131,7 +134,7 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                  " (" +
                                                                  COLS +
                                                                  ")" +
-                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                                                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                                                  new ConstantPreparedStatementDataProvider (sID,
                                                                                                             eTransactionType.getID (),
                                                                                                             sSenderID,
@@ -163,7 +166,10 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                                                             sPayloadMimeType,
                                                                                                             sCustom1,
                                                                                                             sCustom2,
-                                                                                                            sCustom3));
+                                                                                                            sCustom3,
+                                                                                                            eMlsType == null ? null
+                                                                                                                             : eMlsType.getID (),
+                                                                                                            sRequestedAS4MessageID));
     if (LOGGER.isDebugEnabled ())
       LOGGER.debug ("Stored new outbound transaction in DB. " + nRowsAffected + " rows affected.");
 
@@ -226,6 +232,25 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     final long nAffectedRows = newExecutor ().queryCount ("SELECT COUNT(*)" + " FROM " + m_sTableName + " WHERE id=?",
                                                           new ConstantPreparedStatementDataProvider (sID));
     return nAffectedRows > 0;
+  }
+
+  /** {@inheritDoc} */
+  public boolean containsRequestedAS4MessageIDIncludingArchive (@NonNull final String sAS4MessageID)
+  {
+    ValueEnforcer.notNull (sAS4MessageID, "AS4MessageID");
+
+    final DBExecutor aExecutor = newExecutor ();
+    // Active table first
+    if (aExecutor.queryCount ("SELECT COUNT(*) FROM " + m_sTableName + " WHERE requested_as4_message_id=?",
+                              new ConstantPreparedStatementDataProvider (sAS4MessageID)) > 0)
+      return true;
+
+    // Fall back to archive table
+    return aExecutor.queryCount ("SELECT COUNT(*) FROM " +
+                                 m_sTableName +
+                                 "_archive" +
+                                 " WHERE requested_as4_message_id=?",
+                                 new ConstantPreparedStatementDataProvider (sAS4MessageID)) > 0;
   }
 
   /** {@inheritDoc} */
@@ -306,11 +331,12 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
                                                                       " SET status=?" +
-                                                                      " WHERE id=? AND status IN (?,?) AND next_retry_dt <= NOW()",
+                                                                      " WHERE id=? AND status IN (?,?) AND next_retry_dt <= ?",
                                                                       new ConstantPreparedStatementDataProvider (EOutboundStatus.SENDING.getID (),
                                                                                                                  sID,
                                                                                                                  EOutboundStatus.FAILED.getID (),
-                                                                                                                 EOutboundStatus.RECOVERING.getID ()));
+                                                                                                                 EOutboundStatus.RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
@@ -432,12 +458,13 @@ public class OutboundTransactionManagerJdbc extends AbstractAPJdbcManager implem
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
-                                                                      " WHERE status IN (?,?) AND next_retry_dt <= NOW()" +
+                                                                      " WHERE status IN (?,?) AND next_retry_dt <= ?" +
                                                                       " ORDER BY next_retry_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize,
                                                                       new ConstantPreparedStatementDataProvider (EOutboundStatus.FAILED.getID (),
-                                                                                                                 EOutboundStatus.RECOVERING.getID ()));
+                                                                                                                 EOutboundStatus.RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     final ICommonsList <IOutboundTransaction> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)

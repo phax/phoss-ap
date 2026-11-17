@@ -30,6 +30,7 @@ import com.helger.base.numeric.mutable.MutableBoolean;
 import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
@@ -47,6 +48,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
   private static final Logger LOGGER = LoggerFactory.getLogger (ArchivalManagerJdbc.class);
 
   private final String m_sTableNamePrefix;
+  private final String m_sForUpdateSkipLocked;
 
   /**
    * Constructor.
@@ -55,11 +57,17 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
    *        The timestamp manager to use. May not be <code>null</code>.
    * @param sTableNamePrefix
    *        The database table name prefix. May not be <code>null</code>.
+   * @param eDBType
+   *        The database system type, to lock rows correctly. May not be <code>null</code>. Since
+   *        0.15.0.
    */
-  public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr, @NonNull final String sTableNamePrefix)
+  public ArchivalManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
+                              @NonNull final String sTableNamePrefix,
+                              @NonNull final EDatabaseSystemType eDBType)
   {
     super (aTimestampMgr);
     m_sTableNamePrefix = sTableNamePrefix;
+    m_sForUpdateSkipLocked = getForUpdateSkipLockedClause (eDBType);
   }
 
   // The candidate SELECT holds no lock, so the row is locked here - and only if it is still
@@ -74,7 +82,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  sTable +
                                                                  " WHERE id=? AND " +
                                                                  sArchivalCondition +
-                                                                 " FOR UPDATE SKIP LOCKED",
+                                                                 m_sForUpdateSkipLocked,
                                                                  aParams);
     return aRows != null && aRows.isNotEmpty ();
   }
@@ -205,7 +213,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " ORDER BY completed_dt" +
                                                                  " LIMIT " +
                                                                  nBatchSize +
-                                                                 " FOR UPDATE SKIP LOCKED",
+                                                                 m_sForUpdateSkipLocked,
                                                                  new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;
@@ -263,7 +271,7 @@ public class ArchivalManagerJdbc extends AbstractAPJdbcManager implements IArchi
                                                                  " ORDER BY completed_dt" +
                                                                  " LIMIT " +
                                                                  nBatchSize +
-                                                                 " FOR UPDATE SKIP LOCKED",
+                                                                 m_sForUpdateSkipLocked,
                                                                  new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aCutoff)));
     if (aRows == null || aRows.isEmpty ())
       return 0;

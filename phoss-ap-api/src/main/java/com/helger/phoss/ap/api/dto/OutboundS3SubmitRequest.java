@@ -93,6 +93,14 @@ public class OutboundS3SubmitRequest
   @Schema (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.")
   private String custom3;
 
+  @Schema (description = "Optional MLS_TYPE to request for this transaction instead of the configured default. Since 0.15.0.",
+           allowableValues = { "FAILURE_ONLY", "ALWAYS_SEND" })
+  private String mlsType;
+
+  @Schema (description = "Optional AS4 message ID to use for the first sending attempt instead of a random one, e.g. the ID the backend already keeps for this message. Must be a valid ebMS message ID (RFC 2822 msg-id, e.g. 'local@domain'), at most 255 characters, and must not have been used before. Since 0.15.0.",
+           example = "326f1827-c7fe-4c35-9e8a-1f0a4c4b2d1e@backend.example.org")
+  private String requestedAS4MessageID;
+
   /** @return the sender participant ID */
   public String getSenderID ()
   {
@@ -331,5 +339,35 @@ public class OutboundS3SubmitRequest
   public void setCustom3 (final String s)
   {
     custom3 = s;
+  }
+
+  /** @return the optional MLS type */
+  public String getMlsType ()
+  {
+    return mlsType;
+  }
+
+  /**
+   * @param s
+   *        The MLS type to set.
+   */
+  public void setMlsType (final String s)
+  {
+    mlsType = s;
+  }
+
+  /** @return the optional AS4 message ID for the first sending attempt */
+  public String getRequestedAS4MessageID ()
+  {
+    return requestedAS4MessageID;
+  }
+
+  /**
+   * @param s
+   *        The requested AS4 message ID to set.
+   */
+  public void setRequestedAS4MessageID (final String s)
+  {
+    requestedAS4MessageID = s;
   }
 }

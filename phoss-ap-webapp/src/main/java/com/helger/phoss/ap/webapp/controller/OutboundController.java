@@ -44,6 +44,7 @@ import com.helger.json.IJsonObject;
 import com.helger.json.JsonArray;
 import com.helger.json.JsonObject;
 import com.helger.json.JsonValue;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppolid.IDocumentTypeIdentifier;
 import com.helger.peppolid.IParticipantIdentifier;
@@ -195,6 +196,53 @@ public class OutboundController
   }
 
   /**
+   * Validate the optional MLS type request parameter.
+   *
+   * @param sMlsType
+   *        The MLS type as provided. May be <code>null</code>.
+   * @return A 400 Bad Request response if the MLS type is provided but unknown, <code>null</code>
+   *         otherwise.
+   * @since 0.15.0
+   */
+  @Nullable
+  @VisibleForTesting
+  static ResponseEntity <String> validateMlsType (@Nullable final String sMlsType)
+  {
+    if (StringHelper.isNotEmpty (sMlsType) && EPeppolMLSType.getFromIDOrNull (sMlsType) == null)
+      return ResponseEntity.badRequest ()
+                           .body (JsonValue.create ("The 'mlsType' value '" +
+                                                    sMlsType +
+                                                    "' is invalid. It must be one of '" +
+                                                    EPeppolMLSType.FAILURE_ONLY.getID () +
+                                                    "' or '" +
+                                                    EPeppolMLSType.ALWAYS_SEND.getID () +
+                                                    "'").getAsJsonString ());
+    return null;
+  }
+
+  /**
+   * Validate the optional AS4 message ID requested by the submitter.
+   *
+   * @param sAS4MessageID
+   *        The AS4 message ID as provided. May be <code>null</code>.
+   * @return A 400 Bad Request response if the AS4 message ID is provided but cannot be used,
+   *         <code>null</code> otherwise.
+   * @since 0.15.0
+   */
+  @Nullable
+  @VisibleForTesting
+  static ResponseEntity <String> validateAS4MessageID (@Nullable final String sAS4MessageID)
+  {
+    if (StringHelper.isNotEmpty (sAS4MessageID))
+    {
+      final String sError = OutboundOrchestrator.getRequestedAS4MessageIDError (sAS4MessageID);
+      if (sError != null)
+        return ResponseEntity.badRequest ().body (JsonValue.create (sError).getAsJsonString ());
+    }
+    return null;
+  }
+
+  /**
    * Validate the SBDH override parameters against the syntax used by the provided document type
    * identifier. Document types with a non-XML syntax specific ID (like
    * <code>urn:peppol:doctype:pdf+xml</code> used for the French Factur-X document types) carry
@@ -317,6 +365,10 @@ public class OutboundController
    *        Optional custom field 2 (max 255 characters).
    * @param sCustom3
    *        Optional custom field 3 (max 255 characters).
+   * @param sMlsType
+   *        Optional MLS type for this transaction.
+   * @param sAS4MessageID
+   *        Optional AS4 message ID for the first sending attempt.
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -329,7 +381,7 @@ public class OutboundController
                             "Returns a Phase4PeppolSendingReport as JSON.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Document accepted and sent successfully"),
                    @ApiResponse (responseCode = "400",
-                                 description = "Invalid Peppol identifier (sender, receiver, document type or process), or missing SBDH parameters for a non-XML document type"),
+                                 description = "Invalid Peppol identifier (sender, receiver, document type or process), missing SBDH parameters for a non-XML document type, invalid MLS type, or an AS4 message ID that is invalid or was already used"),
                    @ApiResponse (responseCode = "401",
                                  description = "Missing or invalid API token",
                                  content = @Content),
@@ -371,7 +423,11 @@ public class OutboundController
                                                     @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                            required = false) final String sCustom2,
                                                     @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                           required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                           required = false) final String sCustom3,
+                                                    @Parameter (description = "Optional MLS_TYPE (FAILURE_ONLY or ALWAYS_SEND) to request for this transaction instead of the configured default. Since 0.15.0.") @RequestParam (value = "mlsType",
+                                                                                                    required = false) final String sMlsType,
+                                                    @Parameter (description = "Optional AS4 message ID to use for the first sending attempt instead of a random one, e.g. the ID the backend already keeps for this message. Must be a valid ebMS message ID (RFC 2822 msg-id like local@domain), at most 255 characters, and must not have been used before. Retries always use random IDs. Since 0.15.0.") @RequestParam (value = "requestedAS4MessageID",
+                                                                                                    required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -382,6 +438,16 @@ public class OutboundController
     final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
     if (aCustomErr != null)
       return aCustomErr;
+
+    final ResponseEntity <String> aMlsTypeErr = validateMlsType (sMlsType);
+    if (aMlsTypeErr != null)
+      return aMlsTypeErr;
+    final EPeppolMLSType eMlsType = EPeppolMLSType.getFromIDOrNull (sMlsType);
+
+    final ResponseEntity <String> aAS4MessageIDErr = validateAS4MessageID (sAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
+    final String sRequestedAS4MessageID = StringHelper.isNotEmpty (sAS4MessageID) ? sAS4MessageID : null;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
                                                                                       : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -470,7 +536,9 @@ public class OutboundController
                                                                                          sPayloadMimeType,
                                                                                          sCustom1,
                                                                                          sCustom2,
-                                                                                         sCustom3);
+                                                                                         sCustom3,
+                                                                                         eMlsType,
+                                                                                         sRequestedAS4MessageID);
       if (aSubmitResult.isFailure ())
       {
         return ResponseEntity.unprocessableContent ().body (_submitErrorJson (aSubmitResult));
@@ -504,6 +572,8 @@ public class OutboundController
    *        Optional custom field 2 (max 255 characters).
    * @param sCustom3
    *        Optional custom field 3 (max 255 characters).
+   * @param sAS4MessageID
+   *        Optional AS4 message ID for the first sending attempt.
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -511,9 +581,10 @@ public class OutboundController
   @PostMapping (value = "/submit-sbd", produces = MediaType.APPLICATION_JSON_VALUE)
   @Operation (summary = "Submit a pre-built SBD for outbound sending",
               description = "Submits a complete Standard Business Document (with SBDH already present). All Peppol metadata " +
-                            "(sender, receiver, document type, process, C1 country code) is extracted from the SBDH.")
+                            "(sender, receiver, document type, process, C1 country code) and the MLS_TYPE are extracted from the SBDH.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "SBD accepted and sent successfully"),
-                   @ApiResponse (responseCode = "400", description = "Failed to submit the outbound SBD transaction"),
+                   @ApiResponse (responseCode = "400",
+                                 description = "Failed to submit the outbound SBD transaction, or an AS4 message ID that is invalid or was already used"),
                    @ApiResponse (responseCode = "401",
                                  description = "Missing or invalid API token",
                                  content = @Content),
@@ -530,7 +601,9 @@ public class OutboundController
                                                     @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                            required = false) final String sCustom2,
                                                     @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                           required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                           required = false) final String sCustom3,
+                                                    @Parameter (description = "Optional AS4 message ID to use for the first sending attempt instead of a random one, e.g. the ID the backend already keeps for this message. Must be a valid ebMS message ID (RFC 2822 msg-id like local@domain), at most 255 characters, and must not have been used before. Retries always use random IDs. Since 0.15.0.") @RequestParam (value = "requestedAS4MessageID",
+                                                                                                    required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -542,6 +615,11 @@ public class OutboundController
     if (aCustomErr != null)
       return aCustomErr;
 
+    final ResponseEntity <String> aAS4MessageIDErr = validateAS4MessageID (sAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
+    final String sRequestedAS4MessageID = StringHelper.isNotEmpty (sAS4MessageID) ? sAS4MessageID : null;
+
     // Read the InputStream only once
     try (final InputStream aIS = aServletRequest.getInputStream ())
     {
@@ -551,7 +629,8 @@ public class OutboundController
                                                                                          sMlsTo,
                                                                                          sCustom1,
                                                                                          sCustom2,
-                                                                                         sCustom3);
+                                                                                         sCustom3,
+                                                                                         sRequestedAS4MessageID);
       if (aSubmitResult.isFailure ())
       {
         // Deliberately kept at 400 - this endpoint answered 400 before the structured error body
@@ -595,6 +674,10 @@ public class OutboundController
    *        Optional custom field 2 (max 255 characters).
    * @param sCustom3
    *        Optional custom field 3 (max 255 characters).
+   * @param sMlsType
+   *        Optional MLS type for this transaction.
+   * @param sAS4MessageID
+   *        Optional AS4 message ID for the first sending attempt.
    * @return The {@link Phase4PeppolSendingReport} as JSON on success, or an error response.
    * @throws Exception
    *         On unexpected errors.
@@ -608,7 +691,7 @@ public class OutboundController
                             "Does not support binary payloads or SBDH overrides. Since v0.2.0.")
   @ApiResponses ({ @ApiResponse (responseCode = "200", description = "Document accepted and sent successfully"),
                    @ApiResponse (responseCode = "400",
-                                 description = "Empty body, invalid XML, unrecognised document type, or invalid participant ID"),
+                                 description = "Empty body, invalid XML, unrecognised document type, invalid participant ID, invalid MLS type, or an AS4 message ID that is invalid or was already used"),
                    @ApiResponse (responseCode = "401",
                                  description = "Missing or invalid API token",
                                  content = @Content),
@@ -636,7 +719,11 @@ public class OutboundController
                                                    @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                           required = false) final String sCustom2,
                                                    @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                          required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                          required = false) final String sCustom3,
+                                                   @Parameter (description = "Optional MLS_TYPE (FAILURE_ONLY or ALWAYS_SEND) to request for this transaction instead of the configured default. Since 0.15.0.") @RequestParam (value = "mlsType",
+                                                                                                   required = false) final String sMlsType,
+                                                   @Parameter (description = "Optional AS4 message ID to use for the first sending attempt instead of a random one, e.g. the ID the backend already keeps for this message. Must be a valid ebMS message ID (RFC 2822 msg-id like local@domain), at most 255 characters, and must not have been used before. Retries always use random IDs. Since 0.15.0.") @RequestParam (value = "requestedAS4MessageID",
+                                                                                                   required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -647,6 +734,16 @@ public class OutboundController
     final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
     if (aCustomErr != null)
       return aCustomErr;
+
+    final ResponseEntity <String> aMlsTypeErr = validateMlsType (sMlsType);
+    if (aMlsTypeErr != null)
+      return aMlsTypeErr;
+    final EPeppolMLSType eMlsType = EPeppolMLSType.getFromIDOrNull (sMlsType);
+
+    final ResponseEntity <String> aAS4MessageIDErr = validateAS4MessageID (sAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
+    final String sRequestedAS4MessageID = StringHelper.isNotEmpty (sAS4MessageID) ? sAS4MessageID : null;
 
     final String sLogPrefix = "[SubmitAutoDetect] ";
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
@@ -743,7 +840,9 @@ public class OutboundController
                                                                                          null,
                                                                                          sCustom1,
                                                                                          sCustom2,
-                                                                                         sCustom3);
+                                                                                         sCustom3,
+                                                                                         eMlsType,
+                                                                                         sRequestedAS4MessageID);
       if (aSubmitResult.isFailure ())
       {
         // Deliberately kept at 400 - this endpoint answered 400 before the structured error body
@@ -781,7 +880,7 @@ public class OutboundController
   @ApiResponses ({ @ApiResponse (responseCode = "200",
                                  description = "Document fetched, accepted and sent successfully"),
                    @ApiResponse (responseCode = "400",
-                                 description = "Outbound S3 disabled, missing required fields, invalid identifiers, missing SBDH parameters for a non-XML document type, or S3 fetch failed"),
+                                 description = "Outbound S3 disabled, missing required fields, invalid identifiers, missing SBDH parameters for a non-XML document type, invalid MLS type, an AS4 message ID that is invalid or was already used, or S3 fetch failed"),
                    @ApiResponse (responseCode = "401",
                                  description = "Missing or invalid API token",
                                  content = @Content),
@@ -823,6 +922,17 @@ public class OutboundController
                                                                       aRequest.getCustom3 ());
     if (aCustomErr != null)
       return aCustomErr;
+
+    final ResponseEntity <String> aMlsTypeErr = validateMlsType (aRequest.getMlsType ());
+    if (aMlsTypeErr != null)
+      return aMlsTypeErr;
+    final EPeppolMLSType eMlsType = EPeppolMLSType.getFromIDOrNull (aRequest.getMlsType ());
+
+    final ResponseEntity <String> aAS4MessageIDErr = validateAS4MessageID (aRequest.getRequestedAS4MessageID ());
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
+    final String sRequestedAS4MessageID = StringHelper.isNotEmpty (aRequest.getRequestedAS4MessageID ()) ? aRequest.getRequestedAS4MessageID ()
+                                                                                                : null;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (aRequest.getSbdhInstanceID ()) ? aRequest.getSbdhInstanceID ()
                                                                                                     : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -946,7 +1056,9 @@ public class OutboundController
                                                                                          aRequest.getPayloadMimeType (),
                                                                                          aRequest.getCustom1 (),
                                                                                          aRequest.getCustom2 (),
-                                                                                         aRequest.getCustom3 ());
+                                                                                         aRequest.getCustom3 (),
+                                                                                         eMlsType,
+                                                                                         sRequestedAS4MessageID);
       if (aSubmitResult.isFailure ())
       {
         return ResponseEntity.unprocessableContent ().body (_submitErrorJson (aSubmitResult));

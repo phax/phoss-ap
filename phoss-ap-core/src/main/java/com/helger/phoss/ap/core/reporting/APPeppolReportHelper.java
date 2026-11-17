@@ -47,6 +47,7 @@ import com.helger.peppol.reportingsupport.IPeppolReportSenderCallback;
 import com.helger.peppol.reportingsupport.PeppolReportingSupport;
 import com.helger.peppol.reportingsupport.sql.PeppolReportSQLHandler;
 import com.helger.peppol.reportingsupport.sql.PeppolReportStorageSQL;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppol.servicedomain.EPeppolNetwork;
 import com.helger.peppolid.IParticipantIdentifier;
@@ -320,6 +321,9 @@ public final class APPeppolReportHelper
       final String sCustom1 = null;
       final String sCustom2 = null;
       final String sCustom3 = null;
+      // The configured MLS type and a random AS4 message ID apply
+      final EPeppolMLSType eMlsType = null;
+      final String sRequestedAS4MessageID = null;
       final OutboundSubmitResult aSubmitResult = OutboundOrchestrator.submitRawDocument ("[PeppolReporting] ",
                                                                                          aSenderID,
                                                                                          aReceiverID,
@@ -335,7 +339,9 @@ public final class APPeppolReportHelper
                                                                                          sPayloadMimeType,
                                                                                          sCustom1,
                                                                                          sCustom2,
-                                                                                         sCustom3);
+                                                                                         sCustom3,
+                                                                                         eMlsType,
+                                                                                         sRequestedAS4MessageID);
       if (aSubmitResult.isFailure ())
         throw new IllegalStateException ("Failed to submit Peppol Reporting document for transmission: " +
                                          (aSubmitResult.isVerificationRejected () ? aSubmitResult.getVerificationOutcome ()

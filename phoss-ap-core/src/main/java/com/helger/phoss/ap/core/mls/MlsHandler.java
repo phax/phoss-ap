@@ -443,39 +443,24 @@ public final class MlsHandler
     // MLS can never have an MLS_TO
     final String sMlsTo = null;
 
-    // The SBDH parameters are not needed for SBDH
-    final String sSbdhStandard = null;
-    final String sSbdhTypeVersion = null;
-    final String sSbdhType = null;
-    final String sPayloadMimeType = null;
-
-    // Custom fields do not apply to system-generated MLS responses
-    final String sCustom1 = null;
-    final String sCustom2 = null;
-    final String sCustom3 = null;
-
-    // Create outbound transaction
-    final String sMlsTxID = aOutboundMgr.create (ETransactionType.MLS_RESPONSE,
-                                                 aMLSSenderPID.getURIEncoded (),
-                                                 aMLSReceiverPID.getURIEncoded (),
-                                                 EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded (),
-                                                 EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded (),
-                                                 sMlsSbdhInstanceID,
-                                                 ESourceType.PAYLOAD_ONLY,
-                                                 sDocumentPath,
-                                                 aMlsBytes.length,
-                                                 HashHelper.sha256Hex (aMlsBytes),
-                                                 APCoreConfig.getPeppolOwnerCountryCode (),
-                                                 aCreationDT,
-                                                 sMlsTo,
-                                                 aInboundTx.getID (),
-                                                 sSbdhStandard,
-                                                 sSbdhTypeVersion,
-                                                 sSbdhType,
-                                                 sPayloadMimeType,
-                                                 sCustom1,
-                                                 sCustom2,
-                                                 sCustom3);
+    // Create outbound transaction. The SBDH parameters, the custom fields, the MLS type and a
+    // requested AS4 message ID do not apply to system-generated MLS responses
+    final String sMlsTxID = aOutboundMgr.newTransactionBuilder ()
+                                        .transactionType (ETransactionType.MLS_RESPONSE)
+                                        .senderID (aMLSSenderPID.getURIEncoded ())
+                                        .receiverID (aMLSReceiverPID.getURIEncoded ())
+                                        .docTypeID (EPredefinedDocumentTypeIdentifier.PEPPOL_MLS_1_0.getURIEncoded ())
+                                        .processID (EPredefinedProcessIdentifier.urn_peppol_edec_mls.getURIEncoded ())
+                                        .sbdhInstanceID (sMlsSbdhInstanceID)
+                                        .sourceType (ESourceType.PAYLOAD_ONLY)
+                                        .documentPath (sDocumentPath)
+                                        .documentSize (aMlsBytes.length)
+                                        .documentHash (HashHelper.sha256Hex (aMlsBytes))
+                                        .c1CountryCode (APCoreConfig.getPeppolOwnerCountryCode ())
+                                        .creationDT (aCreationDT)
+                                        .mlsTo (sMlsTo)
+                                        .mlsInboundTransactionID (aInboundTx.getID ())
+                                        .create ();
     final var aMlsTx = aOutboundMgr.getByID (sMlsTxID);
     if (aMlsTx == null)
     {

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.helger.annotation.WillNotClose;
 import com.helger.annotation.style.VisibleForTesting;
+import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.io.stream.CountingInputStream;
 import com.helger.base.io.stream.HasInputStream;
 import com.helger.base.io.stream.StreamHelper;
@@ -46,6 +47,7 @@ import com.helger.collection.commons.ICommonsList;
 import com.helger.io.file.FilenameHelper;
 import com.helger.mime.CMimeType;
 import com.helger.peppol.reporting.api.PeppolReportingItem;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppol.sbdh.PeppolSBDHData;
 import com.helger.peppol.sbdh.PeppolSBDHDataReader;
 import com.helger.peppol.security.PeppolTrustedCA;
@@ -185,6 +187,14 @@ public final class OutboundOrchestrator
   /** The maximum number of exception causes contained in an error message. */
   private static final int MAX_ERROR_CAUSE_DEPTH = 10;
 
+  /**
+   * The maximum length of an AS4 message ID requested by the submitter, because of the size of the
+   * database columns.
+   *
+   * @since 0.15.0
+   */
+  public static final int REQUESTED_AS4_MESSAGE_ID_MAX_LENGTH = 255;
+
   /** Private constructor to prevent instantiation of this utility class. */
   private OutboundOrchestrator ()
   {}
@@ -238,6 +248,56 @@ public final class OutboundOrchestrator
   }
 
   /**
+   * Check the syntax of an AS4 message ID requested by the submitter.
+   *
+   * @param sAS4MessageID
+   *        The requested AS4 message ID. May not be <code>null</code>.
+   * @return The error message if the syntax is invalid, <code>null</code> if it is valid.
+   */
+  @Nullable
+  @VisibleForTesting
+  static String getAS4MessageIDSyntaxError (@NonNull final String sAS4MessageID)
+  {
+    if (sAS4MessageID.length () > REQUESTED_AS4_MESSAGE_ID_MAX_LENGTH)
+      return "The AS4 message ID must not be longer than " + REQUESTED_AS4_MESSAGE_ID_MAX_LENGTH + " characters";
+    if (!MessageHelperMethods.isValidMessageID (sAS4MessageID))
+      return "The AS4 message ID '" +
+             sAS4MessageID +
+             "' is not a valid ebMS message ID - it must be an RFC 2822 msg-id like 'local@domain'";
+    return null;
+  }
+
+  /**
+   * Check an AS4 message ID requested by the submitter of an outbound document. It must be a valid
+   * ebMS message ID of at most {@link #REQUESTED_AS4_MESSAGE_ID_MAX_LENGTH} characters, and it must
+   * neither be requested by another outbound transaction nor be used by a sending attempt - both
+   * including the archive.
+   *
+   * @param sAS4MessageID
+   *        The requested AS4 message ID. May not be <code>null</code>.
+   * @return The error message if the AS4 message ID cannot be used, <code>null</code> if it can be
+   *         used.
+   * @since 0.15.0
+   */
+  @Nullable
+  public static String getRequestedAS4MessageIDError (@NonNull final String sAS4MessageID)
+  {
+    ValueEnforcer.notNull (sAS4MessageID, "AS4MessageID");
+
+    final String sSyntaxError = getAS4MessageIDSyntaxError (sAS4MessageID);
+    if (sSyntaxError != null)
+      return sSyntaxError;
+
+    if (APJdbcMetaManager.getOutboundTransactionMgr ().containsRequestedAS4MessageIDIncludingArchive (sAS4MessageID))
+      return "The AS4 message ID '" + sAS4MessageID + "' was already requested by another outbound transaction";
+
+    if (APJdbcMetaManager.getOutboundSendingAttemptMgr ().containsAS4MessageIDIncludingArchive (sAS4MessageID))
+      return "The AS4 message ID '" + sAS4MessageID + "' was already used for sending";
+
+    return null;
+  }
+
+  /**
    * Submit a raw (payload-only) document for outbound sending. The document is stored to disk,
    * optionally verified, and a new outbound transaction is created in
    * {@link EOutboundStatus#PENDING} state.
@@ -276,6 +336,13 @@ public final class OutboundOrchestrator
    *        Second optional custom field (max 255 characters). May be <code>null</code>.
    * @param sCustom3
    *        Third optional custom field (max 255 characters). May be <code>null</code>.
+   * @param eMlsType
+   *        Optional MLS_TYPE for this transaction. May be <code>null</code> to use the configured
+   *        default at sending time.
+   * @param sRequestedAS4MessageID
+   *        Optional AS4 message ID to use for the first sending attempt. May be <code>null</code> to
+   *        use a random one. It must have been checked with
+   *        {@link #getRequestedAS4MessageIDError(String)} before.
    * @return The result of the submission, never <code>null</code>. On a verification rejection it
    *         carries the individual findings and <b>no</b> outbound transaction is created, because
    *         the document is never sent.
@@ -299,7 +366,9 @@ public final class OutboundOrchestrator
                                                         @Nullable final String sPayloadMimeType,
                                                         @Nullable final String sCustom1,
                                                         @Nullable final String sCustom2,
-                                                        @Nullable final String sCustom3)
+                                                        @Nullable final String sCustom3,
+                                                        @Nullable final EPeppolMLSType eMlsType,
+                                                        @Nullable final String sRequestedAS4MessageID)
   {
     LOGGER.info (sLogPrefix + "Submitting raw document with SBDH Instance ID '" + sSbdhInstanceID + "'");
 
@@ -397,28 +466,30 @@ public final class OutboundOrchestrator
     }
 
     // Create transaction in pending state
-    final String sMlsInboundTransactionID = null;
-    final String sTransactionID = aOutboundMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                                       aSenderID.getURIEncoded (),
-                                                       aReceiverID.getURIEncoded (),
-                                                       aDocTypeID.getURIEncoded (),
-                                                       aProcessID.getURIEncoded (),
-                                                       sSbdhInstanceID,
-                                                       ESourceType.PAYLOAD_ONLY,
-                                                       sDocumentPath,
-                                                       nDocumentBytes,
-                                                       sDocumentHash,
-                                                       sC1CountryCode,
-                                                       aCreationDT,
-                                                       sMlsTo,
-                                                       sMlsInboundTransactionID,
-                                                       sSbdhStandard,
-                                                       sSbdhTypeVersion,
-                                                       sSbdhType,
-                                                       sPayloadMimeType,
-                                                       sCustom1,
-                                                       sCustom2,
-                                                       sCustom3);
+    final String sTransactionID = aOutboundMgr.newTransactionBuilder ()
+                                              .transactionType (ETransactionType.BUSINESS_DOCUMENT)
+                                              .senderID (aSenderID.getURIEncoded ())
+                                              .receiverID (aReceiverID.getURIEncoded ())
+                                              .docTypeID (aDocTypeID.getURIEncoded ())
+                                              .processID (aProcessID.getURIEncoded ())
+                                              .sbdhInstanceID (sSbdhInstanceID)
+                                              .sourceType (ESourceType.PAYLOAD_ONLY)
+                                              .documentPath (sDocumentPath)
+                                              .documentSize (nDocumentBytes)
+                                              .documentHash (sDocumentHash)
+                                              .c1CountryCode (sC1CountryCode)
+                                              .creationDT (aCreationDT)
+                                              .mlsTo (sMlsTo)
+                                              .sbdhStandard (sSbdhStandard)
+                                              .sbdhTypeVersion (sSbdhTypeVersion)
+                                              .sbdhType (sSbdhType)
+                                              .payloadMimeType (sPayloadMimeType)
+                                              .custom1 (sCustom1)
+                                              .custom2 (sCustom2)
+                                              .custom3 (sCustom3)
+                                              .mlsType (eMlsType)
+                                              .requestedAS4MessageID (sRequestedAS4MessageID)
+                                              .create ();
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onOutboundDocumentAccepted (sTransactionID,
                                            aSenderID.getURIEncoded (),
@@ -452,6 +523,10 @@ public final class OutboundOrchestrator
    *        Second optional custom field (max 255 characters). May be <code>null</code>.
    * @param sCustom3
    *        Third optional custom field (max 255 characters). May be <code>null</code>.
+   * @param sRequestedAS4MessageID
+   *        Optional AS4 message ID to use for the first sending attempt. May be <code>null</code> to
+   *        use a random one. It must have been checked with
+   *        {@link #getRequestedAS4MessageIDError(String)} before.
    * @return The result of the submission, never <code>null</code>. On a verification rejection it
    *         carries the individual findings and <b>no</b> outbound transaction is created, because
    *         the document is never sent.
@@ -465,7 +540,8 @@ public final class OutboundOrchestrator
                                                         @Nullable final String sMlsTo,
                                                         @Nullable final String sCustom1,
                                                         @Nullable final String sCustom2,
-                                                        @Nullable final String sCustom3)
+                                                        @Nullable final String sCustom3,
+                                                        @Nullable final String sRequestedAS4MessageID)
   {
     LOGGER.info (sLogPrefix + "Submitting pre-built SBD");
 
@@ -561,34 +637,28 @@ public final class OutboundOrchestrator
 
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
 
-    // Create transaction in pending state
-    final String sInboundTxID = null;
-    final String sSbdhStandard = null;
-    final String sSbdhTypeVersion = null;
-    final String sSbdhType = null;
-    final String sPayloadMimeType = null;
-
-    final String sTransactionID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                               aSbdData.getSenderURIEncoded (),
-                                               aSbdData.getReceiverURIEncoded (),
-                                               aSbdData.getDocumentTypeURIEncoded (),
-                                               aSbdData.getProcessURIEncoded (),
-                                               sSbdhInstanceID,
-                                               ESourceType.PREBUILT_SBD,
-                                               sDocumentPath,
-                                               nSbdByteCount,
-                                               sDocumentHash,
-                                               aSbdData.getCountryC1 (),
-                                               aCreationDT,
-                                               sMlsTo,
-                                               sInboundTxID,
-                                               sSbdhStandard,
-                                               sSbdhTypeVersion,
-                                               sSbdhType,
-                                               sPayloadMimeType,
-                                               sCustom1,
-                                               sCustom2,
-                                               sCustom3);
+    // Create transaction in pending state. The pre-built SBD is sent as it is, so the MLS_TYPE of
+    // its SBDH is only stored for information
+    final String sTransactionID = aMgr.newTransactionBuilder ()
+                                      .transactionType (ETransactionType.BUSINESS_DOCUMENT)
+                                      .senderID (aSbdData.getSenderURIEncoded ())
+                                      .receiverID (aSbdData.getReceiverURIEncoded ())
+                                      .docTypeID (aSbdData.getDocumentTypeURIEncoded ())
+                                      .processID (aSbdData.getProcessURIEncoded ())
+                                      .sbdhInstanceID (sSbdhInstanceID)
+                                      .sourceType (ESourceType.PREBUILT_SBD)
+                                      .documentPath (sDocumentPath)
+                                      .documentSize (nSbdByteCount)
+                                      .documentHash (sDocumentHash)
+                                      .c1CountryCode (aSbdData.getCountryC1 ())
+                                      .creationDT (aCreationDT)
+                                      .mlsTo (sMlsTo)
+                                      .custom1 (sCustom1)
+                                      .custom2 (sCustom2)
+                                      .custom3 (sCustom3)
+                                      .mlsType (aSbdData.getMLSType ())
+                                      .requestedAS4MessageID (sRequestedAS4MessageID)
+                                      .create ();
     for (final var aHandler : APCoreMetaManager.getAllLifecycleHandlers ())
       aHandler.onOutboundDocumentAccepted (sTransactionID,
                                            aSbdData.getSenderURIEncoded (),
@@ -998,7 +1068,28 @@ public final class OutboundOrchestrator
       try
       {
         final int nNewAttemptCount = aTx.getAttemptCount () + 1;
-        final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
+
+        // The AS4 message ID requested by the submitter is only used for the first attempt. A retry
+        // with the same AS4 message ID would be rejected by the receiver as a duplicate. It is
+        // checked again, because it may have been used since it was submitted
+        final String sRequestedAS4MessageID = aTx.getRequestedAS4MessageID ();
+        final boolean bUseRequestedAS4MessageID = sRequestedAS4MessageID != null && aTx.getAttemptCount () == 0;
+        String sRequestedAS4MessageIDError = null;
+        if (bUseRequestedAS4MessageID)
+        {
+          sRequestedAS4MessageIDError = getAS4MessageIDSyntaxError (sRequestedAS4MessageID);
+          if (sRequestedAS4MessageIDError == null &&
+              aOutboundAttemptMgr.containsAS4MessageIDIncludingArchive (sRequestedAS4MessageID))
+            sRequestedAS4MessageIDError = "The requested AS4 message ID '" +
+                                          sRequestedAS4MessageID +
+                                          "' was already used for sending";
+        }
+        // A rejected requested AS4 message ID must not be used for the failed sending attempt either
+        final String sAS4MessageID;
+        if (bUseRequestedAS4MessageID && sRequestedAS4MessageIDError == null)
+          sAS4MessageID = sRequestedAS4MessageID;
+        else
+          sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
         final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
 
         // Callback on recoverable error, that is retried independent of the attempt count. Only
@@ -1090,6 +1181,14 @@ public final class OutboundOrchestrator
                                                aNextRetry,
                                                sErrMsg);
         };
+
+        if (sRequestedAS4MessageIDError != null)
+        {
+          LOGGER.error (sRealLogPrefix + sRequestedAS4MessageIDError);
+          aSendingReport.setAS4SendingError (sRequestedAS4MessageIDError);
+          onPermanentFailure.accept (sRequestedAS4MessageIDError);
+          return aSendingReport;
+        }
 
         // Add all information from the transaction into the sending report as soon as possible so
         // that users can leverage it
@@ -1375,7 +1474,9 @@ public final class OutboundOrchestrator
                         aMlsTo = aIF.createParticipantIdentifierWithDefaultScheme (aTx.getMlsTo ());
                       aBuilder.mlsTo (aMlsTo);
                     }
-                    aBuilder.mlsType (APCoreConfig.getMlsType ());
+                    // A per-transaction MLS type overrides the configured one
+                    final EPeppolMLSType eTxMlsType = aTx.getMlsType ();
+                    aBuilder.mlsType (eTxMlsType != null ? eTxMlsType : APCoreConfig.getMlsType ());
                   }
 
                   // Set the main payload

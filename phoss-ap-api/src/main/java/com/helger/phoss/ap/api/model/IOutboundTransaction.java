@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 import com.helger.annotation.Nonempty;
 import com.helger.annotation.Nonnegative;
 import com.helger.base.id.IHasID;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -238,4 +239,21 @@ public interface IOutboundTransaction extends IHasID <String>
    */
   @Nullable
   String getCustom3 ();
+
+  /**
+   * @return The MLS_TYPE of this transaction, or <code>null</code> if the configured default
+   *         applies at sending time. For a pre-built SBD this is the MLS_TYPE contained in the SBDH.
+   * @since 0.15.0
+   */
+  @Nullable
+  EPeppolMLSType getMlsType ();
+
+  /**
+   * @return The AS4 message ID requested by the submitter, or <code>null</code> if a random one is
+   *         used. It only applies to the first sending attempt - every retry uses a new random AS4
+   *         message ID. The AS4 message IDs actually used are part of the sending attempts.
+   * @since 0.15.0
+   */
+  @Nullable
+  String getRequestedAS4MessageID ();
 }

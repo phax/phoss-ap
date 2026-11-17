@@ -138,4 +138,27 @@ final class OutboundControllerTest
     assertNotNull (aDocTypeID);
     assertNull (OutboundController.validateNonXMLPayloadParams (aDocTypeID, null, null, null, null));
   }
+
+  @Test
+  void testMlsType ()
+  {
+    assertNull (OutboundController.validateMlsType (null));
+    assertNull (OutboundController.validateMlsType (""));
+    assertNull (OutboundController.validateMlsType ("FAILURE_ONLY"));
+    assertNull (OutboundController.validateMlsType ("ALWAYS_SEND"));
+    _assertBadRequest (OutboundController.validateMlsType ("NEVER"), "mlsType");
+  }
+
+  @Test
+  void testAS4MessageIDInvalidSyntax ()
+  {
+    // Absent means a random one is used
+    assertNull (OutboundController.validateAS4MessageID (null));
+    assertNull (OutboundController.validateAS4MessageID (""));
+
+    // The syntax is checked before any database lookup
+    final ResponseEntity <String> aResponse = OutboundController.validateAS4MessageID ("no-at-sign");
+    assertNotNull (aResponse);
+    assertEquals (HttpStatus.BAD_REQUEST, aResponse.getStatusCode ());
+  }
 }

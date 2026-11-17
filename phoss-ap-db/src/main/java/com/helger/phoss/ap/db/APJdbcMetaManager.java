@@ -142,9 +142,9 @@ public final class APJdbcMetaManager extends AbstractGlobalSingleton
       final var aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
       m_aOutboundTxMgr = new OutboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aOutboundAttemptMgr = new OutboundSendingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
-      m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aInboundTxMgr = new InboundTransactionManagerJdbc (aTimestampMgr, sTableNamePrefix, eDBType);
       m_aInboundAttemptMgr = new InboundForwardingAttemptManagerJdbc (aTimestampMgr, sTableNamePrefix);
-      m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix);
+      m_aArchivalMgr = new ArchivalManagerJdbc (aTimestampMgr, sTableNamePrefix, eDBType);
       m_aMlsMetricsMgr = new MlsMetricsManagerJdbc (aTimestampMgr, sTableNamePrefix);
       m_aAS4DuplicateMgr = new AS4DuplicateManagerJdbc (aTimestampMgr, sTableNamePrefix);
 

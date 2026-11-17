@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -227,6 +228,18 @@ public final class MockOutboundMlsTransaction implements IOutboundTransaction
 
   @Nullable
   public String getCustom3 ()
+  {
+    return null;
+  }
+
+  @Nullable
+  public EPeppolMLSType getMlsType ()
+  {
+    return null;
+  }
+
+  @Nullable
+  public String getRequestedAS4MessageID ()
   {
     return null;
   }

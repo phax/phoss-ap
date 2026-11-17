@@ -25,6 +25,7 @@ import com.helger.annotation.Nonnegative;
 import com.helger.annotation.style.ReturnsMutableCopy;
 import com.helger.base.state.ESuccess;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -89,7 +90,15 @@ public interface IOutboundTransactionManager
    *        Second optional custom field (max 255 characters). May be <code>null</code>.
    * @param sCustom3
    *        Third optional custom field (max 255 characters). May be <code>null</code>.
+   * @param eMlsType
+   *        Optional MLS_TYPE of this transaction. May be <code>null</code> to use the configured
+   *        default at sending time. For a pre-built SBD this is the MLS_TYPE contained in the SBDH.
+   *        Since 0.15.0.
+   * @param sRequestedAS4MessageID
+   *        Optional AS4 message ID requested by the submitter for the first sending attempt. May be
+   *        <code>null</code> to use a random one. Since 0.15.0.
    * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
+   * @see #newTransactionBuilder()
    */
   @Nullable
   String create (@NonNull ETransactionType eTransactionType,
@@ -112,7 +121,23 @@ public interface IOutboundTransactionManager
                  @Nullable String sPayloadMimeType,
                  @Nullable String sCustom1,
                  @Nullable String sCustom2,
-                 @Nullable String sCustom3);
+                 @Nullable String sCustom3,
+                 @Nullable EPeppolMLSType eMlsType,
+                 @Nullable String sRequestedAS4MessageID);
+
+  /**
+   * Create a new builder for an outbound transaction. The builder calls
+   * {@link #create(ETransactionType, String, String, String, String, String, ESourceType, String, long, String, String, OffsetDateTime, String, String, String, String, String, String, String, String, String, EPeppolMLSType, String)}
+   * of this manager.
+   *
+   * @return A new builder. Never <code>null</code>.
+   * @since 0.15.0
+   */
+  @NonNull
+  default OutboundTransactionBuilder newTransactionBuilder ()
+  {
+    return new OutboundTransactionBuilder (this);
+  }
 
   /**
    * Look up a transaction by its unique ID.
@@ -146,6 +171,18 @@ public interface IOutboundTransactionManager
    * @return <code>true</code> if the transaction exists, <code>false</code> if not.
    */
   boolean containsTransactionWithID (@NonNull String sID);
+
+  /**
+   * Check if an outbound transaction in the active {@code outbound_transaction} table or in the
+   * {@code outbound_transaction_archive} table already requested the provided AS4 message ID.
+   *
+   * @param sAS4MessageID
+   *        The AS4 message ID to check. May not be <code>null</code>.
+   * @return <code>true</code> if the AS4 message ID was already requested, <code>false</code> if
+   *         not.
+   * @since 0.15.0
+   */
+  boolean containsRequestedAS4MessageIDIncludingArchive (@NonNull String sAS4MessageID);
 
   /**
    * Look up a transaction by its SBDH Instance Identifier. Searches the active

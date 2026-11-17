@@ -1323,25 +1323,27 @@ public final class InboundOrchestrator
                                                                    aSBDBytes);
 
         // Store in DB
-        final String sTxID = aInboundMgr.create (sIncomingID,
-                                                 sC2ID,
-                                                 sC3ID,
-                                                 sSigningCertCN,
-                                                 sSenderID,
-                                                 sReceiverID,
-                                                 sDocTypeID,
-                                                 sProcessID,
-                                                 sDocumentPath,
-                                                 aSBDBytes.length,
-                                                 sSbdhHash,
-                                                 sAS4MessageID,
-                                                 aAS4Timestamp,
-                                                 sSbdhInstanceID,
-                                                 sC1CountryCode,
-                                                 bIsDuplicateAS4,
-                                                 bIsDuplicateSBDH,
-                                                 sValidMlsTo,
-                                                 eMlsType);
+        final String sTxID = aInboundMgr.newTransactionBuilder ()
+                                        .incomingID (sIncomingID)
+                                        .c2SeatID (sC2ID)
+                                        .c3SeatID (sC3ID)
+                                        .signingCertCN (sSigningCertCN)
+                                        .senderID (sSenderID)
+                                        .receiverID (sReceiverID)
+                                        .docTypeID (sDocTypeID)
+                                        .processID (sProcessID)
+                                        .documentPath (sDocumentPath)
+                                        .documentSize (aSBDBytes.length)
+                                        .documentHash (sSbdhHash)
+                                        .as4MessageID (sAS4MessageID)
+                                        .as4Timestamp (aAS4Timestamp)
+                                        .sbdhInstanceID (sSbdhInstanceID)
+                                        .c1CountryCode (sC1CountryCode)
+                                        .duplicateAS4 (bIsDuplicateAS4)
+                                        .duplicateSBDH (bIsDuplicateSBDH)
+                                        .mlsTo (sValidMlsTo)
+                                        .mlsType (eMlsType)
+                                        .create ();
         final IInboundTransaction aInboundTx = aInboundMgr.getByID (sTxID);
         if (aInboundTx == null)
           throw new IllegalStateException ("Failed to store incoming transaction");

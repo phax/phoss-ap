@@ -29,6 +29,7 @@ import com.helger.base.state.ESuccess;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
+import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
 import com.helger.db.jdbc.executor.DBExecutor;
@@ -66,6 +67,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
   private static final Logger LOGGER = LoggerFactory.getLogger (InboundTransactionManagerJdbc.class);
 
   private final String m_sTableName;
+  private final String m_sForUpdateSkipLocked;
 
   /**
    * Constructor.
@@ -74,12 +76,17 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
    *        The timestamp manager to use. May not be <code>null</code>.
    * @param sTableNamePrefix
    *        The database table name prefix. May not be <code>null</code>.
+   * @param eDBType
+   *        The database system type, to lock rows correctly. May not be <code>null</code>. Since
+   *        0.15.0.
    */
   public InboundTransactionManagerJdbc (@NonNull final IAPTimestampManager aTimestampMgr,
-                                        @NonNull final String sTableNamePrefix)
+                                        @NonNull final String sTableNamePrefix,
+                                        @NonNull final EDatabaseSystemType eDBType)
   {
     super (aTimestampMgr);
     m_sTableName = sTableNamePrefix + "inbound_transaction";
+    m_sForUpdateSkipLocked = getForUpdateSkipLockedClause (eDBType);
   }
 
   /**
@@ -342,11 +349,12 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
                                                                       " SET status=?" +
-                                                                      " WHERE id=? AND status IN (?,?) AND next_retry_dt <= NOW()",
+                                                                      " WHERE id=? AND status IN (?,?) AND next_retry_dt <= ?",
                                                                       new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARDING.getID (),
                                                                                                                  sID,
                                                                                                                  EInboundStatus.FORWARD_FAILED.getID (),
-                                                                                                                 EInboundStatus.RECOVERING.getID ()));
+                                                                                                                 EInboundStatus.RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
@@ -410,10 +418,11 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
                                                                       " SET status=?" +
-                                                                      " WHERE id=? AND status=? AND next_retry_dt <= NOW()",
+                                                                      " WHERE id=? AND status=? AND next_retry_dt <= ?",
                                                                       new ConstantPreparedStatementDataProvider (EInboundStatus.RECEIVED.getID (),
                                                                                                                  sID,
-                                                                                                                 EInboundStatus.RECEIVE_RECOVERING.getID ()));
+                                                                                                                 EInboundStatus.RECEIVE_RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
@@ -424,14 +433,15 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
     ValueEnforcer.notNull (sID, "ID");
     ValueEnforcer.notNull (aLeaseEndDT, "LeaseEndDT");
 
-    // The status stays - moving "next_retry_dt" out of the "<= NOW()" window is the claim
+    // The status stays - moving "next_retry_dt" out of the "<= now" window is the claim
     final long nRowsAffected = newExecutor ().insertOrUpdateOrDelete ("UPDATE " +
                                                                       m_sTableName +
                                                                       " SET next_retry_dt=?" +
-                                                                      " WHERE id=? AND status=? AND next_retry_dt <= NOW()",
+                                                                      " WHERE id=? AND status=? AND next_retry_dt <= ?",
                                                                       new ConstantPreparedStatementDataProvider (DBValueHelper.toTimestamp (aLeaseEndDT),
                                                                                                                  sID,
-                                                                                                                 EInboundStatus.VERIFICATION_DEFERRED.getID ()));
+                                                                                                                 EInboundStatus.VERIFICATION_DEFERRED.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     return ESuccess.valueOf (nRowsAffected == 1);
   }
 
@@ -628,12 +638,13 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
-                                                                      " WHERE status IN (?,?) AND next_retry_dt <= NOW()" +
+                                                                      " WHERE status IN (?,?) AND next_retry_dt <= ?" +
                                                                       " ORDER BY next_retry_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize,
                                                                       new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARD_FAILED.getID (),
-                                                                                                                 EInboundStatus.RECOVERING.getID ()));
+                                                                                                                 EInboundStatus.RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)
@@ -651,11 +662,12 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
-                                                                      " WHERE status=? AND next_retry_dt <= NOW()" +
+                                                                      " WHERE status=? AND next_retry_dt <= ?" +
                                                                       " ORDER BY next_retry_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize,
-                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.RECEIVE_RECOVERING.getID ()));
+                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.RECEIVE_RECOVERING.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)
@@ -671,11 +683,12 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       COLS +
                                                                       " FROM " +
                                                                       m_sTableName +
-                                                                      " WHERE status=? AND next_retry_dt <= NOW()" +
+                                                                      " WHERE status=? AND next_retry_dt <= ?" +
                                                                       " ORDER BY next_retry_dt" +
                                                                       " LIMIT " +
                                                                       nBatchSize,
-                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.VERIFICATION_DEFERRED.getID ()));
+                                                                      new ConstantPreparedStatementDataProvider (EInboundStatus.VERIFICATION_DEFERRED.getID (),
+                                                                                                                 DBValueHelper.toTimestamp (now ())));
     final ICommonsList <IInboundTransaction> ret = new CommonsArrayList <> ();
     if (aRows != null)
       for (final DBResultRow aRow : aRows)
@@ -712,7 +725,7 @@ public class InboundTransactionManagerJdbc extends AbstractAPJdbcManager impleme
                                                                       " ORDER BY as4_timestamp" +
                                                                       " LIMIT " +
                                                                       nBatchSize +
-                                                                      " FOR UPDATE SKIP LOCKED",
+                                                                      m_sForUpdateSkipLocked,
                                                                       new ConstantPreparedStatementDataProvider (EInboundStatus.FORWARDED.getID (),
                                                                                                                  DBValueHelper.toTimestamp (aMaxAS4Timestamp),
                                                                                                                  EPeppolMLSType.FAILURE_ONLY.getID (),

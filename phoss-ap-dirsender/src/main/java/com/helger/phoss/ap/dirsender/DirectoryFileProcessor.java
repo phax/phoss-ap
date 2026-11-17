@@ -216,8 +216,8 @@ public final class DirectoryFileProcessor
     final OutboundSubmitResult aSubmitResult;
     try (final InputStream aIS = FileHelper.getBufferedInputStream (aPendingFile))
     {
-      // Custom fields are not available for directory-based ingestion
-      aSubmitResult = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null, null, null, null);
+      // Custom fields and a requested AS4 message ID are not available for directory-based ingestion
+      aSubmitResult = OutboundOrchestrator.submitPrebuiltSBD (sLogPrefix, aIS, null, null, null, null, null);
     }
     catch (final Exception ex)
     {

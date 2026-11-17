@@ -175,27 +175,20 @@ public final class InboundVerificationResultIntegrationTest
   private static IOutboundTransaction _createOutboundTx ()
   {
     final IOutboundTransactionManager aMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
-    final String sTxID = aMgr.create (ETransactionType.BUSINESS_DOCUMENT,
-                                      "iso6523-actorid-upis::9915:sender",
-                                      "iso6523-actorid-upis::9915:receiver",
-                                      "busdox-docid-qns::urn:test:invoice",
-                                      "cenbii-procid-ubl::urn:test:process",
-                                      "test-" + UUID.randomUUID (),
-                                      ESourceType.PAYLOAD_ONLY,
-                                      "/tmp/test-outbound.sbd",
-                                      1024L,
-                                      "abc123hash012345678901234567890123456789012345678901234567890123",
-                                      "DE",
-                                      APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC (),
-                                      null,
-                                      null,
-                                      null,
-                                      null,
-                                      null,
-                                      null,
-                                      null,
-                                      null,
-                                      null);
+    final String sTxID = aMgr.newTransactionBuilder ()
+                             .transactionType (ETransactionType.BUSINESS_DOCUMENT)
+                             .senderID ("iso6523-actorid-upis::9915:sender")
+                             .receiverID ("iso6523-actorid-upis::9915:receiver")
+                             .docTypeID ("busdox-docid-qns::urn:test:invoice")
+                             .processID ("cenbii-procid-ubl::urn:test:process")
+                             .sbdhInstanceID ("test-" + UUID.randomUUID ())
+                             .sourceType (ESourceType.PAYLOAD_ONLY)
+                             .documentPath ("/tmp/test-outbound.sbd")
+                             .documentSize (1024L)
+                             .documentHash ("abc123hash012345678901234567890123456789012345678901234567890123")
+                             .c1CountryCode ("DE")
+                             .creationDT (APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ())
+                             .create ();
     assertNotNull (sTxID);
     final IOutboundTransaction aTx = aMgr.getByID (sTxID);
     assertNotNull (aTx);

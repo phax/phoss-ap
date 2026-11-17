@@ -966,6 +966,33 @@ public final class OutboundOrchestrator
                                                                   @NonNull final IOutboundTransaction aTx,
                                                                   @Nullable final MlsSmpFallback aMlsFallback)
   {
+    return processPendingOutbound (sLogPrefix, aTx, aMlsFallback, null);
+  }
+
+  /**
+   * Process a pending outbound transaction like
+   * {@link #processPendingOutbound(String, IOutboundTransaction, MlsSmpFallback)}, but with the AS4
+   * message ID chosen by the submitter instead of a random one.
+   *
+   * @param sLogPrefix
+   *        Log message prefix for traceability. May not be <code>null</code>.
+   * @param aTx
+   *        The outbound transaction to process. Must be in pending state. May not be
+   *        <code>null</code>.
+   * @param aMlsFallback
+   *        The optional MLS SMP lookup fallback description. May be <code>null</code>.
+   * @param sSubmitterAS4MessageID
+   *        The AS4 message ID to use, already checked with {@link AS4MessageIDHelper}. May be
+   *        <code>null</code> to create a random one. It applies to this sending attempt only.
+   * @return The {@link Phase4PeppolSendingReport} containing the full details of the sending
+   *         attempt. Never <code>null</code>.
+   */
+  @NonNull
+  public static Phase4PeppolSendingReport processPendingOutbound (@NonNull final String sLogPrefix,
+                                                                  @NonNull final IOutboundTransaction aTx,
+                                                                  @Nullable final MlsSmpFallback aMlsFallback,
+                                                                  @Nullable final String sSubmitterAS4MessageID)
+  {
     final IAPTimestampManager aTimestampMgr = APBasicMetaManager.getTimestampMgr ();
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
     final IOutboundTransactionManager aOutboundTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
@@ -998,7 +1025,8 @@ public final class OutboundOrchestrator
       try
       {
         final int nNewAttemptCount = aTx.getAttemptCount () + 1;
-        final String sAS4MessageID = MessageHelperMethods.createRandomMessageID ();
+        final String sAS4MessageID = sSubmitterAS4MessageID != null ? sSubmitterAS4MessageID
+                                                                    : MessageHelperMethods.createRandomMessageID ();
         final OffsetDateTime aAS4Timestamp = aTimestampMgr.getCurrentDateTimeUTC ();
 
         // Callback on recoverable error, that is retried independent of the attempt count. Only

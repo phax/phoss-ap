@@ -63,6 +63,7 @@ import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.ddd.DDDHelper;
+import com.helger.phoss.ap.core.outbound.AS4MessageIDHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.phoss.ap.webapp.config.OpenApiConfig;
@@ -192,6 +193,17 @@ public class OutboundController
                                                       MAX_CUSTOM_FIELD_LENGTH +
                                                       " characters").getAsJsonString ());
     return null;
+  }
+
+  @Nullable
+  private static ResponseEntity <String> _validateAS4MessageID (@Nullable final String sAS4MessageID)
+  {
+    if (sAS4MessageID == null)
+      return null;
+    final String sError = AS4MessageIDHelper.getValidationError (sAS4MessageID);
+    if (sError == null)
+      return null;
+    return ResponseEntity.badRequest ().body (JsonValue.create (sError).getAsJsonString ());
   }
 
   /**
@@ -371,7 +383,8 @@ public class OutboundController
                                                     @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                            required = false) final String sCustom2,
                                                     @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                           required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                           required = false) final String sCustom3,
+                                                    @Parameter (description = "Optional AS4 message ID (form local@domain) to use instead of a random one, e.g. the ID the backend already keeps for this message") @RequestParam (value = "as4MessageID", required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -382,6 +395,11 @@ public class OutboundController
     final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
     if (aCustomErr != null)
       return aCustomErr;
+
+    final String sEffectiveAS4MessageID = AS4MessageIDHelper.getTrimmedOrNull (sAS4MessageID);
+    final ResponseEntity <String> aAS4MessageIDErr = _validateAS4MessageID (sEffectiveAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (sSbdhInstanceID) ? sSbdhInstanceID
                                                                                       : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -479,7 +497,9 @@ public class OutboundController
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitRaw] ",
-                                                                                                    aTx);
+                                                                                                    aTx,
+                                                                                                    null,
+                                                                                                    sEffectiveAS4MessageID);
       if (!aSendingReport.isOverallSuccess ())
       {
         return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
@@ -530,7 +550,8 @@ public class OutboundController
                                                     @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                            required = false) final String sCustom2,
                                                     @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                           required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                           required = false) final String sCustom3,
+                                                    @Parameter (description = "Optional AS4 message ID (form local@domain) to use instead of a random one, e.g. the ID the backend already keeps for this message") @RequestParam (value = "as4MessageID", required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -541,6 +562,11 @@ public class OutboundController
     final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
     if (aCustomErr != null)
       return aCustomErr;
+
+    final String sEffectiveAS4MessageID = AS4MessageIDHelper.getTrimmedOrNull (sAS4MessageID);
+    final ResponseEntity <String> aAS4MessageIDErr = _validateAS4MessageID (sEffectiveAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
 
     // Read the InputStream only once
     try (final InputStream aIS = aServletRequest.getInputStream ())
@@ -561,7 +587,9 @@ public class OutboundController
 
       // Perform actual sending
       final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitPrebuiltSBD] ",
-                                                                                                    aTx);
+                                                                                                    aTx,
+                                                                                                    null,
+                                                                                                    sEffectiveAS4MessageID);
       if (!aSendingReport.isOverallSuccess ())
       {
         return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
@@ -636,7 +664,8 @@ public class OutboundController
                                                    @Parameter (description = "Optional custom field 2 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom2",
                                                                                                                                                                                                           required = false) final String sCustom2,
                                                    @Parameter (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.") @RequestParam (value = "custom3",
-                                                                                                                                                                                                          required = false) final String sCustom3) throws Exception
+                                                                                                                                                                                                          required = false) final String sCustom3,
+                                                    @Parameter (description = "Optional AS4 message ID (form local@domain) to use instead of a random one, e.g. the ID the backend already keeps for this message") @RequestParam (value = "as4MessageID", required = false) final String sAS4MessageID) throws Exception
   {
     if (!APCoreConfig.isSendingEnabled ())
     {
@@ -647,6 +676,11 @@ public class OutboundController
     final ResponseEntity <String> aCustomErr = _validateCustomFields (sCustom1, sCustom2, sCustom3);
     if (aCustomErr != null)
       return aCustomErr;
+
+    final String sEffectiveAS4MessageID = AS4MessageIDHelper.getTrimmedOrNull (sAS4MessageID);
+    final ResponseEntity <String> aAS4MessageIDErr = _validateAS4MessageID (sEffectiveAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
 
     final String sLogPrefix = "[SubmitAutoDetect] ";
     final IIdentifierFactory aIF = APBasicMetaManager.getIdentifierFactory ();
@@ -752,7 +786,10 @@ public class OutboundController
       final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
-      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound (sLogPrefix, aTx);
+      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound (sLogPrefix,
+                                                                                                    aTx,
+                                                                                                    null,
+                                                                                                    sEffectiveAS4MessageID);
       if (!aSendingReport.isOverallSuccess ())
         return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));
 
@@ -823,6 +860,11 @@ public class OutboundController
                                                                       aRequest.getCustom3 ());
     if (aCustomErr != null)
       return aCustomErr;
+
+    final String sEffectiveAS4MessageID = AS4MessageIDHelper.getTrimmedOrNull (aRequest.getAS4MessageID ());
+    final ResponseEntity <String> aAS4MessageIDErr = _validateAS4MessageID (sEffectiveAS4MessageID);
+    if (aAS4MessageIDErr != null)
+      return aAS4MessageIDErr;
 
     final String sEffectiveSbdhInstanceID = StringHelper.isNotEmpty (aRequest.getSbdhInstanceID ()) ? aRequest.getSbdhInstanceID ()
                                                                                                     : PeppolSBDHData.createRandomSBDHInstanceIdentifier ();
@@ -954,7 +996,10 @@ public class OutboundController
       final IOutboundTransaction aTx = aSubmitResult.getTransaction ();
 
       // Perform actual sending
-      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitS3] ", aTx);
+      final Phase4PeppolSendingReport aSendingReport = OutboundOrchestrator.processPendingOutbound ("[SubmitS3] ",
+                                                                                                    aTx,
+                                                                                                    null,
+                                                                                                    sEffectiveAS4MessageID);
       if (!aSendingReport.isOverallSuccess ())
       {
         return ResponseEntity.unprocessableContent ().body (_sendingReportJson (aSendingReport, aSubmitResult));

@@ -93,6 +93,9 @@ public class OutboundS3SubmitRequest
   @Schema (description = "Optional custom field 3 (max 255 characters). Stored with the transaction and returned by the status APIs.")
   private String custom3;
 
+  @Schema (description = "Optional AS4 message ID (form local@domain) to use instead of a random one, e.g. the ID the backend already keeps for this message")
+  private String as4MessageID;
+
   /** @return the sender participant ID */
   public String getSenderID ()
   {
@@ -331,5 +334,20 @@ public class OutboundS3SubmitRequest
   public void setCustom3 (final String s)
   {
     custom3 = s;
+  }
+
+  /** @return the optional AS4 message ID to use for sending */
+  public String getAS4MessageID ()
+  {
+    return as4MessageID;
+  }
+
+  /**
+   * @param s
+   *        The AS4 message ID to set.
+   */
+  public void setAS4MessageID (final String s)
+  {
+    as4MessageID = s;
   }
 }

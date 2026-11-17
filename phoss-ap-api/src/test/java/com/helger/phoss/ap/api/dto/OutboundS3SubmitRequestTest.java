@@ -48,6 +48,7 @@ public final class OutboundS3SubmitRequestTest
     assertNull (a.getCustom1 ());
     assertNull (a.getCustom2 ());
     assertNull (a.getCustom3 ());
+    assertNull (a.getAS4MessageID ());
   }
 
   @Test
@@ -70,6 +71,7 @@ public final class OutboundS3SubmitRequestTest
     a.setCustom1 ("c1");
     a.setCustom2 ("c2");
     a.setCustom3 ("c3");
+    a.setAS4MessageID ("id@ap.example.org");
 
     assertEquals ("sender1", a.getSenderID ());
     assertEquals ("receiver1", a.getReceiverID ());
@@ -87,5 +89,6 @@ public final class OutboundS3SubmitRequestTest
     assertEquals ("c1", a.getCustom1 ());
     assertEquals ("c2", a.getCustom2 ());
     assertEquals ("c3", a.getCustom3 ());
+    assertEquals ("id@ap.example.org", a.getAS4MessageID ());
   }
 }

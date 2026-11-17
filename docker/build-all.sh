@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-version=0.13.3
+version=0.14.0
 
 #echo Docker login
 #echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin

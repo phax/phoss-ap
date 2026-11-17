@@ -25,6 +25,7 @@ import com.helger.annotation.Nonempty;
 import com.helger.annotation.Nonnegative;
 import com.helger.base.enforce.ValueEnforcer;
 import com.helger.db.jdbc.executor.DBResultRow;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -70,6 +71,8 @@ public class OutboundTransactionRow implements IOutboundTransaction
   private final String m_sCustom1;
   private final String m_sCustom2;
   private final String m_sCustom3;
+  private final EPeppolMLSType m_eMlsType;
+  private final String m_sRequestedAS4MessageID;
 
   /**
    * Construct an outbound transaction row from a JDBC result row.
@@ -110,6 +113,8 @@ public class OutboundTransactionRow implements IOutboundTransaction
     m_sCustom1 = aRow.getAsString (28);
     m_sCustom2 = aRow.getAsString (29);
     m_sCustom3 = aRow.getAsString (30);
+    m_eMlsType = EPeppolMLSType.getFromIDOrNull (aRow.getAsString (31));
+    m_sRequestedAS4MessageID = aRow.getAsString (32);
     ValueEnforcer.notEmpty (m_sID, "ID");
     ValueEnforcer.notNull (m_eTransactionType, "TransactionType");
     ValueEnforcer.notEmpty (m_sSenderID, "SenderID");
@@ -352,5 +357,19 @@ public class OutboundTransactionRow implements IOutboundTransaction
   public String getCustom3 ()
   {
     return m_sCustom3;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public EPeppolMLSType getMlsType ()
+  {
+    return m_eMlsType;
+  }
+
+  /** {@inheritDoc} */
+  @Nullable
+  public String getRequestedAS4MessageID ()
+  {
+    return m_sRequestedAS4MessageID;
   }
 }

@@ -119,7 +119,8 @@ public final class JdbcManagerIntegrationTest
       final ICommonsList <DBResultRow> aRows = aExecutor.queryAll ("SELECT id FROM " +
                                                                    sTableNamePrefix +
                                                                    sTable +
-                                                                   " WHERE id=? FOR UPDATE",
+                                                                   " WHERE id=?" +
+                                                                   AbstractAPJdbcManager.getForUpdateClause (aJdbcConfig.getJdbcDatabaseSystemType ()),
                                                                    new ConstantPreparedStatementDataProvider (sID));
       assertEquals (1, aRows.size ());
 
@@ -148,6 +149,8 @@ public final class JdbcManagerIntegrationTest
                                      "abc123hash012345678901234567890123456789012345678901234567890123",
                                      "DE",
                                      _now (),
+                                     null,
+                                     null,
                                      null,
                                      null,
                                      null,
@@ -227,6 +230,8 @@ public final class JdbcManagerIntegrationTest
                                     null,
                                     null,
                                     null,
+                                    null,
+                                    null,
                                     null);
     assertNotNull (sID);
 
@@ -259,6 +264,8 @@ public final class JdbcManagerIntegrationTest
                                     "DE",
                                     _now (),
                                     "iso6523-actorid-upis::9915:mlsto",
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null,
@@ -299,6 +306,8 @@ public final class JdbcManagerIntegrationTest
                                     null,
                                     null,
                                     null,
+                                    null,
+                                    null,
                                     null);
     assertNotNull (sID);
 
@@ -331,6 +340,8 @@ public final class JdbcManagerIntegrationTest
                                     "0",
                                     "factur-x",
                                     "application/pdf",
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null);
@@ -370,7 +381,9 @@ public final class JdbcManagerIntegrationTest
                                     null,
                                     "my-custom-1",
                                     "my-custom-2",
-                                    "my-custom-3");
+                                    "my-custom-3",
+                                    null,
+                                    null);
     assertNotNull (sID);
 
     final IOutboundTransaction aTx = aMgr.getByID (sID);
@@ -411,6 +424,8 @@ public final class JdbcManagerIntegrationTest
                                     "hashPrebuilt",
                                     "AT",
                                     _now (),
+                                    null,
+                                    null,
                                     null,
                                     null,
                                     null,
@@ -1087,8 +1102,9 @@ public final class JdbcManagerIntegrationTest
     // The other MLS fields are not touched
     assertNull (aMgr.getByID (sID).getMlsOutboundTransactionID ());
 
-    // Unknown transaction
-    assertTrue (aMgr.updateMlsCorrelatedOutboundTransactionID (_uniqueID (), sOutboundTxID).isFailure ());
+    // Unknown transaction - an ID of the regular length, because DB2 rejects a longer one
+    assertTrue (aMgr.updateMlsCorrelatedOutboundTransactionID (UUID.randomUUID ().toString (), sOutboundTxID)
+                    .isFailure ());
   }
 
   @Test
@@ -2027,7 +2043,9 @@ public final class JdbcManagerIntegrationTest
                                         null,
                                         "archive-custom-1",
                                         "archive-custom-2",
-                                        "archive-custom-3");
+                                        "archive-custom-3",
+                                        null,
+                                        null);
     assertNotNull (sTxID);
 
     // Active table only: both methods find the transaction
@@ -2051,6 +2069,114 @@ public final class JdbcManagerIntegrationTest
     assertEquals ("archive-custom-1", aTxArchived.getCustom1 ());
     assertEquals ("archive-custom-2", aTxArchived.getCustom2 ());
     assertEquals ("archive-custom-3", aTxArchived.getCustom3 ());
+  }
+
+  @Test
+  public void testOutboundMlsTypeAndRequestedAS4MessageID ()
+  {
+    final IOutboundTransactionManager aTxMgr = APJdbcMetaManager.getOutboundTransactionMgr ();
+    final IOutboundSendingAttemptManager aAttemptMgr = APJdbcMetaManager.getOutboundSendingAttemptMgr ();
+    final IArchivalManager aArchivalMgr = APJdbcMetaManager.getArchivalMgr ();
+
+    final String sRequestedAS4MessageID = UUID.randomUUID ().toString () + "@backend.example.org";
+    assertFalse (aTxMgr.containsRequestedAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+    assertFalse (aAttemptMgr.containsAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+
+    final String sTxID = aTxMgr.newTransactionBuilder ()
+                               .transactionType (ETransactionType.BUSINESS_DOCUMENT)
+                               .senderID ("iso6523-actorid-upis::9915:sender")
+                               .receiverID ("iso6523-actorid-upis::9915:receiver")
+                               .docTypeID ("busdox-docid-qns::urn:test:invoice")
+                               .processID ("cenbii-procid-ubl::urn:test:process")
+                               .sbdhInstanceID (_uniqueID ())
+                               .sourceType (ESourceType.PAYLOAD_ONLY)
+                               .documentPath ("/tmp/test-overrides.sbd")
+                               .documentSize (256L)
+                               .documentHash ("hashOverrides")
+                               .c1CountryCode ("DE")
+                               .creationDT (_now ())
+                               .mlsType (EPeppolMLSType.FAILURE_ONLY)
+                               .requestedAS4MessageID (sRequestedAS4MessageID)
+                               .create ();
+    assertNotNull (sTxID);
+
+    IOutboundTransaction aTx = aTxMgr.getByID (sTxID);
+    assertNotNull (aTx);
+    assertEquals (EPeppolMLSType.FAILURE_ONLY, aTx.getMlsType ());
+    assertEquals (sRequestedAS4MessageID, aTx.getRequestedAS4MessageID ());
+    assertTrue (aTxMgr.containsRequestedAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+    assertFalse (aAttemptMgr.containsAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+
+    // The requested AS4 message ID is used for sending
+    assertNotNull (aAttemptMgr.createSuccess (sTxID, sRequestedAS4MessageID, _now (), "receipt-overrides", null));
+    assertTrue (aAttemptMgr.containsAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+
+    // Archive the transaction - both values and both lookups must survive
+    aTxMgr.updateStatusCompleted (sTxID, EOutboundStatus.SENT);
+    aTxMgr.updateReportingStatus (sTxID, EReportingStatus.REPORTED);
+    assertTrue (aArchivalMgr.archiveOutboundTransaction (sTxID).isSuccess ());
+    assertNull (aTxMgr.getByID (sTxID));
+
+    aTx = aTxMgr.getByIDIncludingArchive (sTxID);
+    assertNotNull (aTx);
+    assertEquals (EPeppolMLSType.FAILURE_ONLY, aTx.getMlsType ());
+    assertEquals (sRequestedAS4MessageID, aTx.getRequestedAS4MessageID ());
+    assertTrue (aTxMgr.containsRequestedAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+    assertTrue (aAttemptMgr.containsAS4MessageIDIncludingArchive (sRequestedAS4MessageID));
+  }
+
+  @Test
+  public void testOutboundWithoutOverrides ()
+  {
+    final IOutboundTransaction aTx = APJdbcMetaManager.getOutboundTransactionMgr ().getByID (_createOutboundTx ());
+    assertNotNull (aTx);
+    // NULL means the configured MLS type and a random AS4 message ID
+    assertNull (aTx.getMlsType ());
+    assertNull (aTx.getRequestedAS4MessageID ());
+  }
+
+  @Test
+  public void testInboundBuilder ()
+  {
+    final IInboundTransactionManager aTxMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    final String sAS4MessageID = UUID.randomUUID ().toString () + "@sender.example.org";
+    final String sTxID = aTxMgr.newTransactionBuilder ()
+                               .incomingID (_uniqueID ())
+                               .c2SeatID ("PDE000001")
+                               .c3SeatID ("PAT000001")
+                               .signingCertCN ("CN=PDE000001")
+                               .senderID ("iso6523-actorid-upis::9915:sender")
+                               .receiverID ("iso6523-actorid-upis::9915:receiver")
+                               .docTypeID ("busdox-docid-qns::urn:test:invoice")
+                               .processID ("cenbii-procid-ubl::urn:test:process")
+                               .documentPath ("/tmp/test-inbound-builder.sbd")
+                               .documentSize (64L)
+                               .documentHash ("hashInboundBuilder")
+                               .as4MessageID (sAS4MessageID)
+                               .as4Timestamp (_now ())
+                               .sbdhInstanceID (_uniqueID ())
+                               .c1CountryCode ("DE")
+                               .mlsType (EPeppolMLSType.ALWAYS_SEND)
+                               .create ();
+    assertNotNull (sTxID);
+
+    final IInboundTransaction aTx = aTxMgr.getByID (sTxID);
+    assertNotNull (aTx);
+    assertEquals (sAS4MessageID, aTx.getAS4MessageID ());
+    assertEquals (EPeppolMLSType.ALWAYS_SEND, aTx.getMlsType ());
+    assertFalse (aTx.isDuplicateAS4 ());
+    assertFalse (aTx.isDuplicateSBDH ());
+    assertNull (aTx.getMlsTo ());
+  }
+
+  @Test (expected = NullPointerException.class)
+  public void testOutboundBuilderMissingMandatory ()
+  {
+    // No transaction type set
+    APJdbcMetaManager.getOutboundTransactionMgr ()
+                     .newTransactionBuilder ()
+                     .senderID ("iso6523-actorid-upis::9915:sender")
+                     .create ();
   }
 
   @Test

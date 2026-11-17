@@ -93,6 +93,15 @@ public class OutboundTransactionResponse
   @Schema (description = "Third optional custom field (max 255 characters); null if not set", nullable = true)
   private String custom3;
 
+  @Schema (description = "MLS_TYPE requested for this transaction, or taken from a pre-built SBD; null if the configured default applies. Since 0.15.0.",
+           allowableValues = { "FAILURE_ONLY", "ALWAYS_SEND" },
+           nullable = true)
+  private String mlsType;
+
+  @Schema (description = "AS4 message ID requested by the submitter for the first sending attempt; null if a random one is used. Since 0.15.0.",
+           nullable = true)
+  private String requestedAS4MessageID;
+
   /**
    * Default constructor for JSON deserialization.
    */
@@ -128,6 +137,8 @@ public class OutboundTransactionResponse
     aResp.custom1 = aTx.getCustom1 ();
     aResp.custom2 = aTx.getCustom2 ();
     aResp.custom3 = aTx.getCustom3 ();
+    aResp.mlsType = aTx.getMlsType () != null ? aTx.getMlsType ().getID () : null;
+    aResp.requestedAS4MessageID = aTx.getRequestedAS4MessageID ();
     return aResp;
   }
 
@@ -399,5 +410,35 @@ public class OutboundTransactionResponse
   public void setCustom3 (final String s)
   {
     custom3 = s;
+  }
+
+  /** @return the MLS type of the transaction */
+  public String getMlsType ()
+  {
+    return mlsType;
+  }
+
+  /**
+   * @param s
+   *        The MLS type to set.
+   */
+  public void setMlsType (final String s)
+  {
+    mlsType = s;
+  }
+
+  /** @return the AS4 message ID requested by the submitter */
+  public String getRequestedAS4MessageID ()
+  {
+    return requestedAS4MessageID;
+  }
+
+  /**
+   * @param s
+   *        The requested AS4 message ID to set.
+   */
+  public void setRequestedAS4MessageID (final String s)
+  {
+    requestedAS4MessageID = s;
   }
 }

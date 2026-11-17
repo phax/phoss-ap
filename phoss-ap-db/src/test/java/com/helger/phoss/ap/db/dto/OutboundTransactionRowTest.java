@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import com.helger.db.jdbc.executor.DBResultRow;
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -51,7 +52,7 @@ public final class OutboundTransactionRowTest
   {
     final OffsetDateTime aNow = APBasicMetaManager.getTimestampMgr ().getCurrentDateTimeUTC ();
 
-    // 31 columns, matching OutboundTransactionRow constructor order
+    // 33 columns, matching OutboundTransactionRow constructor order
     // 0 id
     // 1 transactionType
     // 2 senderID
@@ -83,6 +84,8 @@ public final class OutboundTransactionRowTest
     // 28 custom1 (nullable)
     // 29 custom2 (nullable)
     // 30 custom3 (nullable)
+    // 31 mlsType (nullable)
+    // 32 requestedAS4MessageID (nullable)
     return DBResultRowHelper.createRow ("tx-001",
                                         ETransactionType.BUSINESS_DOCUMENT.getID (),
                                         "iso6523-actorid-upis::sender",
@@ -115,6 +118,9 @@ public final class OutboundTransactionRowTest
                                         null,
                                         // 28 custom1, 29 custom2, 30 custom3
                                         null,
+                                        null,
+                                        null,
+                                        // 31 mlsType, 32 requestedAS4MessageID
                                         null,
                                         null);
   }
@@ -162,6 +168,8 @@ public final class OutboundTransactionRowTest
     assertNull (aTx.getMlsReceivedDT ());
     assertNull (aTx.getMlsID ());
     assertNull (aTx.getMlsInboundTransactionID ());
+    assertNull (aTx.getMlsType ());
+    assertNull (aTx.getRequestedAS4MessageID ());
   }
 
   @Test
@@ -201,7 +209,9 @@ public final class OutboundTransactionRowTest
                                                           "application/xml",
                                                           "custom-1",
                                                           "custom-2",
-                                                          "custom-3");
+                                                          "custom-3",
+                                                          EPeppolMLSType.ALWAYS_SEND.getID (),
+                                                          "id@backend.example.org");
     final OutboundTransactionRow aTx = new OutboundTransactionRow (aRow);
 
     assertEquals ("tx-full", aTx.getID ());
@@ -225,5 +235,7 @@ public final class OutboundTransactionRowTest
     assertEquals ("custom-1", aTx.getCustom1 ());
     assertEquals ("custom-2", aTx.getCustom2 ());
     assertEquals ("custom-3", aTx.getCustom3 ());
+    assertEquals (EPeppolMLSType.ALWAYS_SEND, aTx.getMlsType ());
+    assertEquals ("id@backend.example.org", aTx.getRequestedAS4MessageID ());
   }
 }

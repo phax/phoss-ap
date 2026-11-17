@@ -94,4 +94,15 @@ public interface IOutboundSendingAttemptManager
    */
   @NonNull
   ICommonsList <IOutboundSendingAttempt> getByTransactionID (@NonNull String sOutboundTransactionID);
+
+  /**
+   * Check if a sending attempt in the active {@code outbound_sending_attempt} table or in the
+   * {@code outbound_sending_attempt_archive} table already used the provided AS4 message ID.
+   *
+   * @param sAS4MessageID
+   *        The AS4 message ID to check. May not be <code>null</code>.
+   * @return <code>true</code> if the AS4 message ID was already used, <code>false</code> if not.
+   * @since 0.15.0
+   */
+  boolean containsAS4MessageIDIncludingArchive (@NonNull String sAS4MessageID);
 }

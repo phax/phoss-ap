@@ -81,6 +81,7 @@ public interface IInboundTransactionManager
    * @param eMlsType
    *        The MLS sending strategy. Never <code>null</code>.
    * @return The ID of the created transaction. Only <code>null</code> if insertion fails.
+   * @see #newTransactionBuilder()
    */
   @Nullable
   String create (@NonNull String sIncomingID,
@@ -102,6 +103,20 @@ public interface IInboundTransactionManager
                  boolean bIsDuplicateSBDH,
                  @Nullable String sMlsTo,
                  @NonNull EPeppolMLSType eMlsType);
+
+  /**
+   * Create a new builder for an inbound transaction. The builder calls
+   * {@link #create(String, String, String, String, String, String, String, String, String, long, String, String, OffsetDateTime, String, String, boolean, boolean, String, EPeppolMLSType)}
+   * of this manager.
+   *
+   * @return A new builder. Never <code>null</code>.
+   * @since 0.15.0
+   */
+  @NonNull
+  default InboundTransactionBuilder newTransactionBuilder ()
+  {
+    return new InboundTransactionBuilder (this);
+  }
 
   /**
    * Look up a transaction by its unique ID.

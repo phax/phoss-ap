@@ -23,6 +23,7 @@ import org.jspecify.annotations.NonNull;
 
 import com.helger.annotation.Nonempty;
 import com.helger.base.tostring.ToStringGenerator;
+import com.helger.db.api.EDatabaseSystemType;
 import com.helger.db.jdbc.mgr.AbstractJDBCEnabledManager;
 import com.helger.phoss.ap.api.datetime.IAPTimestampManager;
 
@@ -49,6 +50,42 @@ public abstract class AbstractAPJdbcManager extends AbstractJDBCEnabledManager
     return UUID.randomUUID ().toString ();
   }
 
+  /**
+   * Get the clause that locks the selected rows until the end of the transaction. DB2 releases the
+   * lock of a row read with its default isolation level "cursor stability" as soon as the cursor
+   * leaves the row, so "read stability" is required there.
+   *
+   * @param eDBType
+   *        The database system type. May not be <code>null</code>.
+   * @return The clause with a leading space. Never <code>null</code>.
+   */
+  @NonNull
+  public static String getForUpdateClause (@NonNull final EDatabaseSystemType eDBType)
+  {
+    return eDBType == EDatabaseSystemType.DB2 ? " FOR UPDATE WITH RS" : " FOR UPDATE";
+  }
+
+  /**
+   * Get the clause that locks the selected rows until the end of the transaction and that skips
+   * rows locked by another transaction instead of waiting for them.
+   *
+   * @param eDBType
+   *        The database system type. May not be <code>null</code>.
+   * @return The clause with a leading space. Never <code>null</code>.
+   * @see #getForUpdateClause(EDatabaseSystemType)
+   */
+  @NonNull
+  public static String getForUpdateSkipLockedClause (@NonNull final EDatabaseSystemType eDBType)
+  {
+    return eDBType == EDatabaseSystemType.DB2 ? " FOR UPDATE WITH RS SKIP LOCKED DATA" : " FOR UPDATE SKIP LOCKED";
+  }
+
+  /**
+   * @return The current date time of the application. It is bound as a parameter instead of using
+   *         the SQL function <code>NOW()</code>, because a column without time zone (MySQL
+   *         <code>DATETIME</code>) holds the local time of the JVM, while <code>NOW()</code> uses the
+   *         time zone of the database session. Never <code>null</code>.
+   */
   @NonNull
   protected final OffsetDateTime now ()
   {

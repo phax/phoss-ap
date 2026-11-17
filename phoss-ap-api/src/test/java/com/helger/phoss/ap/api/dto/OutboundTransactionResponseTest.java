@@ -27,6 +27,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
+import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EOutboundStatus;
 import com.helger.phoss.ap.api.codelist.EReportingStatus;
@@ -63,6 +64,8 @@ public final class OutboundTransactionResponseTest
     assertNull (a.getCustom1 ());
     assertNull (a.getCustom2 ());
     assertNull (a.getCustom3 ());
+    assertNull (a.getMlsType ());
+    assertNull (a.getRequestedAS4MessageID ());
   }
 
   @Test
@@ -87,6 +90,8 @@ public final class OutboundTransactionResponseTest
     a.setCustom1 ("c1");
     a.setCustom2 ("c2");
     a.setCustom3 ("c3");
+    a.setMlsType ("ALWAYS_SEND");
+    a.setRequestedAS4MessageID ("id@backend.example.org");
 
     assertEquals ("id1", a.getID ());
     assertEquals ("business_document", a.getTransactionType ());
@@ -106,6 +111,8 @@ public final class OutboundTransactionResponseTest
     assertEquals ("c1", a.getCustom1 ());
     assertEquals ("c2", a.getCustom2 ());
     assertEquals ("c3", a.getCustom3 ());
+    assertEquals ("ALWAYS_SEND", a.getMlsType ());
+    assertEquals ("id@backend.example.org", a.getRequestedAS4MessageID ());
   }
 
   @Test
@@ -145,7 +152,9 @@ public final class OutboundTransactionResponseTest
                                                   null,
                                                   "custom-a",
                                                   "custom-b",
-                                                  "custom-c");
+                                                  "custom-c",
+                                                  EPeppolMLSType.FAILURE_ONLY,
+                                                  "id@backend.example.org");
 
     final OutboundTransactionResponse aResp = OutboundTransactionResponse.fromDomain (aTx);
     assertNotNull (aResp);
@@ -167,6 +176,8 @@ public final class OutboundTransactionResponseTest
     assertEquals ("custom-a", aResp.getCustom1 ());
     assertEquals ("custom-b", aResp.getCustom2 ());
     assertEquals ("custom-c", aResp.getCustom3 ());
+    assertEquals ("FAILURE_ONLY", aResp.getMlsType ());
+    assertEquals ("id@backend.example.org", aResp.getRequestedAS4MessageID ());
   }
 
   @Test
@@ -204,6 +215,8 @@ public final class OutboundTransactionResponseTest
                                                   null,
                                                   null,
                                                   null,
+                                                  null,
+                                                  null,
                                                   null);
 
     final OutboundTransactionResponse aResp = OutboundTransactionResponse.fromDomain (aTx);
@@ -216,6 +229,8 @@ public final class OutboundTransactionResponseTest
     assertNull (aResp.getErrorDetails ());
     assertNull (aResp.getMlsStatus ());
     assertEquals ("pending", aResp.getReportingStatus ());
+    assertNull (aResp.getMlsType ());
+    assertNull (aResp.getRequestedAS4MessageID ());
   }
 
   @NonNull
@@ -249,7 +264,9 @@ public final class OutboundTransactionResponseTest
                                                    @Nullable final String sPayloadMimeType,
                                                    @Nullable final String sCustom1,
                                                    @Nullable final String sCustom2,
-                                                   @Nullable final String sCustom3)
+                                                   @Nullable final String sCustom3,
+                                                   @Nullable final EPeppolMLSType eMlsType,
+                                                   @Nullable final String sRequestedAS4MessageID)
   {
     return new IOutboundTransaction ()
     {
@@ -406,6 +423,16 @@ public final class OutboundTransactionResponseTest
       public String getCustom3 ()
       {
         return sCustom3;
+      }
+
+      public EPeppolMLSType getMlsType ()
+      {
+        return eMlsType;
+      }
+
+      public String getRequestedAS4MessageID ()
+      {
+        return sRequestedAS4MessageID;
       }
     };
   }

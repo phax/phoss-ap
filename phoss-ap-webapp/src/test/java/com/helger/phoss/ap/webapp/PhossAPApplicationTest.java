@@ -16,14 +16,20 @@
  */
 package com.helger.phoss.ap.webapp;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import com.helger.phoss.ap.api.dto.OutboundS3SubmitRequest;
+import com.helger.phoss.ap.api.dto.OutboundTransactionResponse;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Test class to load the {@link PhossAPApplication} and make sure we're good.
@@ -50,9 +56,32 @@ final class PhossAPApplicationTest
     System.setProperty ("phossap.internal.skip-peppol-certificate-check", "true");
   }
 
+  @Autowired
+  private JsonMapper m_aJsonMapper;
+
   @Test
   void testContextLoads ()
   {}
+
+  @Test
+  void testOutboundOverridesJsonNames ()
+  {
+    // The JSON property names are derived from the JavaBean getters - a name like "AS4MessageID"
+    // would be expected for a getter "getAS4MessageID", so the requested AS4 message ID is named
+    // "requestedAS4MessageID" everywhere
+    final OutboundS3SubmitRequest aRequest = m_aJsonMapper.readValue ("{\"mlsType\":\"FAILURE_ONLY\"," +
+                                                                      "\"requestedAS4MessageID\":\"id@backend.example.org\"}",
+                                                                      OutboundS3SubmitRequest.class);
+    assertEquals ("FAILURE_ONLY", aRequest.getMlsType ());
+    assertEquals ("id@backend.example.org", aRequest.getRequestedAS4MessageID ());
+
+    final OutboundTransactionResponse aResponse = new OutboundTransactionResponse ();
+    aResponse.setMlsType ("ALWAYS_SEND");
+    aResponse.setRequestedAS4MessageID ("id@backend.example.org");
+    final String sJson = m_aJsonMapper.writeValueAsString (aResponse);
+    assertTrue (sJson.contains ("\"mlsType\":\"ALWAYS_SEND\""), sJson);
+    assertTrue (sJson.contains ("\"requestedAS4MessageID\":\"id@backend.example.org\""), sJson);
+  }
 
   @Test
   void testOpenTelemetrySdkIsTheGlobalInstance ()

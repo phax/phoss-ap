@@ -21,11 +21,13 @@ import java.time.OffsetDateTime;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import com.helger.base.enforce.ValueEnforcer;
 import com.helger.base.tostring.ToStringGenerator;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.db.api.helper.DBValueHelper;
 import com.helger.db.jdbc.callback.ConstantPreparedStatementDataProvider;
+import com.helger.db.jdbc.executor.DBExecutor;
 import com.helger.db.jdbc.executor.DBResultRow;
 import com.helger.phoss.ap.api.IOutboundSendingAttemptManager;
 import com.helger.phoss.ap.api.codelist.EAttemptStatus;
@@ -128,6 +130,22 @@ public class OutboundSendingAttemptManagerJdbc extends AbstractAPJdbcManager imp
       for (final DBResultRow aRow : aRows)
         ret.add (new OutboundSendingAttemptRow (aRow));
     return ret;
+  }
+
+  /** {@inheritDoc} */
+  public boolean containsAS4MessageIDIncludingArchive (@NonNull final String sAS4MessageID)
+  {
+    ValueEnforcer.notNull (sAS4MessageID, "AS4MessageID");
+
+    final DBExecutor aExecutor = newExecutor ();
+    // Active table first
+    if (aExecutor.queryCount ("SELECT COUNT(*) FROM " + m_sTableName + " WHERE as4_message_id=?",
+                              new ConstantPreparedStatementDataProvider (sAS4MessageID)) > 0)
+      return true;
+
+    // Fall back to archive table
+    return aExecutor.queryCount ("SELECT COUNT(*) FROM " + m_sTableName + "_archive" + " WHERE as4_message_id=?",
+                                 new ConstantPreparedStatementDataProvider (sAS4MessageID)) > 0;
   }
 
   @Override

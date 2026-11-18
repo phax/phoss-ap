@@ -79,7 +79,7 @@
     <ph-db.version>8.5.3</ph-db.version>
     <ph-web.version>11.5.1</ph-web.version>
     <ph-oton.version>10.9.0</ph-oton.version>
-    <peppol-commons.version>13.2.3</peppol-commons.version>
+    <peppol-commons.version>13.3.0</peppol-commons.version>
     <phive.version>12.3.0</phive.version>
     <phase4.version>4.9.2</phase4.version>
     <ddd.version>0.9.4</ddd.version>

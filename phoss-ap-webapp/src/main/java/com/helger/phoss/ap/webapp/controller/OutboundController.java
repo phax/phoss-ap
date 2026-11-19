@@ -17,7 +17,6 @@
 package com.helger.phoss.ap.webapp.controller;
 
 import java.io.InputStream;
-import java.net.URI;
 import java.util.List;
 
 import org.jspecify.annotations.NonNull;
@@ -62,6 +61,7 @@ import com.helger.phoss.ap.api.model.VerificationIssue;
 import com.helger.phoss.ap.api.model.VerificationOutcome;
 import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
+import com.helger.phoss.ap.basic.s3.S3ClientHelper;
 import com.helger.phoss.ap.core.APCoreConfig;
 import com.helger.phoss.ap.core.ddd.DDDHelper;
 import com.helger.phoss.ap.core.outbound.OutboundOrchestrator;
@@ -77,11 +77,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 /**
@@ -1019,22 +1016,11 @@ public class OutboundController
     }
 
     // Build S3 client for the sender's bucket
-
-    final S3ClientBuilder aS3Builder = S3Client.builder ().region (aRegion);
-    final String sOutboundEndpoint = APCoreConfig.getOutboundS3Endpoint ();
-    if (StringHelper.isNotEmpty (sOutboundEndpoint))
-      aS3Builder.endpointOverride (URI.create (sOutboundEndpoint));
-    if (APCoreConfig.isOutboundS3PathStyleAccess ())
-      aS3Builder.forcePathStyle (Boolean.TRUE);
-    final String sAccessKeyID = APCoreConfig.getOutboundS3AccessKeyID ();
-    final String sSecretAccessKey = APCoreConfig.getOutboundS3SecretAccessKey ();
-    if (StringHelper.isNotEmpty (sAccessKeyID) && StringHelper.isNotEmpty (sSecretAccessKey))
-    {
-      aS3Builder.credentialsProvider (StaticCredentialsProvider.create (AwsBasicCredentials.create (sAccessKeyID,
-                                                                                                    sSecretAccessKey)));
-    }
-
-    try (final S3Client aS3Client = aS3Builder.build ();
+    try (final S3Client aS3Client = S3ClientHelper.createS3Client (aRegion,
+                                                                   APCoreConfig.getOutboundS3Endpoint (),
+                                                                   APCoreConfig.isOutboundS3PathStyleAccess (),
+                                                                   APCoreConfig.getOutboundS3AccessKeyID (),
+                                                                   APCoreConfig.getOutboundS3SecretAccessKey ());
          final InputStream aIS = aS3Client.getObject (GetObjectRequest.builder ()
                                                                       .bucket (sS3Bucket)
                                                                       .key (aRequest.getS3Key ())

@@ -19,7 +19,6 @@ package com.helger.phoss.ap.basic.mgr;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -38,14 +37,12 @@ import com.helger.base.io.nonblocking.NonBlockingByteArrayOutputStream;
 import com.helger.base.string.StringHelper;
 import com.helger.phoss.ap.api.mgr.IDocumentPayloadManager;
 import com.helger.phoss.ap.basic.APBasicConfig;
+import com.helger.phoss.ap.basic.s3.S3ClientHelper;
 
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -143,23 +140,12 @@ public class DocumentPayloadManagerS3 implements IDocumentPayloadManager
     if (StringHelper.isEmpty (m_sBucket))
       throw new InitializationException ("No S3 storage bucket configured (storage.s3.bucket)");
 
-    final S3ClientBuilder aBuilder = S3Client.builder ().region (aRegion);
-
     final String sEndpoint = APBasicConfig.getStorageS3Endpoint ();
-    if (StringHelper.isNotEmpty (sEndpoint))
-      aBuilder.endpointOverride (URI.create (sEndpoint));
-    if (APBasicConfig.isStorageS3PathStyleAccess ())
-      aBuilder.forcePathStyle (Boolean.TRUE);
-
-    final String sAccessKeyID = APBasicConfig.getStorageS3AccessKeyID ();
-    final String sSecretAccessKey = APBasicConfig.getStorageS3SecretAccessKey ();
-    if (StringHelper.isNotEmpty (sAccessKeyID) && StringHelper.isNotEmpty (sSecretAccessKey))
-    {
-      aBuilder.credentialsProvider (StaticCredentialsProvider.create (AwsBasicCredentials.create (sAccessKeyID,
-                                                                                                  sSecretAccessKey)));
-    }
-
-    m_aS3Client = aBuilder.build ();
+    m_aS3Client = S3ClientHelper.createS3Client (aRegion,
+                                                 sEndpoint,
+                                                 APBasicConfig.isStorageS3PathStyleAccess (),
+                                                 APBasicConfig.getStorageS3AccessKeyID (),
+                                                 APBasicConfig.getStorageS3SecretAccessKey ());
     LOGGER.info ("S3 DocumentPayloadManager initialized with region '" +
                  sRegion +
                  "' and bucket '" +

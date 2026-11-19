@@ -17,7 +17,6 @@
 package com.helger.phoss.ap.forwarding.s3;
 
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.jspecify.annotations.NonNull;
@@ -40,15 +39,13 @@ import com.helger.phoss.ap.api.model.ForwardingResult;
 import com.helger.phoss.ap.api.model.IForwardableDocument;
 import com.helger.phoss.ap.api.otel.CPhossAPOtel;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
+import com.helger.phoss.ap.basic.s3.S3ClientHelper;
 import com.helger.telemetry.ETelemetrySpanKind;
 import com.helger.telemetry.Telemetry;
 
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -172,18 +169,11 @@ public class S3DocumentForwarder implements IDocumentForwarder
 
     try
     {
-      final S3ClientBuilder aBuilder = S3Client.builder ().region (m_aRegion);
-      if (StringHelper.isNotEmpty (m_sEndpoint))
-        aBuilder.endpointOverride (URI.create (m_sEndpoint));
-      if (m_bPathStyleAccess)
-        aBuilder.forcePathStyle (Boolean.TRUE);
-      if (StringHelper.isNotEmpty (m_sAccessKeyId) && StringHelper.isNotEmpty (m_sSecretAccessKey))
-      {
-        aBuilder.credentialsProvider (StaticCredentialsProvider.create (AwsBasicCredentials.create (m_sAccessKeyId,
-                                                                                                    m_sSecretAccessKey)));
-      }
-
-      try (final S3Client aS3Client = aBuilder.build ();
+      try (final S3Client aS3Client = S3ClientHelper.createS3Client (m_aRegion,
+                                                                     m_sEndpoint,
+                                                                     m_bPathStyleAccess,
+                                                                     m_sAccessKeyId,
+                                                                     m_sSecretAccessKey);
            final InputStream aDocumentIS = aDocPayloadMgr.openDocumentStreamForRead (aDocument.documentPath ()))
       {
         final String sBaseKey = m_sKeyPrefix + m_aFilenamePattern.getResolvedBaseName (aDocument);

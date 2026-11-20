@@ -76,7 +76,9 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
+# Disable the HotSpot Base64 intrinsic as mitigation for CVE-2026-114938 ("Java2Shell")
 ENTRYPOINT ["java", \
+            "-XX:-UseBASE64Intrinsics", \
             "-Djava.security.egd=file:/dev/urandom", \
             "-XX:InitialRAMPercentage=10", \
             "-XX:MinRAMPercentage=50", \

@@ -56,6 +56,8 @@ import com.helger.phoss.ap.db.APJdbcMetaManager;
 public final class APPeppolReportingHelper
 {
   private static final Logger LOGGER = LoggerFactory.getLogger (APPeppolReportingHelper.class);
+  // withBackendDo signals a missing or uninitialisable backend only via its return value
+  private static final String ERR_NO_BACKEND = "No Peppol Reporting backend is available or it could not be initialised";
   // Remember the invalid configured participant IDs for which a warning was already logged, so it
   // is emitted only once per value
   private static final Set <String> WARNED_INVALID_PARTICIPANT_IDS = ConcurrentHashMap.newKeySet ();
@@ -202,8 +204,10 @@ public final class APPeppolReportingHelper
         return aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.EXCLUDED);
       }
 
-      PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                            aBackend -> aBackend.storeReportingItem (aReportingItem));
+      if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
+                                                aBackend -> aBackend.storeReportingItem (aReportingItem))
+                                .isFailure ())
+        throw new IllegalStateException (ERR_NO_BACKEND);
 
       // Remember that we did it
       return aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.REPORTED);
@@ -313,8 +317,10 @@ public final class APPeppolReportingHelper
                                                                     .endUserID (getEffectiveEndUserID (aReceiverID))
                                                                     .build ();
 
-      PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
-                                            aBackend -> aBackend.storeReportingItem (aReportingItem));
+      if (PeppolReportingBackend.withBackendDo (APConfigProvider.getConfig (),
+                                                aBackend -> aBackend.storeReportingItem (aReportingItem))
+                                .isFailure ())
+        throw new IllegalStateException (ERR_NO_BACKEND);
 
       // Remember that we did it
       return aTxMgr.updateReportingStatus (sTransactionID, EReportingStatus.REPORTED);

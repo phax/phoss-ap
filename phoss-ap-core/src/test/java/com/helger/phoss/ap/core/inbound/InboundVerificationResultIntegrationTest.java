@@ -46,6 +46,7 @@ import com.helger.config.fallback.IConfigWithFallback;
 import com.helger.config.source.MultiConfigurationValueProvider;
 import com.helger.config.source.appl.ConfigurationSourceFunction;
 import com.helger.peppol.mls.EPeppolMLSResponseCode;
+import com.helger.peppol.reporting.api.PeppolReportingItem;
 import com.helger.peppol.sbdh.EPeppolMLSType;
 import com.helger.peppolid.peppol.doctype.EPredefinedDocumentTypeIdentifier;
 import com.helger.peppolid.peppol.process.EPredefinedProcessIdentifier;
@@ -55,6 +56,7 @@ import com.helger.phoss.ap.api.codelist.EForwardingMode;
 import com.helger.phoss.ap.api.codelist.EInboundStatus;
 import com.helger.phoss.ap.api.codelist.EMlsReceptionStatus;
 import com.helger.phoss.ap.api.codelist.EMlsSendingTrigger;
+import com.helger.phoss.ap.api.codelist.EReportingStatus;
 import com.helger.phoss.ap.api.codelist.ESourceType;
 import com.helger.phoss.ap.api.codelist.ETransactionType;
 import com.helger.phoss.ap.api.codelist.EVerificationRejectionForwarding;
@@ -72,6 +74,7 @@ import com.helger.phoss.ap.api.model.VerifierResult;
 import com.helger.phoss.ap.basic.APBasicMetaManager;
 import com.helger.phoss.ap.core.APCoreMetaManager;
 import com.helger.phoss.ap.core.mls.MlsHandler;
+import com.helger.phoss.ap.core.reporting.APPeppolReportingHelper;
 import com.helger.phoss.ap.db.APJdbcMetaManager;
 import com.helger.scope.mock.ScopeTestRule;
 
@@ -813,5 +816,45 @@ public final class InboundVerificationResultIntegrationTest
     assertSame (EInboundStatus.FORWARDED, _reRead (aTx).getStatus ());
     assertSame (EPeppolMLSResponseCode.REJECTION, _reRead (aTx).getMlsResponseCode ());
     assertEquals (nOutboundCountBefore, _getOutboundCount ());
+  }
+
+  @Test
+  public void testInboundReportingStaysPendingWithoutBackend ()
+  {
+    // The test class path contains no Peppol Reporting backend
+    final IInboundTransactionManager aMgr = APJdbcMetaManager.getInboundTransactionMgr ();
+    // Building the reporting item needs valid Peppol identifiers
+    final IInboundTransaction aTx = _createInboundTx (EPredefinedDocumentTypeIdentifier.APPLICATIONRESPONSE_FDC_PEPPOL_EU_POACC_TRNS_MLR_3.getURIEncoded (),
+                                                      EPredefinedProcessIdentifier.BIS3_MLR.getURIEncoded (),
+                                                      null);
+    assertTrue (aMgr.updateC4CountryCode (aTx.getID (), "AT").isSuccess ());
+
+    assertTrue (APPeppolReportingHelper.createInboundPeppolReportingItem (aTx.getID ()).isFailure ());
+    assertSame (EReportingStatus.PENDING, _reRead (aTx).getReportingStatus ());
+  }
+
+  @Test
+  public void testOutboundReportingStaysPendingWithoutBackend ()
+  {
+    // The test class path contains no Peppol Reporting backend
+    final IOutboundTransaction aTx = _createOutboundTx ();
+    final PeppolReportingItem aReportingItem = PeppolReportingItem.builder ()
+                                                                  .exchangeDateTime (_now ())
+                                                                  .directionSending ()
+                                                                  .c2ID ("POP000001")
+                                                                  .c3ID ("POP000002")
+                                                                  .docTypeIDScheme ("busdox-docid-qns")
+                                                                  .docTypeIDValue ("urn:test:invoice")
+                                                                  .processIDScheme ("cenbii-procid-ubl")
+                                                                  .processIDValue ("urn:test:process")
+                                                                  .transportProtocolPeppolAS4v2 ()
+                                                                  .c1CountryCode ("DE")
+                                                                  .endUserID ("9915:sender")
+                                                                  .build ();
+
+    assertTrue (APPeppolReportingHelper.createOutboundPeppolReportingItem (aTx.getID (), aReportingItem).isFailure ());
+    final IOutboundTransaction aUpdated = APJdbcMetaManager.getOutboundTransactionMgr ().getByID (aTx.getID ());
+    assertNotNull (aUpdated);
+    assertSame (EReportingStatus.PENDING, aUpdated.getReportingStatus ());
   }
 }

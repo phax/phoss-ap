@@ -37,7 +37,6 @@ import com.helger.base.state.EContinue;
 import com.helger.base.state.ESuccess;
 import com.helger.base.string.StringHelper;
 import com.helger.base.wrapper.Wrapper;
-import com.helger.cache.regex.RegExHelper;
 import com.helger.collection.commons.CommonsArrayList;
 import com.helger.collection.commons.ICommonsList;
 import com.helger.diagnostics.error.IError;
@@ -135,6 +134,33 @@ public final class InboundOrchestrator
   {}
 
   /**
+   * Get the SPID Main ID of the provided participant identifier, if it is a syntactically valid
+   * SPIS participant identifier (scheme <code>iso6523-actorid-upis</code>, value
+   * <code>0242:&lt;SPID&gt;</code>).
+   *
+   * @param sScheme
+   *        The participant identifier scheme. May be <code>null</code>.
+   * @param sValue
+   *        The participant identifier value. May be <code>null</code>.
+   * @return The 6-digit SPID Main ID or <code>null</code> if the participant identifier is not a
+   *         valid SPIS participant identifier.
+   */
+  @Nullable
+  private static String _getSpisMainID (@Nullable final String sScheme, @Nullable final String sValue)
+  {
+    // Scheme must be the ISO6523 actor id upis scheme
+    if (!PeppolIdentifierHelper.PARTICIPANT_SCHEME_ISO6523_ACTORID_UPIS.equals (sScheme))
+      return null;
+
+    // Value must be syntactically valid as an SPIS participant identifier
+    if (sValue == null || sValue.length () <= EXPECTED_MLS_PREFIX.length () || !sValue.startsWith (EXPECTED_MLS_PREFIX))
+      return null;
+
+    // Returns null if the SPID is syntactically invalid
+    return SPIDHelper.getMainID (sValue.substring (EXPECTED_MLS_PREFIX.length ()));
+  }
+
+  /**
    * Determine the valid <code>MLS_TO</code> participant identifier (URI encoded) from the provided
    * SBDH <code>MLS_TO</code> scheme and value. Implements the MLS SPOG section 5.1 checks: the
    * value must use the SPIS participant identifier scheme, be syntactically valid, and its Main ID
@@ -156,26 +182,46 @@ public final class InboundOrchestrator
                                @Nullable final String sValue,
                                @Nullable final String sC2SeatID)
   {
-    // Scheme must be the ISO6523 actor id upis scheme
-    if (!PeppolIdentifierHelper.PARTICIPANT_SCHEME_ISO6523_ACTORID_UPIS.equals (sScheme))
-      return null;
-
-    // Value must be syntactically valid as an SPIS participant identifier
-    if (sValue == null || sValue.length () <= EXPECTED_MLS_PREFIX.length () || !sValue.startsWith (EXPECTED_MLS_PREFIX))
-      return null;
-
-    final String sSpidValue = sValue.substring (EXPECTED_MLS_PREFIX.length ());
-    // Value must be syntactically valid as an SPIS participant identifier
-    if (!RegExHelper.stringMatchesPattern (SPIDHelper.REGEX_COMPLETE, sSpidValue))
+    // Value must be a syntactically valid SPIS participant identifier
+    final String sMlsToMainID = _getSpisMainID (sScheme, sValue);
+    if (sMlsToMainID == null)
       return null;
 
     // MLS SPOG section 5.1: the MLS_TO Main ID must correlate to the sending C2's SPID Main ID
-    final String sMlsToMainID = SPIDHelper.getMainID (sSpidValue);
     final String sC2MainID = SPIDHelper.getMainIDFromSeatID (sC2SeatID);
     if (!sMlsToMainID.equalsIgnoreCase (sC2MainID))
       return null;
 
     return CIdentifier.getURIEncoded (sScheme, sValue);
+  }
+
+  /**
+   * Check if the SBDH sender of a received MLS is valid. The sender of an MLS is always the SPID of
+   * the sending Service Provider, so it must be a syntactically valid SPIS participant identifier
+   * and its Main ID must match the SPID Main ID derived from the Seat ID in the subject CN of the
+   * sending AP certificate. Using the SPID of a different Service Provider is not allowed.
+   *
+   * @param sScheme
+   *        The SBDH sender scheme. May be <code>null</code>.
+   * @param sValue
+   *        The SBDH sender value. May be <code>null</code>.
+   * @param sSenderSeatID
+   *        The Seat ID of the sending AP (from the Peppol AP certificate CN). May be
+   *        <code>null</code>.
+   * @return <code>true</code> if the MLS sender is valid, <code>false</code> if it is absent,
+   *         syntactically invalid, or its Main ID does not match the one of the sending AP.
+   */
+  @VisibleForTesting
+  static boolean isValidMlsSender (@Nullable final String sScheme,
+                                   @Nullable final String sValue,
+                                   @Nullable final String sSenderSeatID)
+  {
+    final String sMlsSenderMainID = _getSpisMainID (sScheme, sValue);
+    if (sMlsSenderMainID == null)
+      return false;
+
+    final String sSenderMainID = SPIDHelper.getMainIDFromSeatID (sSenderSeatID);
+    return sMlsSenderMainID.equals (sSenderMainID);
   }
 
   private static void _notifyInboundDuplicateRejected (@NonNull final String sSenderID,
@@ -1255,6 +1301,20 @@ public final class InboundOrchestrator
             final String sMsg = "Found duplicate SBDH instance '" + sSbdhInstanceID + "' - processing it anyway";
             LOGGER.error (sLogPrefix + sMsg);
           }
+        }
+
+        // MLS sender check - the MLS must be sent with the SPID of the sending Service Provider
+        if (CPhossAP.isMLS (aDocTypeID, aProcessID) &&
+            !isValidMlsSender (aPeppolSBD.getSenderScheme (), aPeppolSBD.getSenderValue (), sC2ID))
+        {
+          final String sMsg = "The MLS sender '" +
+                              sSenderID +
+                              "' is not a valid SPIS participant identifier with the SPID Main ID of the sending AP certificate '" +
+                              sC2ID +
+                              "'";
+          LOGGER.error (sLogPrefix + sMsg);
+          aProcessingErrors.add (sMsg);
+          return aProcessingErrors;
         }
 
         // Receiver check
